@@ -155,7 +155,7 @@ $$(\mathbf{X}^T \mathbf{X} + \mathbf{P}) \hat{\boldsymbol{\beta}} = \mathbf{X}^T
 
 Rather than forming normal equations directly (which squares the condition number), the solver uses **data augmentation**. The penalty is factorised via Cholesky:
 
-$$\mathbf{P} = \mathbf{E}^T \mathbf{E}, \quad \mathbf{E} = \operatorname{chol}(\mathbf{P} + \delta \mathbf{I})^T$$
+$$\mathbf{P} = \mathbf{E}^T \mathbf{E}, \quad \mathbf{E} = \mathrm{chol}(\mathbf{P} + \delta \mathbf{I})^T$$
 
 The QR decomposition of **X** is computed:
 
@@ -175,7 +175,7 @@ $$\mathbf{B}_{\text{solve}} = \mathbf{V} \mathbf{D}^{-1} \mathbf{U}_1^T \mathbf{
 
 is stored and reused for covariance computation:
 
-$$\operatorname{Cov}(\hat{\boldsymbol{\beta}}) = \hat{\sigma}^2 \cdot \mathbf{B}_{\text{solve}} \mathbf{B}_{\text{solve}}^T$$
+$$\mathrm{Cov}(\hat{\boldsymbol{\beta}}) = \hat{\sigma}^2 \cdot \mathbf{B}_{\text{solve}} \mathbf{B}_{\text{solve}}^T$$
 
 ### 5. Effective Degrees of Freedom (EDF)
 
@@ -185,7 +185,7 @@ $$\text{EDF} = \sum_{i} \sum_{j} (\mathbf{U}_1)_{ij}^2$$
 
 In the fast grid search (Cholesky path), EDF is computed via the trace of the hat sub-matrix:
 
-$$\text{EDF} = \operatorname{tr}\!\left( (\mathbf{R}^T \mathbf{R} + \lambda \mathbf{S})^{-1} \mathbf{R}^T \mathbf{R} \right)$$
+$$\text{EDF} = \mathrm{tr}\!\left( (\mathbf{R}^T \mathbf{R} + \lambda \mathbf{S})^{-1} \mathbf{R}^T \mathbf{R} \right)$$
 
 ### 6. Generalized Cross Validation (GCV)
 
@@ -210,11 +210,11 @@ The GCV objective is evaluated over a Cartesian product of *K* (number of spline
 
 $$\mathbf{B} = \mathbf{R}^T \mathbf{R} + \lambda \mathbf{S}$$
 
-$$\mathbf{c} = \operatorname{cho\_factor}(\mathbf{B})$$
+$$\mathbf{c} = \mathrm{cho\_factor}(\mathbf{B})$$
 
-$$\hat{\boldsymbol{\beta}} = \operatorname{cho\_solve}(\mathbf{c}, \mathbf{R}^T \mathbf{Q}^T \mathbf{y})$$
+$$\hat{\boldsymbol{\beta}} = \mathrm{cho\_solve}(\mathbf{c}, \mathbf{R}^T \mathbf{Q}^T \mathbf{y})$$
 
-$$\text{EDF} = \operatorname{tr}(\operatorname{cho\_solve}(\mathbf{c}, \mathbf{R}^T \mathbf{R}))$$
+$$\text{EDF} = \mathrm{tr}(\mathrm{cho\_solve}(\mathbf{c}, \mathbf{R}^T \mathbf{R}))$$
 
 Cholesky is ~2× faster than LU decomposition. Both phases are multithreaded.
 
@@ -227,7 +227,7 @@ When `robust=True`, the fit iteratively down-weights outliers using the **Huber 
 1. **Initialize** residuals around the global median: *rᵢ = yᵢ − median(y)*
 2. **Estimate scale** via Median Absolute Deviation (MAD):
 
-$$\hat{\sigma}_{\text{MAD}} = \frac{\operatorname{median}(|r_i - \operatorname{median}(r_i)|)}{0.6745}$$
+$$\hat{\sigma}_{\text{MAD}} = \frac{\mathrm{median}(|r_i - \mathrm{median}(r_i)|)}{0.6745}$$
 
 3. **Compute Huber weights** with tuning constant *c = 1.345 · σ̂*:
 
@@ -247,11 +247,11 @@ Both confidence and prediction intervals use the **t-distribution** with *n −*
 
 **Confidence interval** for the mean *f(x)* — captures uncertainty in the fitted curve:
 
-$$\hat{y} \pm t_{1-\alpha/2,\, \nu} \cdot \sqrt{\mathbf{x}^T \operatorname{Cov}(\hat{\boldsymbol{\beta}})\, \mathbf{x}}$$
+$$\hat{y} \pm t_{1-\alpha/2,\, \nu} \cdot \sqrt{\mathbf{x}^T \mathrm{Cov}(\hat{\boldsymbol{\beta}})\, \mathbf{x}}$$
 
 **Prediction interval** for a new observation — additionally includes residual variance:
 
-$$\hat{y} \pm t_{1-\alpha/2,\, \nu} \cdot \sqrt{\hat{\sigma}^2 + \mathbf{x}^T \operatorname{Cov}(\hat{\boldsymbol{\beta}})\, \mathbf{x}}$$
+$$\hat{y} \pm t_{1-\alpha/2,\, \nu} \cdot \sqrt{\hat{\sigma}^2 + \mathbf{x}^T \mathrm{Cov}(\hat{\boldsymbol{\beta}})\, \mathbf{x}}$$
 
 where *ν = n −* EDF and *σ̂²* is the residual scale.
 
