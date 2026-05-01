@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "linGAM"
+version = "0.1.0"
+description = "Simple Fast Linear GAM — a minimal implementation of Generalized Additive Models using penalized B-splines"
+readme = "README.md"
+license = "MIT"
+authors = [
+    {name = "David Ávila Cortés"}
+]
+keywords = ["gam", "generalized-additive-models", "splines", "regression", "machine-learning"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "numpy>=1.20",
+    "scipy>=1.7",
+    "matplotlib>=3.5",
+]
+
+[project.urls]
+Homepage = "https://github.com/dacts/linGAM"
+Repository = "https://github.com/dacts/linGAM"
+
+[tool.setuptools]
+py-modules = ["linGAM"]
