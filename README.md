@@ -153,15 +153,17 @@ $$(\mathbf{X}^T \mathbf{X} + \mathbf{P}) \hat{\boldsymbol{\beta}} = \mathbf{X}^T
 
 ### 4. Numerical Solution via Data Augmentation
 
-Rather than forming normal equations directly (which squares the condition number), the solver uses **data augmentation**. The penalty is factorised via Cholesky:
+**Why data augmentation?** Forming **X**ᵀ**X** directly squares the condition number — even mild near-dependency among basis functions gets amplified into numerical instability. Instead, the solver treats the penalty as additional "fake data rows" that softly pull coefficients toward zero, solving the augmented system without ever forming **X**ᵀ**X**.
 
-$$\mathbf{P} = \mathbf{E}^T \mathbf{E}, \quad \mathbf{E} = \mathrm{chol}(\mathbf{P} + \delta \mathbf{I})^T$$
+A tiny ridge term δ**I** (δ = √ε₁ₐₕ) is added to **P** before Cholesky factorization — this ensures positive-definiteness even when λ = 0 (no penalty), preventing the Cholesky from failing. The penalty is factorised:
 
-The QR decomposition of **X** is computed:
+$$\mathbf{P} + \delta\mathbf{I} = \mathbf{E}^T \mathbf{E}, \quad \mathbf{E} = \mathrm{chol}(\mathbf{P} + \delta \mathbf{I})^T$$
+
+The QR decomposition of **X** is computed, separating orthogonal structure (**Q**) from scale (**R**):
 
 $$\mathbf{X} = \mathbf{Q} \mathbf{R}$$
 
-The stacked matrix is then decomposed via SVD:
+The stacked matrix **[R; E]** is then decomposed via SVD — the most numerically stable way to solve linear systems, gracefully handling near-singular matrices by truncating tiny singular values:
 
 $$\begin{bmatrix} \mathbf{R} \\ \mathbf{E} \end{bmatrix} = \mathbf{U} \mathbf{D} \mathbf{V}^T$$
 
@@ -169,11 +171,11 @@ The solution reduces to:
 
 $$\hat{\boldsymbol{\beta}} = \mathbf{V} \mathbf{D}^{-1} \mathbf{U}_1^T \mathbf{Q}^T \mathbf{y}$$
 
-where **U**₁ is the top half of **U** corresponding to the data matrix **R**. The component matrix:
+where **U**₁ is the top portion of **U** corresponding to the data matrix **R** (the bottom portion corresponds to **E** and is not needed for solving). The component matrix:
 
 $$\mathbf{B}_{\text{solve}} = \mathbf{V} \mathbf{D}^{-1} \mathbf{U}_1^T \mathbf{Q}^T$$
 
-is stored and reused for covariance computation:
+is the "inverse operator" mapping any **y** to its coefficient vector **β̂**. It is stored and reused for the covariance:
 
 $$\mathrm{Cov}(\hat{\boldsymbol{\beta}}) = \hat{\sigma}^2 \cdot \mathbf{B}_{\text{solve}} \mathbf{B}_{\text{solve}}^T$$
 
@@ -222,24 +224,36 @@ Cholesky is ~2× faster than LU decomposition. Both phases are multithreaded.
 
 ### 8. Robust Fitting (Huber IRLS)
 
-When `robust=True`, the fit iteratively down-weights outliers using the **Huber loss function**. The procedure:
+Ordinary least squares is easily thrown off by outliers — a single extreme point can yank the fitted curve far from the rest of the data. When `robust=True`, the fit uses **Huber-weighted Iteratively Reweighted Least Squares (IRLS)** to progressively down-weight outliers.
 
-1. **Initialize** residuals around the global median: *rᵢ = yᵢ − median(y)*
-2. **Estimate scale** via Median Absolute Deviation (MAD):
+The **Huber loss** is a compromise between squared-error loss (sensitive to outliers) and absolute-error loss (robust but less efficient for well-behaved data):
 
-$$\hat{\sigma}_{\text{MAD}} = \frac{\mathrm{median}(|r_i - \mathrm{median}(r_i)|)}{0.6745}$$
+- Points with small residuals (|r| ≤ c) are **fully trusted** — weight = 1 (uses OLS, which is statistically optimal for Gaussian errors).
+- Points with large residuals (|r| > c) are **down-weighted** as c / |r| — the bigger the residual, the less influence the point has.
+
+The procedure iterates:
+
+1. **Initialize** residuals around the global median: *rᵢ = yᵢ − median(y)*. The median is naturally robust to outliers, giving a much better starting point than the mean.
+
+2. **Estimate scale** via Median Absolute Deviation (MAD). The MAD is a robust alternative to standard deviation — it measures spread using medians instead of means, making it largely immune to outliers. The constant 0.6745 converts MAD to a consistent estimate of σ for Gaussian errors:
+
+$$\hat{\sigma}_{\text{MAD}} = \frac{\mathrm{median}(|r_i - \mathrm{median}(r_i)|)}{0.6745}, \quad 0.6745 = \Phi^{-1}(3/4)$$
 
 3. **Compute Huber weights** with tuning constant *c = 1.345 · σ̂*:
 
 $$w_i = \begin{cases} 1 & \text{if } |r_i| \le c \\ \dfrac{c}{|r_i|} & \text{if } |r_i| > c \end{cases}$$
 
-4. **Solve weighted penalized least squares**:
+The constant 1.345 gives approximately **95% asymptotic efficiency** when the errors are actually Gaussian — meaning we lose almost nothing by being robust, but gain a great deal when outliers are present.
+
+4. **Solve weighted penalized least squares** by applying √w to each row of **X** and **y**:
 
 $$\mathbf{X}_w = \sqrt{\mathbf{w}} \odot \mathbf{X}, \quad \mathbf{y}_w = \sqrt{\mathbf{w}} \odot \mathbf{y}$$
 
 $$\hat{\boldsymbol{\beta}} = \arg\min_{\boldsymbol{\beta}} \left(\|\mathbf{y}_w - \mathbf{X}_w \boldsymbol{\beta}\|^2 + \lambda \,\boldsymbol{\beta}^T \mathbf{S} \,\boldsymbol{\beta}\right)$$
 
-5. Update residuals and repeat for up to 15 iterations (robust fit) or 10 iterations (robust grid search).
+Row-weighting with √w avoids forming weighted normal equations (**X**ᵀ**WX**), which would square the condition number. Instead, the weighted matrices pass directly into the QR+SVD solve pipeline, preserving numerical stability.
+
+5. **Recompute residuals** on the original (unweighted) **X**: *r = y − Xβ̂*. This ensures the weights in the next iteration reflect actual prediction error, not weighted error. Repeat for up to 15 iterations (robust fit) or 10 iterations (robust grid search).
 
 ### 9. Interval Estimation
 
