@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 from concurrent.futures import ThreadPoolExecutor
 from scipy import stats
 from scipy.linalg import cho_factor, cho_solve
@@ -285,36 +286,6 @@ class LinGAM:
 
         return coef, U1, B_solve
 
-    def _irls_solve(self, X: np.ndarray, y: np.ndarray, P: np.ndarray,
-                    n_iter: int = 15) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        """
-        Huber-weighted Iteratively Reweighted Least Squares (IRLS).
-
-        Returns (coef, U1, B_solve, weights, residuals) for subsequent GCV/edof
-        computation. The same core loop is shared by _fit_internal (15 iterations)
-        and gridsearch_basic.eval_lam (10 iterations).
-        """
-        n = len(y)
-        med_y = np.median(y)
-        residuals = y - med_y
-        w = np.ones(n)
-        coef, U1, B_solve = None, None, None
-
-        for _ in range(n_iter):
-            mad = np.median(np.abs(residuals - np.median(residuals)))
-            scale_est = mad / 0.6745 if mad > 1e-6 else 1e-6
-            c = 1.345 * scale_est
-            abs_r = np.abs(residuals)
-            w = np.where(abs_r <= c, 1.0, c / np.maximum(abs_r, 1e-6))
-            W_sqrt = np.sqrt(w).reshape(-1, 1)
-            X_w = X * W_sqrt
-            y_w = y * np.sqrt(w)
-            Qw, Rw = np.linalg.qr(X_w)
-            coef, U1, B_solve = self._solve_pirls(X_w, y_w, P, Q=Qw, R=Rw)
-            residuals = y - X @ coef
-
-        return coef, U1, B_solve, w, residuals
-
     def gridsearch(self, x: ArrayLike, y: ArrayLike,
                    lam: Optional[ArrayLike] = None,
                    n_splines: Optional[ArrayLike] = None,
@@ -404,9 +375,9 @@ class LinGAM:
             # of columns changes with the number of basis functions.
             self.n_splines = K
             Xmat = self._build_design_matrix(x)
-            Q = R = None
-            if not robust:
-                Q, R = np.linalg.qr(Xmat)
+            # Pre-compute QR once per K — it's the expensive part, and lambda
+            # only affects the penalty, not the design matrix, so QR is reusable.
+            Q, R = np.linalg.qr(Xmat)
             _, S_pen = self._build_penalty(1.0)
             m = K + 1
 
@@ -417,10 +388,48 @@ class LinGAM:
                 P[:K, :K] = l_val * S_pen
                 
                 if robust:
-                    coef, U1, _, w, _ = self._irls_solve(Xmat, y, P, n_iter=10)
+                    # ---- Robust path: Huber IRLS within each grid candidate ----
+                    # For the intuition behind these steps, see _fit_internal().
+                    # Median initialization prevents the spline from anchoring to outliers.
+                    med_y = np.median(y)
+                    residuals = y - med_y
+                    
+                    coef, edf = None, 0.0
+                    w = np.ones(n)
+                    for _ in range(10): # IRLS: iteratively reweight until convergence
+                        # MAD-based scale: robust measure of "typical" residual size,
+                        # insensitive to the magnitude of extreme outliers.
+                        mad = np.median(np.abs(residuals - np.median(residuals)))
+                        scale_est = mad / 0.6745 if mad > 1e-6 else 1e-6
+                        
+                        # Huber weights: full weight for "normal" residuals, diminishing
+                        # weight for outliers. The threshold c=1.345*scale gives
+                        # 95% statistical efficiency on clean (Gaussian) data.
+                        c = 1.345 * scale_est
+                        abs_r = np.abs(residuals)
+                        w = np.where(abs_r <= c, 1.0, c / np.maximum(abs_r, 1e-6))
+                        
+                        # Scale rows of X and elements of y by sqrt(w) to solve weighted PIRLS.
+                        # This is the standard trick for weighted least squares:
+                        # instead of (X^T W X) beta = X^T W y, we solve
+                        # (X_w^T X_w) beta = X_w^T y_w, which is unweighted.
+                        W_sqrt = np.sqrt(w).reshape(-1, 1)
+                        X_w = Xmat * W_sqrt
+                        y_w = y * np.sqrt(w)
+                        
+                        Qw, Rw = np.linalg.qr(X_w)
+                        coef, U1, _ = self._solve_pirls(X_w, y_w, P, Q=Qw, R=Rw)
+                        residuals = y - Xmat @ coef
+                        
+                        # EDF from SVD: each singular value contributes a fractional amount
+                        # to the total degrees of freedom. Sum of U1^2 entries
+                        # gives EDF — see _solve_pirls() for why U1 encodes this.
+                        edf = np.sum(U1 ** 2)
+                        
                     y_hat = Xmat @ coef
+                    # Weighted RSS: only well-behaved points (w≈1) contribute
+                    # significantly to the residual sum of squares.
                     rss = np.sum(w * (y - y_hat) ** 2)
-                    edf = np.sum(U1 ** 2)
                 else:
                     coef, U1, _ = self._solve_pirls(Xmat, y, P, Q=Q, R=R)
                     y_hat = Xmat @ coef
@@ -453,7 +462,7 @@ class LinGAM:
     def gridsearch_fast(self, x: ArrayLike, y: ArrayLike,
                         lam: Optional[ArrayLike] = None,
                         n_splines: Optional[ArrayLike] = None,
-                        gamma: float = 1.4) -> "LinGAM":
+                        gamma: float = 1.4, robust: bool = False) -> "LinGAM":
         """
         Fast grid search that multithreads BOTH n_splines (precomputing QR)
         and lam evaluations concurrently.
@@ -487,65 +496,83 @@ class LinGAM:
         # can reuse R^T R and R^T Q^T y for all lambda values at a given K.
         def precompute_K(K: int):
             Xmat = self._build_design_matrix(x, n_splines=K)
-            Q, R = np.linalg.qr(Xmat)
+            Xmat_w = Xmat
+            y_w = y
+            
+            Q, R = np.linalg.qr(Xmat_w)
             _, S_pen = self._build_penalty(1.0, n_splines=K)
-
+            
+            # These two quantities are the building blocks for ALL lambda values
+            # at this K. R^T R replaces X^T X (same information, but from QR),
+            # and R^T Q^T y replaces X^T y. This is why QR helps: it compresses
+            # the n×m data into a compact m×m form.
             RtR = R.T @ R
-            Rt_qty = R.T @ (Q.T @ y)
-
+            Rt_qty = R.T @ (Q.T @ y_w)
+            
             P_base = np.zeros((K + 1, K + 1))
             P_base[:K, :K] = S_pen
-
+            
             return K, Xmat, P_base, RtR, Rt_qty, K + 1
 
         with ThreadPoolExecutor() as executor:
-            precomputed_raw = list(executor.map(precompute_K, n_splines))
+            precomputed = list(executor.map(precompute_K, n_splines))
 
-        Xmats = {}
-        precomputed = []
-        for K, Xmat, P_base, RtR, Rt_qty, m in precomputed_raw:
-            Xmats[K] = Xmat
-            precomputed.append((K, P_base, RtR, Rt_qty, m))
-
-        def eval_candidate(args) -> Tuple[int, float, np.ndarray, float]:
-            K, l_val, P_base, RtR, Rt_qty, m = args
-
+        # Phase 2: Evaluate all (K, lambda) candidates using precomputed quantities.
+        # For each pair, we just solve a small linear system — no need to rebuild
+        # or decompose anything. Cholesky is ~2x faster than LU for this.
+        def eval_candidate(args) -> Tuple[float, int, float, np.ndarray, float]:
+            K, l_val, Xmat, P_base, RtR, Rt_qty, m = args
+            
+            # The normal equations with penalty: (R^T R + lambda * P) beta = R^T Q^T y
+            # This is equivalent to (X^T X + lambda * P) beta = X^T y, but using
+            # the QR-compressed form avoids numerical issues with X^T X.
             B = RtR + l_val * P_base
-            B.flat[::m+1] += 1e-12
-
+            B.flat[::m+1] += 1e-12  # Tiny ridge for numerical stability: prevents
+                                     # Cholesky from failing when B is nearly singular
+            
             try:
+                # Cholesky decomposition: factor B = L L^T, then solve two triangular
+                # systems. We solve twice — once for the coefficients, once for EDF.
                 c, lower = cho_factor(B, overwrite_a=True, check_finite=False)
                 coef = cho_solve((c, lower), Rt_qty, check_finite=False)
+                
+                # Effective degrees of freedom = trace of the "hat matrix" restricted
+                # to the data space. Intuitively, EDF measures how many "free
+                # parameters" the smooth is actually using. A straight line has EDF~2,
+                # a wildly wiggly curve has EDF close to K+1.
                 B_inv_RtR = cho_solve((c, lower), RtR, check_finite=False)
                 edf = np.trace(B_inv_RtR)
             except Exception:
+                # Cholesky requires a positive-definite matrix. If lambda is very small
+                # and the design matrix is ill-conditioned, B might not be positive-
+                # definite enough. LU-based solve doesn't have this requirement.
                 coef = np.linalg.solve(B, Rt_qty)
                 edf = np.trace(np.linalg.solve(B, RtR))
-
-            return K, l_val, coef, edf
+                
+            y_hat = Xmat @ coef
+            rss = np.sum((y - y_hat) ** 2)
+            # GCV formula: see gridsearch() docstring for intuition.
+            gcv_score = (n * rss) / (n - gamma * edf) ** 2
+            return gcv_score, K, l_val, coef, edf
 
         tasks = []
-        for K, P_base, RtR, Rt_qty, m in precomputed:
+        for K, Xmat, P_base, RtR, Rt_qty, m in precomputed:
             for l_val in lam:
-                tasks.append((K, l_val, P_base, RtR, Rt_qty, m))
+                tasks.append((K, l_val, Xmat, P_base, RtR, Rt_qty, m))
 
         with ThreadPoolExecutor() as executor:
-            for K, l_val, coef, edf in executor.map(eval_candidate, tasks):
-                Xmat = Xmats[K]
-                y_hat = Xmat @ coef
-                rss = np.sum((y - y_hat) ** 2)
-                gcv_score = (n * rss) / (n - gamma * edf) ** 2
-                results.append((gcv_score, K, l_val, coef, edf))
-                if gcv_score < best_gcv:
-                    best_gcv = gcv_score
-                    best_result = (gcv_score, K, l_val, coef, edf)
+            for res in executor.map(eval_candidate, tasks):
+                results.append(res)
+                if res[0] < best_gcv:
+                    best_gcv = res[0]
+                    best_result = res
 
         _, best_K, best_l, _, _ = best_result
         self.n_splines = best_K
         self.lam = best_l
         self.gcv_results_ = results
 
-        self._fit_internal(x, y, robust=False)
+        self._fit_internal(x, y, robust=robust)
         return self
 
     def fit(self, x: ArrayLike, y: ArrayLike, robust: bool = False) -> "LinGAM":
@@ -607,9 +634,53 @@ class LinGAM:
         P, _ = self._build_penalty(self.lam)
         
         if robust:
-            self.coef_, U1, B_solve, w, _ = self._irls_solve(X, y, P, n_iter=15)
+            # ---- Robust fitting via Huber IRLS ----
+            # Ordinary least squares is very sensitive to outliers because squaring
+            # a large residual makes it dominate the objective. Huber IRLS fixes
+            # this by assigning lower weights to points with large residuals —
+            # effectively telling the model "don't trust that point."
+            #
+            # The algorithm:
+            # 1. Start with the global median (robust to outliers, unlike the mean).
+            # 2. Measure how spread out the "typical" residuals are using MAD —
+            #    the Median Absolute Deviation. MAD is like standard deviation but
+            #    ignores extreme values. The factor 0.6745 makes MAD comparable to
+            #    standard deviation for normally-distributed data.
+            # 3. Determine a threshold c = 1.345 * scale. The magic constant 1.345
+            #    makes Huber loss 95% as efficient as least squares on clean data.
+            # 4. Points with |residual| < c keep full weight (w=1). Points beyond
+            #    c get weight c/|residual|, which shrinks as the residual grows.
+            # 5. Re-fit the spline with these weights, update residuals, and repeat.
+            #    The weights push the curve away from outliers each iteration.
+            med_y = np.median(y)
+            residuals = y - med_y
+            w = np.ones(n)
+            
+            for _ in range(15): # IRLS Loop
+                # 2. Scale estimation using MAD
+                mad = np.median(np.abs(residuals - np.median(residuals)))
+                scale_est = mad / 0.6745 if mad > 1e-6 else 1e-6
+                
+                # 3. Compute Huber weights: full weight for "normal" points,
+                #    diminishing weight for outliers (c/|residual|).
+                c = 1.345 * scale_est
+                abs_r = np.abs(residuals)
+                w = np.where(abs_r <= c, 1.0, c / np.maximum(abs_r, 1e-6))
+                
+                # 4. Convert to weighted least squares by multiplying each row
+                #    of X and each element of y by sqrt(w). This is mathematically
+                #    identical to solving (X^T W X + P) beta = X^T W y, but it's
+                #    cleaner to let the existing solver handle it via transformed data.
+                W_sqrt = np.sqrt(w).reshape(-1, 1)
+                X_w = X * W_sqrt
+                y_w = y * np.sqrt(w)
+                
+                self.coef_, U1, B_solve = self._solve_pirls(X_w, y_w, P)
+                residuals = y - X @ self.coef_
+            
             self._B_solve = B_solve
             y_hat = X @ self.coef_
+            # Weighted RSS: only points with w≈1 contribute significantly.
             rss = np.sum(w * (y - y_hat) ** 2)
         else:
             # ---- Standard fitting: solve (X^T X + P) beta = X^T y ----
