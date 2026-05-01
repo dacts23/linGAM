@@ -290,27 +290,74 @@ class LinGAM:
         """
         Huber-weighted Iteratively Reweighted Least Squares (IRLS).
 
+        Ordinary least squares is easily thrown off by outliers — a single extreme
+        point can yank the fitted curve far away from the rest of the data. Robust
+        regression fixes this by giving each point a "trust weight" and iterating:
+
+            1. Fit the penalized model using current weights.
+            2. Recompute residuals and update weights (outliers get smaller weights).
+            3. Repeat until the weights stabilize.
+
+        The Huber loss function is used here because it is a compromise between
+        squared-error loss (sensitive to outliers) and absolute-error loss (robust
+        but less statistically efficient for well-behaved data):
+
+            - Points with small residuals (|r| <= c) are trusted and get weight 1.
+            - Points with large residuals (|r| > c) are down-weighted as c / |r|,
+              so the bigger the residual, the less influence the point has.
+
+        The threshold c = 1.345 * sigma, where sigma is estimated from the MAD
+        (Median Absolute Deviation). The constant 1.345 gives about 95% asymptotic
+        efficiency when the errors are actually Gaussian — meaning we lose almost
+        nothing by being robust, but gain a lot when outliers are present.
+
+        The same core loop is shared by _fit_internal (15 iterations) and
+        gridsearch_basic.eval_lam (10 iterations).
+
         Returns (coef, U1, B_solve, weights, residuals) for subsequent GCV/edof
-        computation. The same core loop is shared by _fit_internal (15 iterations)
-        and gridsearch_basic.eval_lam (10 iterations).
+        computation.
         """
         n = len(y)
+        # Initialize residuals around the median (not zero). The median is
+        # naturally robust to outliers, so it gives a much better starting
+        # point than the mean would — we start closer to the true curve.
         med_y = np.median(y)
         residuals = y - med_y
         w = np.ones(n)
         coef, U1, B_solve = None, None, None
 
         for _ in range(n_iter):
+            # ---- Robust scale estimation via MAD ----
+            # The MAD (Median Absolute Deviation) is a robust alternative to
+            # standard deviation. Multiplying by 1/0.6745 converts MAD to a
+            # consistent estimate of sigma for Gaussian errors:
+            #     sigma_hat = MAD / Phi^{-1}(3/4) = MAD / 0.6745
+            # This is far less affected by outliers than the sample std dev.
             mad = np.median(np.abs(residuals - np.median(residuals)))
             scale_est = mad / 0.6745 if mad > 1e-6 else 1e-6
+            # Huber threshold: points within c get full weight, points beyond
+            # are progressively down-weighted. The constant 1.345 balances
+            # robustness against statistical efficiency.
             c = 1.345 * scale_est
             abs_r = np.abs(residuals)
             w = np.where(abs_r <= c, 1.0, c / np.maximum(abs_r, 1e-6))
+
+            # ---- Apply weights and solve ----
+            # Rather than re-weighting the normal equations (which doubles the
+            # condition number), we weight each row of X and y by sqrt(w).
+            # The weighted model becomes:
+            #     min || sqrt(w) * (y - X beta) ||^2 + beta^T P beta
+            # which is equivalent to the original IRLS formulation but stays
+            # numerically well-conditioned because we pass the weighted matrices
+            # directly into the QR+SVD solve pipeline.
             W_sqrt = np.sqrt(w).reshape(-1, 1)
             X_w = X * W_sqrt
             y_w = y * np.sqrt(w)
             Qw, Rw = np.linalg.qr(X_w)
             coef, U1, B_solve = self._solve_pirls(X_w, y_w, P, Q=Qw, R=Rw)
+
+            # Recompute residuals using the original (unweighted) X so weights
+            # reflect the actual prediction errors, not the weighted errors.
             residuals = y - X @ coef
 
         return coef, U1, B_solve, w, residuals
