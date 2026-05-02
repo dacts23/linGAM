@@ -24,18 +24,33 @@ linGAM fits smooth, additive regression models of the form
 
 .. math::
 
-   y_i = \beta_0 + \sum_{j=1}^{p} f_j(x_{ij}) + \varepsilon_i
+   y_i = \beta_0 + f_1(x_{i1}) + f_2(x_{i2}) + \dots + f_p(x_{ip}) + \varepsilon_i
 
-where each :math:`f_j` is a flexible smooth function learned from data,
-penalised to avoid overfitting.  The package supports:
+where each :math:`f_j` is a flexible smooth function *learned from data*,
+penalised to avoid overfitting.
 
-* **Univariate splines** ``s()`` — smooth nonlinear trends
-* **Tensor-product interactions** ``te()`` — multidimensional smooths
-* **Categorical factors** ``f()`` — one-hot / dummy encoding
-* **Linear terms** ``l()`` — plain linear coefficients
+In plain language: instead of assuming "y goes up by 2.3 for every unit of x"
+(a straight line), the model figures out the *shape* of the relationship on
+its own.  It can find saturation curves, optimal operating points,
+diminishing returns, and interactions — all while keeping each effect
+separate and interpretable.
+
+The package supports:
+
+* **Univariate splines** ``s()`` — smooth nonlinear trends (e.g., "how does
+  temperature affect blade life?")
+* **Tensor-product interactions** ``te()`` — multidimensional smooths (e.g.,
+  "does high temperature + high vibration make things worse than either
+  alone?")
+* **Categorical factors** ``f()`` — one-hot / dummy encoding (e.g., "does
+  coating type A last longer than B?")
+* **Linear terms** ``l()`` — plain linear coefficients (e.g., "more cooling
+  flow → linearly longer life")
 * **Shape constraints** — monotonicity, convexity, concavity, periodicity
-* **Robust fitting** — Huber IRLS for outlier resistance
-* **Fast grid search** — QR+Cholesky GCV optimisation with selective term search
+  (encode what physics tells you)
+* **Robust fitting** — Huber IRLS for resistance to sensor outliers
+* **Fast grid search** — QR+Cholesky GCV optimisation with selective term
+  search (automatically find the right amount of smoothing)
 
 Key design goals
 ^^^^^^^^^^^^^^^^
@@ -49,6 +64,19 @@ Key design goals
   and pyGAM conventions.
 * **Flexibility**:  Choose which terms participate in grid search, apply
   shape constraints, or mix standard and robust fitting.
+
+When to use linGAM
+^^^^^^^^^^^^^^^^^^
+
+* You need more flexibility than linear regression but more interpretability
+  than a neural network.
+* You have domain knowledge about shapes (monotonic, concave, periodic) that
+  you want to bake into the model.
+* You need to *explain* predictions to colleagues — each term produces a
+  plot, not a black-box score.
+* Your data has outliers and you want the fit to ignore them automatically.
+* You want automatic hyperparameter tuning via grid search over smoothing
+  parameters.
 
 
 Quick example

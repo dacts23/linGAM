@@ -7,29 +7,31 @@
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
         <title>linGAM Documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=c309799c" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css?v=afa656db" />
     
     
 
 
 <style>
   body {
-    --color-code-background: #f2f2f2;
-  --color-code-foreground: #1e1e1e;
+    --color-code-background: #0d1117;
+  --color-code-foreground: #e6edf3;
   
   }
   @media not print {
     body[data-theme="dark"] {
-      --color-code-background: #202020;
-  --color-code-foreground: #d0d0d0;
+      --color-code-background: #0d1117;
+  --color-code-foreground: #e6edf3;
   
     }
     @media (prefers-color-scheme: dark) {
       body:not([data-theme="light"]) {
-        --color-code-background: #202020;
-  --color-code-foreground: #d0d0d0;
+        --color-code-background: #0d1117;
+  --color-code-foreground: #e6edf3;
   
       }
     }
@@ -259,15 +261,19 @@ Generalized Additive Models using penalised B-splines.</p>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="math.html">Mathematical Foundations</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="math.html#b-spline-bases">B-spline bases</a></li>
-<li class="toctree-l2"><a class="reference internal" href="math.html#penalised-least-squares">Penalised least squares</a></li>
-<li class="toctree-l2"><a class="reference internal" href="math.html#svd-data-augmentation-solver">SVD data-augmentation solver</a></li>
-<li class="toctree-l2"><a class="reference internal" href="math.html#effective-degrees-of-freedom-edf">Effective degrees of freedom (EDF)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#why-gams">Why GAMs?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#b-spline-bases-building-curves-from-building-blocks">B-spline bases: building curves from building blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#penalties-why-flexibility-needs-a-cost">Penalties: why flexibility needs a cost</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#the-svd-data-augmentation-solver">The SVD data-augmentation solver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#effective-degrees-of-freedom-edf">Effective Degrees of Freedom (EDF)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="math.html#generalised-cross-validation-gcv">Generalised Cross Validation (GCV)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="math.html#fast-qr-cholesky-grid-search">Fast QR+Cholesky grid search</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#putting-it-together-the-penalised-fit">Putting it together: the penalised fit</a></li>
 <li class="toctree-l2"><a class="reference internal" href="math.html#tensor-product-interactions">Tensor-product interactions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="math.html#huber-irls-robust-fitting">Huber IRLS (robust fitting)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#decomposition-how-the-model-explains-its-predictions">Decomposition: how the model explains its predictions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="math.html#confidence-and-prediction-intervals">Confidence and prediction intervals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#fast-grid-search-how-it-works">Fast grid search: how it works</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#huber-irls-handling-outliers">Huber IRLS: handling outliers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#key-takeaways">Key takeaways</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a><ul>
@@ -315,18 +321,31 @@ Generalized Additive Models using penalised B-splines.</p>
 <p>linGAM fits smooth, additive regression models of the form</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
-\[y_i = \beta_0 + \sum_{j=1}^{p} f_j(x_{ij}) + \varepsilon_i\]</div>
+\[y_i = \beta_0 + f_1(x_{i1}) + f_2(x_{i2}) + \dots + f_p(x_{ip}) + \varepsilon_i\]</div>
 </div>
-<p>where each <span class="math notranslate nohighlight">\(f_j\)</span> is a flexible smooth function learned from data,
-penalised to avoid overfitting.  The package supports:</p>
+<p>where each <span class="math notranslate nohighlight">\(f_j\)</span> is a flexible smooth function <em>learned from data</em>,
+penalised to avoid overfitting.</p>
+<p>In plain language: instead of assuming “y goes up by 2.3 for every unit of x”
+(a straight line), the model figures out the <em>shape</em> of the relationship on
+its own.  It can find saturation curves, optimal operating points,
+diminishing returns, and interactions — all while keeping each effect
+separate and interpretable.</p>
+<p>The package supports:</p>
 <ul class="simple">
-<li><p><strong>Univariate splines</strong> <code class="docutils literal notranslate"><span class="pre">s()</span></code> — smooth nonlinear trends</p></li>
-<li><p><strong>Tensor-product interactions</strong> <code class="docutils literal notranslate"><span class="pre">te()</span></code> — multidimensional smooths</p></li>
-<li><p><strong>Categorical factors</strong> <code class="docutils literal notranslate"><span class="pre">f()</span></code> — one-hot / dummy encoding</p></li>
-<li><p><strong>Linear terms</strong> <code class="docutils literal notranslate"><span class="pre">l()</span></code> — plain linear coefficients</p></li>
-<li><p><strong>Shape constraints</strong> — monotonicity, convexity, concavity, periodicity</p></li>
-<li><p><strong>Robust fitting</strong> — Huber IRLS for outlier resistance</p></li>
-<li><p><strong>Fast grid search</strong> — QR+Cholesky GCV optimisation with selective term search</p></li>
+<li><p><strong>Univariate splines</strong> <code class="docutils literal notranslate"><span class="pre">s()</span></code> — smooth nonlinear trends (e.g., “how does
+temperature affect blade life?”)</p></li>
+<li><p><strong>Tensor-product interactions</strong> <code class="docutils literal notranslate"><span class="pre">te()</span></code> — multidimensional smooths (e.g.,
+“does high temperature + high vibration make things worse than either
+alone?”)</p></li>
+<li><p><strong>Categorical factors</strong> <code class="docutils literal notranslate"><span class="pre">f()</span></code> — one-hot / dummy encoding (e.g., “does
+coating type A last longer than B?”)</p></li>
+<li><p><strong>Linear terms</strong> <code class="docutils literal notranslate"><span class="pre">l()</span></code> — plain linear coefficients (e.g., “more cooling
+flow → linearly longer life”)</p></li>
+<li><p><strong>Shape constraints</strong> — monotonicity, convexity, concavity, periodicity
+(encode what physics tells you)</p></li>
+<li><p><strong>Robust fitting</strong> — Huber IRLS for resistance to sensor outliers</p></li>
+<li><p><strong>Fast grid search</strong> — QR+Cholesky GCV optimisation with selective term
+search (automatically find the right amount of smoothing)</p></li>
 </ul>
 <section id="key-design-goals">
 <h3>Key design goals<a class="headerlink" href="#key-design-goals" title="Link to this heading">¶</a></h3>
@@ -340,6 +359,20 @@ numbers.  No <span class="math notranslate nohighlight">\(X^\top X\)</span> is e
 and pyGAM conventions.</p></li>
 <li><p><strong>Flexibility</strong>:  Choose which terms participate in grid search, apply
 shape constraints, or mix standard and robust fitting.</p></li>
+</ul>
+</section>
+<section id="when-to-use-lingam">
+<h3>When to use linGAM<a class="headerlink" href="#when-to-use-lingam" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>You need more flexibility than linear regression but more interpretability
+than a neural network.</p></li>
+<li><p>You have domain knowledge about shapes (monotonic, concave, periodic) that
+you want to bake into the model.</p></li>
+<li><p>You need to <em>explain</em> predictions to colleagues — each term produces a
+plot, not a black-box score.</p></li>
+<li><p>Your data has outliers and you want the fit to ignore them automatically.</p></li>
+<li><p>You want automatic hyperparameter tuning via grid search over smoothing
+parameters.</p></li>
 </ul>
 </section>
 </section>
@@ -425,6 +458,7 @@ shape constraints, or mix standard and robust fitting.</p></li>
 <li><a class="reference internal" href="#">linGAM</a><ul>
 <li><a class="reference internal" href="#what-is-lingam">What is linGAM?</a><ul>
 <li><a class="reference internal" href="#key-design-goals">Key design goals</a></li>
+<li><a class="reference internal" href="#when-to-use-lingam">When to use linGAM</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#quick-example">Quick example</a></li>
@@ -444,6 +478,8 @@ shape constraints, or mix standard and robust fitting.</p></li>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "displayMath": [["$$", "$$"], ["\\[", "\\]"]]}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     </body>

@@ -330,7 +330,7 @@ fig_diag.suptitle(f'Diagnostics -- Constrained Model  '
                   f'(GCV={model.statistics_["GCV"]:.3f}, '
                   f'R^2={model.deviance_explained():.3f}, '
                   f'EDF={model.statistics_["edof"]:.1f})',
-                  fontsize=12, fontweight='bold', y=1.02)
+                  fontsize=12, fontweight='bold')
 fig_diag.tight_layout()
 print("[Plot 1] Diagnostics -- close to continue...")
 plt.show()
@@ -357,7 +357,7 @@ fig_dec, axes_dec = model.plot_decomposition(
 # plot_decomposition internals, but we can annotate the figure)
 fig_dec.suptitle(
     'GAM Decomposition -- How Each Term Contributes to Blade Life',
-    fontsize=13, fontweight='bold', y=1.01,
+    fontsize=13, fontweight='bold',
 )
 
 # Add a text box explaining how to read the chart

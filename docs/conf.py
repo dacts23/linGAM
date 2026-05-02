@@ -57,6 +57,9 @@ intersphinx_mapping = {
 viewcode_follow_imported_members = True
 html_show_sourcelink = True
 
+html_static_path = ['_static']
+html_css_files = ['custom.css']
+
 mathjax3_config = {
     'tex': {
         'inlineMath': [['$', '$'], ['\\(', '\\)']],

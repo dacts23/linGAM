@@ -1,0 +1,19 @@
+/* ── System font stack for body text ── */
+html {
+    --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                  Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans",
+                  "Droid Sans", "Helvetica Neue", Arial, sans-serif;
+    --font-stack--monospace: "SF Mono", "Fira Code", "Fira Mono",
+                             "Roboto Mono", Menlo, Monaco, Consolas,
+                             "Liberation Mono", "Courier New", monospace;
+}
+
+/* Slightly tighter line-height for denser reading */
+body {
+    line-height: 1.55;
+}
+
+/* Code blocks and inline code */
+code, pre, kbd, samp {
+    font-size: 0.875em;
+}

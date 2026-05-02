@@ -7,29 +7,31 @@
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
         <title>Mathematical Foundations - linGAM Documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=c309799c" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css?v=afa656db" />
     
     
 
 
 <style>
   body {
-    --color-code-background: #f2f2f2;
-  --color-code-foreground: #1e1e1e;
+    --color-code-background: #0d1117;
+  --color-code-foreground: #e6edf3;
   
   }
   @media not print {
     body[data-theme="dark"] {
-      --color-code-background: #202020;
-  --color-code-foreground: #d0d0d0;
+      --color-code-background: #0d1117;
+  --color-code-foreground: #e6edf3;
   
     }
     @media (prefers-color-scheme: dark) {
       body:not([data-theme="light"]) {
-        --color-code-background: #202020;
-  --color-code-foreground: #d0d0d0;
+        --color-code-background: #0d1117;
+  --color-code-foreground: #e6edf3;
   
       }
     }
@@ -242,42 +244,121 @@
         </div>
         <article role="main" id="furo-main-content">
           <section id="mathematical-foundations">
-<h1>Mathematical Foundations<a class="headerlink" href="#mathematical-foundations" title="Link to this heading">¶</a></h1>
-<p>This chapter derives the core mathematics behind linGAM: B-spline bases,
-penalised least squares, the SVD data-augmentation solver, effective degrees
-of freedom, and Generalised Cross Validation (GCV).</p>
-<section id="b-spline-bases">
-<h2>B-spline bases<a class="headerlink" href="#b-spline-bases" title="Link to this heading">¶</a></h2>
-<p>A B-spline of order <span class="math notranslate nohighlight">\(k\)</span> (polynomial degree <span class="math notranslate nohighlight">\(k-1\)</span>) is built from
-<span class="math notranslate nohighlight">\(K\)</span> basis functions via the De Boor recursion.  Given data
-<span class="math notranslate nohighlight">\(x \in [x_{\min}, x_{\max}]\)</span>, we first map to <span class="math notranslate nohighlight">\([0, 1]\)</span>:</p>
+<span id="math"></span><h1>Mathematical Foundations<a class="headerlink" href="#mathematical-foundations" title="Link to this heading">¶</a></h1>
+<p>This chapter explains the ideas that make GAMs work — not just the
+equations, but <em>why</em> we chose each ingredient and what problem it solves.</p>
+<p>If you’re new to GAMs, start from the top.  If you already know penalised
+B-splines, skip to <a class="reference internal" href="#section-svd-solver"><span class="std std-ref">the solver</span></a> or
+<a class="reference internal" href="#section-gcv"><span class="std std-ref">GCV</span></a>.</p>
+<section id="why-gams">
+<span id="section-why-gam"></span><h2>Why GAMs?<a class="headerlink" href="#why-gams" title="Link to this heading">¶</a></h2>
+<p>Classical linear regression fits a straight line (or hyperplane):</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[y_i = \beta_0 + \beta_1 x_{i1} + \beta_2 x_{i2} + \dots + \varepsilon_i.\]</div>
+</div>
+<p>The problem: the real world is rarely a straight line.  Temperature does not
+degrade turbine blades linearly.  Dose-response curves saturate.  An
+engine’s sweet-spot RPM is a peak, not a slope.</p>
+<p><strong>Generalised Additive Models</strong> replace each linear term <span class="math notranslate nohighlight">\(\beta_j
+x_{ij}\)</span> with a <em>learned smooth function</em> <span class="math notranslate nohighlight">\(f_j(x_{ij})\)</span>:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[y_i = \beta_0 + f_1(x_{i1}) + f_2(x_{i2}) + \dots + \varepsilon_i.\]</div>
+</div>
+<p>Now the model can bend to match the data.  The word <strong>additive</strong> means the
+contributions still <em>sum</em> together — there’s no multiplicative or nested
+structure, just a collection of understandable pieces you can inspect one at
+a time.  The word <strong>generalised</strong> means we replaced “linear coefficient ×
+predictor” with “learned function of predictor.”</p>
+<p>This is the central tradeoff of statistical modelling:</p>
+<blockquote>
+<div><p><strong>Simple models</strong> (lines) don’t capture reality.  <strong>Complex models</strong>
+(deep nets, random forests) capture it but you can’t explain <em>how</em>.
+GAMs sit in the sweet spot: flexible enough to fit nonlinear patterns,
+interpretable enough that each term is a plot you can show to a colleague.</p>
+</div></blockquote>
+<p>When you call <code class="docutils literal notranslate"><span class="pre">model.plot_decomposition(x,</span> <span class="pre">y)</span></code>, what you see is the
+<strong>decomposition</strong> of the prediction into independent pieces:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\hat y(\mathbf{x}) =
+\underset{\text{intercept}}{\beta_0}
++ \underset{\text{term 0}}{f_1(x_1)}
++ \underset{\text{term 1}}{f_2(x_2)}
++ \dots
++ \underset{\text{noise}}{\hat\varepsilon}.\]</div>
+</div>
+<p>Each subplot in the decomposition is one <span class="math notranslate nohighlight">\(f_j\)</span> in isolation.  Because
+the model is additive, the pieces are independent: changing <span class="math notranslate nohighlight">\(x_1\)</span>
+only affects <span class="math notranslate nohighlight">\(f_1(x_1)\)</span>, not <span class="math notranslate nohighlight">\(f_2(x_2)\)</span>.  This is the property
+that makes GAMs <strong>interpretable</strong> where black-box models are not.</p>
+</section>
+<section id="b-spline-bases-building-curves-from-building-blocks">
+<span id="section-bsplines"></span><h2>B-spline bases: building curves from building blocks<a class="headerlink" href="#b-spline-bases-building-curves-from-building-blocks" title="Link to this heading">¶</a></h2>
+<p>If we want <span class="math notranslate nohighlight">\(f(x)\)</span> to be a <em>smooth, flexible curve</em>, we need a
+way to represent it mathematically.</p>
+<p><strong>Why not just use a high-degree polynomial?</strong>  A degree-20 polynomial can
+wiggle a lot, but when you fit it to data every point in one corner of the
+plot affects the curve <em>everywhere</em>.  You get wild oscillations (Runge’s
+phenomenon).  Polynomials are globally coupled — change one coefficient and
+everything changes.</p>
+<p><strong>The key insight of B-splines</strong>: build the curve from <em>localised</em> building
+blocks.  Each block (basis function) is nonzero only in a small region.
+Adjusting a block only changes the curve in its neighbourhood, not across
+the whole domain.  This is called <strong>compact support</strong>.</p>
+<p>Think of LEGO bricks.  A long, curved wall isn’t built from one flexible
+piece — it’s built from many small, rigid bricks each responsible for a
+tiny segment.  The bricks overlap slightly at the edges for smoothness.
+B-spline basis functions are the mathematical equivalent: each one is a
+smooth “bump” that covers a few neighbouring data points.  When you stack
+them with different heights (coefficients <span class="math notranslate nohighlight">\(\beta_j\)</span>), you get any
+smooth shape you want:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[f(x) = \sum_{j=1}^K \beta_j \, B_j(x).\]</div>
+</div>
+<p>Each <span class="math notranslate nohighlight">\(B_j(x)\)</span> is one basis function; <span class="math notranslate nohighlight">\(\beta_j\)</span> is how tall
+you make it; <span class="math notranslate nohighlight">\(K\)</span> is how many bricks you use (<code class="docutils literal notranslate"><span class="pre">n_splines</span></code> in the
+API).</p>
+<p><strong>The De Boor recursion.</strong>  A B-spline of order <span class="math notranslate nohighlight">\(k\)</span> (polynomial
+degree <span class="math notranslate nohighlight">\(k-1\)</span>) is built recursively.  Given data
+<span class="math notranslate nohighlight">\(x \in [x_{\min}, x_{\max}]\)</span>, we map to <span class="math notranslate nohighlight">\([0, 1]\)</span>:</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[z = \frac{x - x_{\min}}{x_{\max} - x_{\min}}.\]</div>
 </div>
-<p>Internal knots are placed uniformly:</p>
+<p>Uniform interior knots divide <span class="math notranslate nohighlight">\([0, 1]\)</span> into segments:</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[\tau_0 = 0, \; \tau_1, \dots, \tau_{K-k+1} = 1.\]</div>
 </div>
-<p>The augmented knot sequence extends <span class="math notranslate nohighlight">\(k\)</span> knots beyond each boundary.</p>
-<p><strong>De Boor recursion.</strong>  Start with order-1 (piecewise constant) bases:</p>
+<p>The augmented knot sequence extends <span class="math notranslate nohighlight">\(k\)</span> knots beyond each boundary
+to handle the edges.</p>
+<p>Start with order-1 (piecewise constant) bases:</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[B_{i,1}(z) = \mathbf{1}_{[\tau_i, \tau_{i+1})}(z).\]</div>
 </div>
-<p>For orders <span class="math notranslate nohighlight">\(m = 2, \dots, k\)</span>:</p>
+<p>Then recursively blend for orders <span class="math notranslate nohighlight">\(m = 2, \dots, k\)</span>:</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[B_{i,m}(z)
 = \frac{z - \tau_i}{\tau_{i+m-1} - \tau_i} \, B_{i,m-1}(z)
 + \frac{\tau_{i+m} - z}{\tau_{i+m} - \tau_{i+1}} \, B_{i+1,m-1}(z).\]</div>
 </div>
-<p>The result is an <span class="math notranslate nohighlight">\(n \times K\)</span> design matrix <span class="math notranslate nohighlight">\(B\)</span> with the property
-that each row sums to 1 and each column has compact support (localised).</p>
-<p><strong>Linear extrapolation.</strong>  Outside <span class="math notranslate nohighlight">\([0,1]\)</span>, B-splines shoot to zero or
-oscillate wildly.  linGAM replaces the B-spline values with a linear
-extension using the boundary gradient:</p>
+<p>The result is an <span class="math notranslate nohighlight">\(n \times K\)</span> design matrix <span class="math notranslate nohighlight">\(B\)</span>.  Each row sums
+to 1 (the bricks tile the space) and each column has compact support
+(localised bumps).</p>
+<p><strong>Why cubic?</strong>  linGAM defaults to cubic splines (<span class="math notranslate nohighlight">\(k = 3\)</span>,
+<code class="docutils literal notranslate"><span class="pre">spline_order=3</span></code>), corresponding to polynomial degree 2.  Cubic is the
+lowest order that gives <em>continuous second derivatives</em> — the curve looks
+smooth to the human eye.  Lower orders look jagged; higher orders increase
+computation without visible benefit.</p>
+<p><strong>Linear extrapolation.</strong>  Outside <span class="math notranslate nohighlight">\([0,1]\)</span>, B-splines can oscillate
+or collapse to zero — not useful for prediction beyond the training range.
+linGAM replaces the B-spline values with a linear extension using the
+boundary derivative:</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[f(z) \approx f(0) + f'(0) \, z \quad (z &lt; 0),
@@ -286,44 +367,56 @@ f(z) \approx f(1) + f'(1) \, (z-1) \quad (z &gt; 1).\]</div>
 </div>
 <p>The derivative <span class="math notranslate nohighlight">\(f'(0)\)</span> is computed analytically from the
 <span class="math notranslate nohighlight">\((k-1)\)</span>-order basis saved during recursion.</p>
-<p><strong>Periodic basis.</strong>  When <code class="docutils literal notranslate"><span class="pre">constraint='periodic'</span></code>, the basis is wrapped so
-that the first <span class="math notranslate nohighlight">\(k-1\)</span> columns are added to the last <span class="math notranslate nohighlight">\(k-1\)</span>
-columns.  This enforces <span class="math notranslate nohighlight">\(f(0) = f(1)\)</span> and reduces the coefficient
-count from <span class="math notranslate nohighlight">\(K\)</span> to <span class="math notranslate nohighlight">\(K - k + 1\)</span>.</p>
+<p><strong>Periodic basis.</strong>  When <code class="docutils literal notranslate"><span class="pre">constraint='periodic'</span></code>, the domain wraps
+around.  The first <span class="math notranslate nohighlight">\(k-1\)</span> columns fold into the last <span class="math notranslate nohighlight">\(k-1\)</span>,
+enforcing <span class="math notranslate nohighlight">\(f(0) = f(1)\)</span> and reducing the coefficient count from
+<span class="math notranslate nohighlight">\(K\)</span> to <span class="math notranslate nohighlight">\(K_{\text{eff}} = K - k + 1\)</span>.</p>
 </section>
-<section id="penalised-least-squares">
-<h2>Penalised least squares<a class="headerlink" href="#penalised-least-squares" title="Link to this heading">¶</a></h2>
-<p>The model is</p>
+<section id="penalties-why-flexibility-needs-a-cost">
+<span id="section-penalties"></span><h2>Penalties: why flexibility needs a cost<a class="headerlink" href="#penalties-why-flexibility-needs-a-cost" title="Link to this heading">¶</a></h2>
+<p>Suppose we give the model <span class="math notranslate nohighlight">\(K = 30\)</span> basis functions.  It could fit the
+data almost <em>perfectly</em> — including every random noise wiggle.  When we then
+predict on new data, the model falls apart.  This is <strong>overfitting</strong>.</p>
+<p>The solution is to penalise complexity.  We don’t forbid wiggles; we charge
+a tax for them.  The model can still wiggle, but only if doing so improves
+the fit enough to be worth the tax.</p>
+<p><strong>The penalised least-squares objective</strong> is:</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
-\[\mathbf{y} = X \boldsymbol{\beta} + \boldsymbol{\varepsilon},\]</div>
+\[\underbrace{\|\mathbf{y} - X\boldsymbol{\beta}\|^2}_{\text{fit to data}}
+\;+\;
+\underbrace{\boldsymbol{\beta}^\top P \boldsymbol{\beta}}_{\text{complexity penalty}}.\]</div>
 </div>
-<p>where <span class="math notranslate nohighlight">\(X\)</span> stacks all term design matrices (plus an intercept column).
-We minimise the penalised sum of squares:</p>
-<div class="math-wrapper docutils container">
-<div class="math notranslate nohighlight">
-\[S(\boldsymbol{\beta})
-= \|\mathbf{y} - X \boldsymbol{\beta}\|^2
-+ \boldsymbol{\beta}^\top P \boldsymbol{\beta}.\]</div>
-</div>
-<p>The penalty <span class="math notranslate nohighlight">\(P\)</span> is block-diagonal, with one block per term.  The
-intercept block is zero (unpenalised).</p>
-<p><strong>Second-difference penalty</strong> (smoothness).  For a spline with <span class="math notranslate nohighlight">\(K\)</span>
-coefficients:</p>
+<p>The first term rewards fitting the training data closely.  The second term
+punishes certain patterns in the coefficients.  The smoothing parameter
+<span class="math notranslate nohighlight">\(\lambda\)</span> (<code class="docutils literal notranslate"><span class="pre">lam</span></code> in the API) controls the tax rate:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\lambda = 0\)</span>: no penalty — the curve can be as wiggly as the
+basis allows.  Equivalent to unpenalised regression.</p></li>
+<li><p><span class="math notranslate nohighlight">\(\lambda \to \infty\)</span>: infinite penalty — the curve is forced to
+be as smooth as possible (a straight line for second-difference penalties).</p></li>
+<li><p><span class="math notranslate nohighlight">\(0 &lt; \lambda &lt; \infty\)</span>: a balance.  linGAM uses grid search to
+find the <span class="math notranslate nohighlight">\(\lambda\)</span> that minimises GCV.</p></li>
+</ul>
+<p><strong>What each penalty does to the curve:</strong></p>
+<p><em>Second-difference penalty (default):</em>  Penalises the <em>curvature</em> (second
+derivative) of <span class="math notranslate nohighlight">\(f(x)\)</span>.  A straight line has zero curvature, so it
+costs nothing.  Wiggles cost a lot.  This produces the visually “smooth”
+curves we expect.</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[\begin{split}D_2 = \begin{pmatrix}
 1 &amp; -2 &amp; 1 &amp;        &amp;   \\
   &amp;  1 &amp; -2 &amp; 1     &amp;   \\
-  &amp;    &amp; \ddots &amp; \ddots &amp; \ddots \\
+  &amp;    &amp; \ddots &amp; \ddots &amp; \ddots
 \end{pmatrix}_{(K-2) \times K},
 \qquad
 P = \lambda \, D_2^\top D_2.\end{split}\]</div>
 </div>
-<p>This penalises curvature: neighbouring coefficients that differ wildly incur
-a large cost.</p>
-<p><strong>First-difference penalty</strong> (monotonicity).  For <code class="docutils literal notranslate"><span class="pre">constraint='mono_inc'</span></code>
-or <code class="docutils literal notranslate"><span class="pre">'mono_dec'</span></code>:</p>
+<p><em>First-difference penalty (monotonicity):</em>  Penalises <em>changes</em> between
+adjacent coefficients.  If all adjacent coefficients are similar, the
+curve can’t reverse direction — hence the curve is pushed toward being
+monotonic.</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[\begin{split}D_1 = \begin{pmatrix}
@@ -334,235 +427,454 @@ or <code class="docutils literal notranslate"><span class="pre">'mono_dec'</span
 \qquad
 P = \lambda \, D_1^\top D_1.\end{split}\]</div>
 </div>
-<p>Minimising <span class="math notranslate nohighlight">\(\beta^\top D_1^\top D_1 \beta = \sum_i (\beta_{i+1} - \beta_i)^2\)</span>
-forces adjacent coefficients to be similar, which encourages a monotonic
-shape.  Combined with the natural ordering of B-spline basis functions,
-this produces an increasing (or decreasing) smooth.</p>
-<p><strong>Circular second-difference</strong> (periodicity).  For
-<code class="docutils literal notranslate"><span class="pre">constraint='periodic'</span></code>:</p>
-<div class="math-wrapper docutils container">
-<div class="math notranslate nohighlight">
-\[\begin{split} P_{ij} = \lambda \times \begin{cases}
- 4  &amp; i = j \\
--2  &amp; j = (i \pm 1) \bmod K_{\text{eff}} \\
- 1  &amp; j = (i \pm 2) \bmod K_{\text{eff}} \\
- 0  &amp; \text{otherwise}
- \end{cases}\end{split}\]</div>
-</div>
-<p>This wraps the second-difference operator, connecting the first and last
-coefficients so the curve is closed.</p>
-<p><strong>Ridge penalty.</strong>  For factor and linear terms:</p>
-<div class="math-wrapper docutils container">
-<div class="math notranslate nohighlight">
-\[P = \lambda I_K.\]</div>
-</div>
+<p><em>Circular second-difference (periodicity):</em>  The second-difference operator
+wraps around, connecting the last coefficient back to the first — the
+mathematical equivalent of gluing the two ends of the curve together.</p>
+<p><em>Ridge penalty:</em>  For factor and linear terms, <span class="math notranslate nohighlight">\(P = \lambda I_K\)</span>.
+This is a “shrink-toward-zero” penalty — it pulls all coefficients toward
+zero by the same amount.</p>
+<p><strong>The role of</strong> <span class="math notranslate nohighlight">\(\boldsymbol{\lambda}\)</span> <strong>cannot be overstated.</strong>
+<span class="math notranslate nohighlight">\(\lambda\)</span> determines how much information the model extracts from the
+data vs. how much it imposes from the smoothness prior.  Too small →
+overfitting (the model chases noise).  Too large → underfitting (the model
+misses real patterns).  Grid search finds the Goldilocks value
+automatically.</p>
 </section>
-<section id="svd-data-augmentation-solver">
-<h2>SVD data-augmentation solver<a class="headerlink" href="#svd-data-augmentation-solver" title="Link to this heading">¶</a></h2>
-<p>The normal equations are <span class="math notranslate nohighlight">\((X^\top X + P)\beta = X^\top y\)</span>.  Forming
-<span class="math notranslate nohighlight">\(X^\top X\)</span> squares the condition number and amplifies numerical
-instability.  linGAM uses a <strong>data-augmentation</strong> trick instead.</p>
-<ol class="arabic">
-<li><p><strong>Cholesky of the penalty.</strong>  Factor <span class="math notranslate nohighlight">\(P + \varepsilon I = E^\top E\)</span>
-where <span class="math notranslate nohighlight">\(\varepsilon = \sqrt{\text{machine epsilon}}\)</span> is a tiny ridge
-that guarantees positive definiteness even when <span class="math notranslate nohighlight">\(\lambda = 0\)</span>.</p></li>
-<li><p><strong>QR of the design matrix.</strong>  <span class="math notranslate nohighlight">\(X = QR\)</span> where <span class="math notranslate nohighlight">\(Q\)</span> is
-orthogonal and <span class="math notranslate nohighlight">\(R\)</span> is upper-triangular.  Because <span class="math notranslate nohighlight">\(Q\)</span> preserves
-norms, working with <span class="math notranslate nohighlight">\(R\)</span> (size <span class="math notranslate nohighlight">\(m \times m\)</span>) instead of
-<span class="math notranslate nohighlight">\(X\)</span> (size <span class="math notranslate nohighlight">\(n \times m\)</span>) is numerically safe and cheaper when
-<span class="math notranslate nohighlight">\(n \gg m\)</span>.</p></li>
-<li><p><strong>SVD of the stacked matrix.</strong>  Form <span class="math notranslate nohighlight">\([R; E]\)</span> and decompose:</p>
+<section id="the-svd-data-augmentation-solver">
+<span id="section-svd-solver"></span><h2>The SVD data-augmentation solver<a class="headerlink" href="#the-svd-data-augmentation-solver" title="Link to this heading">¶</a></h2>
+<p>Once we have the design matrix <span class="math notranslate nohighlight">\(X\)</span> and the penalty <span class="math notranslate nohighlight">\(P\)</span>, we
+need to find the coefficients <span class="math notranslate nohighlight">\(\hat{\boldsymbol{\beta}}\)</span> that
+minimise the penalised objective.</p>
+<p><strong>The naive approach</strong> forms the normal equations:</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
-\[[R; E] = U \, \text{diag}(d) \, V^\top.\]</div>
+\[(X^\top X + P)\hat{\boldsymbol{\beta}} = X^\top \mathbf{y}.\]</div>
 </div>
-<p>This is equivalent to solving the augmented least-squares system</p>
+<p>This is mathematically correct but numerically dangerous.  Forming
+<span class="math notranslate nohighlight">\(X^\top X\)</span> squares the condition number — if <span class="math notranslate nohighlight">\(X\)</span> has a
+condition number of <span class="math notranslate nohighlight">\(10^4\)</span>, then <span class="math notranslate nohighlight">\(X^\top X\)</span> has <span class="math notranslate nohighlight">\(10^8\)</span>.
+On a computer with 16-digit precision, this leaves very little room for
+error.</p>
+<p><strong>The data-augmentation trick</strong> treats the penalty as “fake data”:</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
-\[\begin{split}\begin{pmatrix} X \\ E \end{pmatrix} \beta
-= \begin{pmatrix} y \\ 0 \end{pmatrix}\end{split}\]</div>
+\[\begin{split}\begin{pmatrix} X \\ E \end{pmatrix} \boldsymbol{\beta}
+\approx \begin{pmatrix} \mathbf{y} \\ \mathbf{0} \end{pmatrix},\end{split}\]</div>
 </div>
-<p>but never forms <span class="math notranslate nohighlight">\(X^\top X\)</span> explicitly.</p>
-</li>
-<li><p><strong>Solution operator.</strong>  Truncate to the first <span class="math notranslate nohighlight">\(\min(m,n)\)</span> singular
-values and compute:</p>
-<div class="math-wrapper docutils container">
-<div class="math notranslate nohighlight">
-\[B_{\text{solve}} = V \, \text{diag}(d^{-1}) \, U_1^\top Q^\top,
-\qquad
-\hat\beta = B_{\text{solve}} \, y.\]</div>
-</div>
-<p>Saving <span class="math notranslate nohighlight">\(B_{\text{solve}}\)</span> lets us compute covariance and effective
-degrees of freedom later without re-fitting.</p>
-</li>
+<p>where <span class="math notranslate nohighlight">\(E\)</span> satisfies <span class="math notranslate nohighlight">\(E^\top E = P + \varepsilon I\)</span> (a tiny
+ridge <span class="math notranslate nohighlight">\(\varepsilon\)</span> ensures <span class="math notranslate nohighlight">\(P\)</span> is positive definite even
+when <span class="math notranslate nohighlight">\(\lambda = 0\)</span>).  The top block says “fit the actual data.”
+The bottom block says “keep the coefficients small in the penalised
+directions.”</p>
+<p>Solving this augmented system is equivalent to the penalised normal
+equations, but <strong>never forms</strong> <span class="math notranslate nohighlight">\(X^\top X\)</span>.  Instead, linGAM uses:</p>
+<ol class="arabic simple">
+<li><p><strong>QR decomposition</strong> of <span class="math notranslate nohighlight">\(X = QR\)</span>.  <span class="math notranslate nohighlight">\(R\)</span> is small
+(<span class="math notranslate nohighlight">\(m \times m\)</span>, where <span class="math notranslate nohighlight">\(m = \sum K_j + 1\)</span>), so subsequent
+operations are cheap even when <span class="math notranslate nohighlight">\(n\)</span> is huge.</p></li>
+<li><p><strong>SVD of the stacked matrix</strong> <span class="math notranslate nohighlight">\([R; E] = U \Sigma V^\top\)</span>.  The
+singular value decomposition is the most numerically stable way to
+factor a matrix — it exposes the “directions” in which the data has
+information and the directions it doesn’t.</p></li>
+<li><p><strong>Solution operator</strong> <span class="math notranslate nohighlight">\(B_{\text{solve}} = V \Sigma^{-1} U_1^\top
+Q^\top\)</span> so that <span class="math notranslate nohighlight">\(\hat{\boldsymbol{\beta}} = B_{\text{solve}}
+\mathbf{y}\)</span>.  This is saved and reused for covariance, EDF, and
+confidence intervals — no re-solving needed.</p></li>
 </ol>
-<p><strong>Why this works.</strong>  The stacked SVD is the most numerically stable way to
-solve a penalised linear system.  Tiny singular values are handled gracefully
-(by division, not inversion of a near-singular matrix), and the condition
-number of <span class="math notranslate nohighlight">\([R; E]\)</span> is the square root of the condition number of
-<span class="math notranslate nohighlight">\(X^\top X + P\)</span>.</p>
+<p>The SVD approach is especially important when <span class="math notranslate nohighlight">\(\lambda\)</span> is very small
+(the near-unpenalised case) or very large (near-zero coefficients), where
+the normal equations become ill-conditioned.  By working with the
+square-root of <span class="math notranslate nohighlight">\(X^\top X + P\)</span> rather than the matrix itself, the SVD
+solver stays accurate across the entire range of <span class="math notranslate nohighlight">\(\lambda\)</span>.</p>
 </section>
 <section id="effective-degrees-of-freedom-edf">
-<h2>Effective degrees of freedom (EDF)<a class="headerlink" href="#effective-degrees-of-freedom-edf" title="Link to this heading">¶</a></h2>
-<p>In ordinary linear regression, the degrees of freedom equal the number of
-parameters.  In a penalised spline, the penalty “shrinks” coefficients,
-so each one uses <em>less</em> than one full degree of freedom.</p>
-<p>The EDF is the trace of the <strong>influence</strong> (hat) matrix:</p>
+<span id="section-edf"></span><h2>Effective Degrees of Freedom (EDF)<a class="headerlink" href="#effective-degrees-of-freedom-edf" title="Link to this heading">¶</a></h2>
+<p>In ordinary linear regression with <span class="math notranslate nohighlight">\(p\)</span> predictors, the model uses
+exactly <span class="math notranslate nohighlight">\(p\)</span> degrees of freedom — one per coefficient.  You can think
+of each degree of freedom as the model’s ability to “move” in one
+independent direction to fit the data.</p>
+<p><strong>Penalised splines blur this picture.</strong>  The model <em>has</em> <span class="math notranslate nohighlight">\(K\)</span>
+coefficients (basis functions), but the penalty restricts how freely each
+one can move.  A heavily penalised coefficient is “shrunken” toward its
+neighbours — it costs you an entire degree of freedom to include, but the
+penalty means you only use a fraction of it.</p>
+<p>The EDF measures <strong>how many independent directions the fitted model actually
+explores.</strong>  It is always between 0 and <span class="math notranslate nohighlight">\(K\)</span>, and usually much closer
+to the number of “real features” in the data.</p>
+<p>Mathematically, the EDF is the trace of the influence (hat) matrix:</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
-\[\text{EDF} = \text{tr}(H),
+\[\text{EDF} = \operatorname{tr}(H),
 \qquad
 H = X (X^\top X + P)^{-1} X^\top.\]</div>
 </div>
-<p>Using the SVD augmentation, this simplifies to</p>
+<p>Using the SVD augmentation from the solver, this simplifies to:</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
-\[\text{EDF} = \sum_{i=1}^{\min(m,n)} \sigma_i(U_1)^2
-= \|U_1\|_F^2,\]</div>
+\[\text{EDF} = \sum_{i} \sigma_i(U_1)^2 = \|U_1\|_F^2,\]</div>
 </div>
-<p>where <span class="math notranslate nohighlight">\(U_1\)</span> is the top-left <span class="math notranslate nohighlight">\(\min(m,n) \times \min(m,n)\)</span> block
-of <span class="math notranslate nohighlight">\(U\)</span>.  This is computed in a single NumPy call with no extra matrix
-inversions.</p>
-<p>Per-coefficient EDF tells us how much each individual parameter contributes:</p>
+<p>where <span class="math notranslate nohighlight">\(U_1\)</span> is a block of the SVD’s left singular vectors.  This
+is computed in a single NumPy call with no matrix inversion.</p>
+<p><strong>What EDF tells you in practice:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">EDF</span> <span class="pre">≈</span> <span class="pre">2</span></code>: the term is essentially a straight line (2 df = intercept +
+slope).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">EDF</span> <span class="pre">≈</span> <span class="pre">K</span></code>: the penalty is very weak; the term is using nearly all its
+basis functions.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">EDF</span> <span class="pre">&lt;&lt;</span> <span class="pre">K</span></code> with good fit: the penalty is working well — the data has a
+smooth trend that the model captures with few effective parameters.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">EDF</span></code> growing while GCV stays flat: you’re overfitting — the extra
+wiggle doesn’t help prediction.</p></li>
+</ul>
+<p>Per-coefficient EDF tells you <em>which</em> basis functions are doing the work:</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[\text{EDF}_j = \sum_i U_{1,ij}^2.\]</div>
 </div>
+<p>A coefficient with EDF <span class="math notranslate nohighlight">\(\approx 0\)</span> is essentially ignored by the
+model — its basis function could be removed without consequence.</p>
 </section>
 <section id="generalised-cross-validation-gcv">
-<h2>Generalised Cross Validation (GCV)<a class="headerlink" href="#generalised-cross-validation-gcv" title="Link to this heading">¶</a></h2>
-<p>Leave-one-out cross validation is expensive: fit the model <span class="math notranslate nohighlight">\(n\)</span> times,
-dropping one point each time.  GCV is a clever closed-form approximation:</p>
+<span id="section-gcv"></span><h2>Generalised Cross Validation (GCV)<a class="headerlink" href="#generalised-cross-validation-gcv" title="Link to this heading">¶</a></h2>
+<p><strong>The problem.</strong>  How do we know if our model is good?  We could hold out
+some data, fit on the rest, and check how well it predicts the held-out
+points.  But we’d have to do this many times (cross-validation), which is
+slow — especially during grid search where we evaluate thousands of models.</p>
+<p><strong>The clever solution.</strong>  Leave-one-out cross-validation (LOOCV) fits the
+model <span class="math notranslate nohighlight">\(n\)</span> times, each time dropping one data point and predicting it.
+This is <span class="math notranslate nohighlight">\(O(n)\)</span> fits, prohibitive for anything but tiny datasets.</p>
+<p>GCV is a closed-form approximation of LOOCV that requires <strong>only one fit</strong>.
+The formula:</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
-\[\text{GCV} = \frac{n \cdot \text{RSS}}{(n - \gamma \cdot \text{EDF})^2},\]</div>
+\[\text{GCV} = \frac{n \cdot \text{RSS}}
+                  {(n - \gamma \cdot \text{EDF})^2}.\]</div>
 </div>
-<p>where</p>
+<p>Let’s unpack each piece:</p>
 <ul class="simple">
-<li><p><span class="math notranslate nohighlight">\(n\)</span> = number of observations,</p></li>
-<li><p><span class="math notranslate nohighlight">\(\text{RSS} = \sum_i (y_i - \hat y_i)^2\)</span> = residual sum of squares,</p></li>
-<li><p><span class="math notranslate nohighlight">\(\text{EDF}\)</span> = effective degrees of freedom,</p></li>
-<li><p><span class="math notranslate nohighlight">\(\gamma\)</span> = complexity penalty multiplier (default 1.4).</p></li>
+<li><p><span class="math notranslate nohighlight">\(n\)</span>: number of observations — a larger dataset gives a more stable
+estimate.</p></li>
+<li><p><span class="math notranslate nohighlight">\(\text{RSS} = \sum_i (y_i - \hat y_i)^2\)</span>: how far the predictions
+are from the actual values.  Lower is better (better fit).</p></li>
+<li><p><span class="math notranslate nohighlight">\(\text{EDF}\)</span>: effective degrees of freedom — the model’s complexity.
+More EDF means the model can “chase” data points more aggressively.</p></li>
+<li><p><span class="math notranslate nohighlight">\(\gamma\)</span>: the GCV penalty multiplier (default 1.4).  Setting
+<span class="math notranslate nohighlight">\(\gamma &gt; 1\)</span> makes the criterion slightly conservative — it prefers
+simpler models, analogous to AIC’s penalty term.</p></li>
 </ul>
-<p>The denominator penalises model complexity.  When <span class="math notranslate nohighlight">\(\text{EDF}\)</span> grows,
-the denominator shrinks and GCV explodes — this prevents overfitting.
-Setting <span class="math notranslate nohighlight">\(\gamma &gt; 1\)</span> (e.g. 1.4) is analogous to AIC/BIC corrections
-that prefer slightly simpler models.</p>
-<p><strong>Why GCV and not plain CV?</strong>  GCV requires only a single fit.  It is
-asymptotically equivalent to leave-one-out CV but computes in <span class="math notranslate nohighlight">\(O(1)\)</span>
-extra time after the fit.</p>
+<p>The denominator <span class="math notranslate nohighlight">\((n - \gamma \cdot \text{EDF})^2\)</span> is the key.  When
+EDF is small (simple model), the denominator is large → GCV is small →
+good.  When EDF grows, the denominator shrinks → GCV explodes → bad,
+<em>unless</em> the extra complexity reduces RSS enough to compensate.</p>
+<p><strong>Why GCV and not plain CV?</strong>  GCV is asymptotically equivalent to LOOCV
+but computes in <span class="math notranslate nohighlight">\(O(1)\)</span> extra time after a single fit.  It’s the
+reason linGAM’s grid search can evaluate thousands of hyperparameter
+combinations in seconds rather than minutes.</p>
+<p><strong>Interpreting GCV values:</strong></p>
+<ul class="simple">
+<li><p>GCV is in squared units of <span class="math notranslate nohighlight">\(y\)</span>.  Comparing GCV between models on
+the same dataset tells you which is better; comparing across datasets
+does not.</p></li>
+<li><p>A GCV that drops dramatically when you add a term means the term is
+useful.</p></li>
+<li><p>A GCV that stays flat or increases when you add a term means the term is
+unnecessary noise.</p></li>
+<li><p>The absolute value matters less than the <em>relative</em> value across models.</p></li>
+</ul>
 </section>
-<section id="fast-qr-cholesky-grid-search">
-<h2>Fast QR+Cholesky grid search<a class="headerlink" href="#fast-qr-cholesky-grid-search" title="Link to this heading">¶</a></h2>
-<p>Grid search evaluates every combination of <span class="math notranslate nohighlight">\((K, \lambda)\)</span> candidates.
-A naïve implementation rebuilds <span class="math notranslate nohighlight">\(X\)</span> and solves from scratch for each
-combination.  linGAM’s fast path avoids redundant work.</p>
-<p><strong>Phase 1 — Precompute per :math:`K` (threaded).</strong>
-For each candidate basis count <span class="math notranslate nohighlight">\(K\)</span>:</p>
+<section id="putting-it-together-the-penalised-fit">
+<span id="section-penalised-fit"></span><h2>Putting it together: the penalised fit<a class="headerlink" href="#putting-it-together-the-penalised-fit" title="Link to this heading">¶</a></h2>
+<p>Let’s trace what happens when you call <code class="docutils literal notranslate"><span class="pre">model.fit(x,</span> <span class="pre">y)</span></code>:</p>
 <ol class="arabic simple">
-<li><p>Build <span class="math notranslate nohighlight">\(X_K\)</span> and compute its QR decomposition: <span class="math notranslate nohighlight">\(X_K = Q_K R_K\)</span>.</p></li>
-<li><p>Form <span class="math notranslate nohighlight">\(R_K^\top R_K\)</span> and <span class="math notranslate nohighlight">\(R_K^\top Q_K^\top y\)</span>.
-These are <strong>independent of :math:`lambda`</strong>.</p></li>
-<li><p>Precompute the unscaled penalty basis <span class="math notranslate nohighlight">\(S = D^\top D\)</span> (also
-independent of <span class="math notranslate nohighlight">\(\lambda\)</span>).</p></li>
+<li><p><strong>Parse the formula.</strong>  <code class="docutils literal notranslate"><span class="pre">&quot;s(0)</span> <span class="pre">+</span> <span class="pre">te(1,2)</span> <span class="pre">+</span> <span class="pre">f(3)&quot;</span></code> becomes a list of
+term objects, each knowing its feature column(s), basis count, and
+penalty type.</p></li>
+<li><p><strong>Build design matrices.</strong>  Each term constructs its B-spline basis
+(or one-hot encoding for factors, or just a column for linear terms).
+These are stacked side-by-side, plus an intercept column of ones, to
+form the full design matrix <span class="math notranslate nohighlight">\(X\)</span> (size <span class="math notranslate nohighlight">\(n \times m\)</span>).</p></li>
+<li><p><strong>Build the penalty.</strong>  Each term’s penalty matrix is computed and
+assembled into a block-diagonal <span class="math notranslate nohighlight">\(P\)</span> (size <span class="math notranslate nohighlight">\(m \times m\)</span>).
+The intercept block is zero — we never penalise the overall level.</p></li>
+<li><p><strong>Solve.</strong>  The SVD data-augmentation solver finds
+<span class="math notranslate nohighlight">\(\hat{\boldsymbol{\beta}}\)</span> and stores the solution operator
+<span class="math notranslate nohighlight">\(B_{\text{solve}}\)</span> for later use.</p></li>
+<li><p><strong>Compute diagnostics.</strong>  RSS, EDF, GCV, scale estimate, covariance
+matrix, standard errors — all available via <code class="docutils literal notranslate"><span class="pre">model.statistics_</span></code>.</p></li>
 </ol>
-<p>All of this is done once per <span class="math notranslate nohighlight">\(K\)</span> and cached.</p>
-<p><strong>Phase 2 — Evaluate per :math:`(K, lambda)` (threaded).</strong>
-For each combination:</p>
-<ol class="arabic simple">
-<li><p>Assemble the penalty: <span class="math notranslate nohighlight">\(P = \lambda S\)</span>.</p></li>
-<li><p>Build <span class="math notranslate nohighlight">\(B = R_K^\top R_K + P\)</span>.</p></li>
-<li><p>Cholesky solve: <span class="math notranslate nohighlight">\(\hat\beta = B^{-1} (R_K^\top Q_K^\top y)\)</span>.</p></li>
-<li><p>Compute EDF via <span class="math notranslate nohighlight">\(\text{tr}(B^{-1} R_K^\top R_K)\)</span>.</p></li>
-<li><p>Compute RSS and GCV.</p></li>
-</ol>
-<p>Cholesky costs <span class="math notranslate nohighlight">\(O(m^3/3)\)</span> versus <span class="math notranslate nohighlight">\(O(m^3)\)</span> for SVD, and both
-phases are fully parallel via <code class="docutils literal notranslate"><span class="pre">concurrent.futures.ThreadPoolExecutor</span></code>.</p>
-<p><strong>Precomputed penalty bases.</strong>  For multi-term models, each term’s penalty
-is built from unscaled base matrices (e.g. <span class="math notranslate nohighlight">\(D_2^\top D_2\)</span> at
-<span class="math notranslate nohighlight">\(\lambda = 1\)</span>).  During Phase 2, assembly is just element-wise
-scaling: <span class="math notranslate nohighlight">\(P_{ij} += \lambda_k \cdot S_{ij}\)</span>.  No matrix is rebuilt
-from scratch.</p>
+<p><strong>Why the intercept is special.</strong>  If we penalised the intercept, the
+model would be forced toward <span class="math notranslate nohighlight">\(y = 0\)</span>, which is almost never what we
+want.  The intercept absorbs the overall level, letting the penalised
+terms focus on shape.  This is why <code class="docutils literal notranslate"><span class="pre">fit_intercept=True</span></code> is the default
+and why the intercept block in <span class="math notranslate nohighlight">\(P\)</span> is zero.</p>
 </section>
 <section id="tensor-product-interactions">
-<h2>Tensor-product interactions<a class="headerlink" href="#tensor-product-interactions" title="Link to this heading">¶</a></h2>
-<p>A tensor term <code class="docutils literal notranslate"><span class="pre">te(f1,</span> <span class="pre">f2,</span> <span class="pre">...,</span> <span class="pre">fd)</span></code> models interactions without assuming
-additivity.  The design matrix is the <strong>Khatri-Rao</strong> (column-wise
-Kronecker) product of marginal B-spline bases:</p>
+<span id="section-tensor"></span><h2>Tensor-product interactions<a class="headerlink" href="#tensor-product-interactions" title="Link to this heading">¶</a></h2>
+<p>An additive model with only univariate terms cannot capture relationships
+where the effect of one predictor depends on the value of another.  For
+example, high temperature might be especially damaging at high vibration —
+this is a <strong>synergistic interaction</strong>.</p>
+<p><strong>The tensor product</strong> <code class="docutils literal notranslate"><span class="pre">te(f1,</span> <span class="pre">f2,</span> <span class="pre">...,</span> <span class="pre">fd)</span></code> models this by building a
+multi-dimensional smooth surface.  The design matrix is the column-wise
+Kronecker product of marginal B-spline bases:</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
-\[B_{\text{tensor}} = B_1 \odot B_2 \odot \dots \odot B_d,\]</div>
+\[B_{\text{tensor}} = B_1 \odot B_2 \odot \dots \odot B_d.\]</div>
 </div>
-<p>where <span class="math notranslate nohighlight">\(\odot\)</span> denotes column-wise product.  If <span class="math notranslate nohighlight">\(B_i\)</span> is
-<span class="math notranslate nohighlight">\(n \times K_i\)</span>, the result is <span class="math notranslate nohighlight">\(n \times (K_1 K_2 \dots K_d)\)</span>.</p>
-<p>The penalty is the <strong>Kronecker sum</strong> of marginal penalties:</p>
+<p>If <span class="math notranslate nohighlight">\(B_1\)</span> is <span class="math notranslate nohighlight">\(n \times K_1\)</span> and <span class="math notranslate nohighlight">\(B_2\)</span> is <span class="math notranslate nohighlight">\(n \times
+K_2\)</span>, then <span class="math notranslate nohighlight">\(B_{\text{tensor}}\)</span> is <span class="math notranslate nohighlight">\(n \times (K_1 K_2)\)</span>.  This
+grows quickly — a 2-D tensor with <span class="math notranslate nohighlight">\(K_1 = K_2 = 6\)</span> creates 36
+columns; with <span class="math notranslate nohighlight">\(K_1 = K_2 = 10\)</span> it’s 100 columns.  This is why
+tensor terms use smaller default <span class="math notranslate nohighlight">\(K\)</span> values (4-8) than univariate
+splines (5-25).</p>
+<p>The penalty is a <strong>Kronecker sum</strong> — each dimension gets its own
+smoothing parameter:</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
-\[P_{\text{tensor}}
-= \lambda_1 (P_1 \otimes I_{K_2} \otimes \dots \otimes I_{K_d})
-+ \lambda_2 (I_{K_1} \otimes P_2 \otimes \dots \otimes I_{K_d})
-+ \dots
-+ \lambda_d (I_{K_1} \otimes \dots \otimes I_{K_{d-1}} \otimes P_d).\]</div>
+\[P_{\text{tensor}} = \sum_{d=1}^D \lambda_d \,
+\bigl( I_{K_1} \otimes \dots \otimes P_d \otimes \dots
+\otimes I_{K_D} \bigr).\]</div>
 </div>
-<p>Each direction can have its own smoothing parameter <span class="math notranslate nohighlight">\(\lambda_i\)</span>.</p>
-<p>For a 2-D tensor <code class="docutils literal notranslate"><span class="pre">te(0,</span> <span class="pre">1)</span></code> with <span class="math notranslate nohighlight">\(K_1 = K_2 = 6\)</span>, the design matrix
-has <span class="math notranslate nohighlight">\(n \times 36\)</span> columns and the penalty is <span class="math notranslate nohighlight">\(36 \times 36\)</span>.</p>
+<p>This means smoothness is enforced independently in each direction.  A
+surface can be smooth in temperature but wiggly in vibration, or vice
+versa.</p>
+<p><strong>When to use a tensor vs. separate s() terms.</strong>  If the interaction
+exists, a model with only <code class="docutils literal notranslate"><span class="pre">s(temperature)</span> <span class="pre">+</span> <span class="pre">s(vibration)</span></code> will show
+patterned residuals — the error at high-temp-high-vibration will be
+systematically wrong.  Adding <code class="docutils literal notranslate"><span class="pre">te(temperature,</span> <span class="pre">vibration)</span></code> captures this
+extra structure.  Check the decomposition plot: if the te() heatmap shows
+a strong diagonal pattern, the interaction is real.</p>
 </section>
-<section id="huber-irls-robust-fitting">
-<h2>Huber IRLS (robust fitting)<a class="headerlink" href="#huber-irls-robust-fitting" title="Link to this heading">¶</a></h2>
-<p>Ordinary least squares is sensitive to outliers.  Robust fitting replaces the
-squared loss with the <strong>Huber loss</strong>:</p>
+<section id="decomposition-how-the-model-explains-its-predictions">
+<span id="section-formula-decomposition"></span><h2>Decomposition: how the model explains its predictions<a class="headerlink" href="#decomposition-how-the-model-explains-its-predictions" title="Link to this heading">¶</a></h2>
+<p>The defining feature of GAMs is that predictions decompose additively:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\hat y(\mathbf{x}_i) =
+\underbrace{\hat\beta_0}_{\text{intercept}}
++ \underbrace{\hat f_1(x_{i1})}_{\text{term 1}}
++ \underbrace{\hat f_2(x_{i2})}_{\text{term 2}}
++ \dots
++ \underbrace{\hat f_p(x_{ip})}_{\text{term p}}.\]</div>
+</div>
+<p>Each <span class="math notranslate nohighlight">\(\hat f_j\)</span> is a <em>partial dependence function</em> — it shows how the
+prediction changes when you vary <span class="math notranslate nohighlight">\(x_j\)</span> while holding everything else
+fixed (usually at the median).  This is the “all else equal” effect.</p>
+<p><strong>The plot_decomposition grid.</strong>  When you call
+<code class="docutils literal notranslate"><span class="pre">model.plot_decomposition(x,</span> <span class="pre">y)</span></code>, you see:</p>
+<ul class="simple">
+<li><p><strong>Top row — overall fit:</strong> The model’s prediction when sweeping the first
+predictor across its range, with all others at their medians.  Gray dots
+are the actual data.  This gives you a quick sanity check: does the curve
+pass through the cloud of points?</p></li>
+<li><p><strong>Per-term panels:</strong> One subplot for each term in the formula:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">s()</span></code> panel: a line plot.  The curve shows how blade life changes with
+temperature (or RPM, or vibration).  A flat line means the term
+contributes nothing — the predictor doesn’t matter.  A steep curve means
+the predictor is important.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">te()</span></code> panel: a 2-D heatmap (or projection line for 3+D).  Blue =
+below-average contribution, red = above-average.  Look for diagonal
+patterns — they indicate synergy.  A uniform color means no interaction.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">f()</span></code> panel: a bar chart.  Each bar is one category’s baseline shift
+relative to the reference level.  Tall bars mean big differences between
+categories.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">l()</span></code> panel: a straight line.  The slope (beta coefficient) is shown
+in the title.  The line passes through zero at the median of the
+predictor.</p></li>
+</ul>
+</li>
+<li><p><strong>Red shaded regions:</strong> Extrapolation — the model is predicting outside
+the range of the training data.  Treat these regions with caution; the
+linear extrapolation used there is a heuristic, not a guarantee.</p></li>
+<li><p><strong>Zero reference lines:</strong> Each term’s contribution is centred so that the
+sum of all contributions (plus intercept) equals the prediction.  The
+dashed horizontal line at zero shows where the term contributes nothing.</p></li>
+</ul>
+<p><strong>How to read the decomposition as a story.</strong>  Start from the leftmost
+term and work right.  Each panel answers one question:</p>
+<ol class="arabic simple">
+<li><p>“What does temperature do to blade life, all else equal?”</p></li>
+<li><p>“What does RPM do, all else equal?”</p></li>
+<li><p>“Do temperature and vibration interact synergistically?”</p></li>
+<li><p>“Does coating type A last longer than B?”</p></li>
+<li><p>“Is cooling flow linearly protective?”</p></li>
+</ol>
+<p>The answers are <em>independent</em> — they add up to the full prediction, but you
+can understand each one without reference to the others.  This is the
+superpower of additive models: complex predictions built from simple,
+understandable pieces.</p>
+<p><strong>Partial dependence vs. raw data.</strong>  The partial dependence curves do NOT
+show the raw data distribution; they show the <em>model’s isolated view</em> of
+each predictor.  A scatter of raw data against a single predictor mixes in
+the effects of all other predictors, so it can look very different from the
+partial dependence.  The partial dependence is the “clean” signal — the
+model’s best estimate of what that predictor alone contributes.</p>
+</section>
+<section id="confidence-and-prediction-intervals">
+<span id="section-intervals"></span><h2>Confidence and prediction intervals<a class="headerlink" href="#confidence-and-prediction-intervals" title="Link to this heading">¶</a></h2>
+<p>A point prediction says “the model thinks blade life is 42.3 cycles.”  An
+interval says “the model thinks blade life is between 40.1 and 44.5 cycles,
+with 95% confidence.”  Intervals quantify uncertainty.</p>
+<p><strong>Confidence intervals</strong> answer: <em>How precisely do we know the average
+response at this point?</em>  They capture uncertainty in the coefficient
+estimates.  Narrow where we have lots of data; wide where data is sparse.</p>
+<p><strong>Prediction intervals</strong> answer: <em>Where would a single new observation
+likely fall?</em>  They add the residual variability <span class="math notranslate nohighlight">\(\hat\sigma^2\)</span> to
+the confidence interval width.  A prediction interval is always wider than
+a confidence interval at the same point — individual observations are
+noisier than averages.</p>
+<p>The formulas:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\text{Var}(\hat y(\mathbf{x}^*))
+= \mathbf{x}^{*\top} \, \text{Cov}(\hat{\boldsymbol{\beta}}) \,
+  \mathbf{x}^*,\]</div>
+</div>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\text{Cov}(\hat{\boldsymbol{\beta}})
+= B_{\text{solve}} B_{\text{solve}}^\top \, \hat\sigma^2,
+\qquad
+\hat\sigma^2 = \frac{\text{RSS}}{n - \text{EDF}}.\]</div>
+</div>
+<p>Confidence intervals:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\hat y(\mathbf{x}^*) \pm t_{\alpha/2, \, n-\text{EDF}} \,
+\sqrt{\text{Var}(\hat y(\mathbf{x}^*))}.\]</div>
+</div>
+<p>Prediction intervals:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\hat y(\mathbf{x}^*) \pm t_{\alpha/2, \, n-\text{EDF}} \,
+\sqrt{\text{Var}(\hat y(\mathbf{x}^*)) + \hat\sigma^2}.\]</div>
+</div>
+<p>We use the t-distribution (not the normal) because <span class="math notranslate nohighlight">\(\sigma\)</span> is
+estimated from the data.  Degrees of freedom are <span class="math notranslate nohighlight">\(n - \text{EDF}\)</span>
+because the penalty has already “used up” EDF worth of information.</p>
+</section>
+<section id="fast-grid-search-how-it-works">
+<span id="section-grid-search-mechanics"></span><h2>Fast grid search: how it works<a class="headerlink" href="#fast-grid-search-how-it-works" title="Link to this heading">¶</a></h2>
+<p>Grid search evaluates every combination of <span class="math notranslate nohighlight">\(K\)</span> (<code class="docutils literal notranslate"><span class="pre">n_splines</span></code>) and
+<span class="math notranslate nohighlight">\(\lambda\)</span> (<code class="docutils literal notranslate"><span class="pre">lam</span></code>) candidates.  A naïve implementation would rebuild
+<span class="math notranslate nohighlight">\(X\)</span> and solve from scratch for each combination — prohibitively slow.</p>
+<p>linGAM’s fast path splits the work into two phases:</p>
+<p><strong>Phase 1 — Precompute per</strong> <span class="math notranslate nohighlight">\(\boldsymbol{K}\)</span> <strong>(threaded).</strong>
+For each candidate basis count <span class="math notranslate nohighlight">\(K\)</span>:</p>
+<ol class="arabic simple">
+<li><p>Build <span class="math notranslate nohighlight">\(X_K\)</span> and compute <span class="math notranslate nohighlight">\(X_K = Q_K R_K\)</span> (QR).</p></li>
+<li><p>Cache <span class="math notranslate nohighlight">\(R_K^\top R_K\)</span> and <span class="math notranslate nohighlight">\(R_K^\top Q_K^\top \mathbf{y}\)</span>.
+These are <em>independent of</em> <span class="math notranslate nohighlight">\(\lambda\)</span>.</p></li>
+<li><p>Precompute the unscaled penalty basis <span class="math notranslate nohighlight">\(S = D^\top D\)</span> at
+<span class="math notranslate nohighlight">\(\lambda = 1\)</span>.</p></li>
+</ol>
+<p>All <span class="math notranslate nohighlight">\(K\)</span>-configurations are processed in parallel via
+<code class="docutils literal notranslate"><span class="pre">ThreadPoolExecutor</span></code>.  NumPy releases the GIL during QR decomposition,
+so CPU-bound linear algebra genuinely runs on multiple cores.</p>
+<p><strong>Phase 2 — Evaluate per</strong> <span class="math notranslate nohighlight">\(\boldsymbol{(K, \lambda)}\)</span> <strong>(threaded).</strong>
+For each combination:</p>
+<ol class="arabic simple">
+<li><p>Assemble penalty: <span class="math notranslate nohighlight">\(P = \lambda S\)</span>.</p></li>
+<li><p>Form <span class="math notranslate nohighlight">\(B = R_K^\top R_K + P\)</span>.</p></li>
+<li><p>Cholesky solve for <span class="math notranslate nohighlight">\(\hat{\boldsymbol{\beta}}\)</span> and EDF.</p></li>
+<li><p>Compute RSS and GCV.</p></li>
+</ol>
+<p>Cholesky costs <span class="math notranslate nohighlight">\(O(m^3/3)\)</span> vs. <span class="math notranslate nohighlight">\(O(m^3)\)</span> for SVD, and it’s
+numerically safe because <span class="math notranslate nohighlight">\(R_K^\top R_K + P\)</span> is positive definite
+(the penalty adds ridge stabilisation).  Both phases are fully parallel.</p>
+<p><strong>Why this matters.</strong>  For a model with <span class="math notranslate nohighlight">\(m = 20\)</span> coefficients,
+<span class="math notranslate nohighlight">\(n = 500\)</span> observations, and a grid of <span class="math notranslate nohighlight">\(8 \times 8 = 64\)</span>
+combinations: a naïve sweep takes ~64 SVDs of <span class="math notranslate nohighlight">\(500 \times 20\)</span>
+matrices.  The fast path does ~8 QR decompositions (one per unique
+<span class="math notranslate nohighlight">\(K\)</span>) and ~64 Cholesky solves (one per <span class="math notranslate nohighlight">\((K, \lambda)\)</span> pair),
+which is roughly 10× faster.  The gap widens with larger <span class="math notranslate nohighlight">\(n\)</span>.</p>
+</section>
+<section id="huber-irls-handling-outliers">
+<span id="section-robust"></span><h2>Huber IRLS: handling outliers<a class="headerlink" href="#huber-irls-handling-outliers" title="Link to this heading">¶</a></h2>
+<p>Real data has outliers — sensor glitches, data-entry errors, anomalous
+operating conditions.  Ordinary least squares weights every point equally,
+so a single extreme outlier can pull the entire curve toward it.</p>
+<p><strong>The Huber loss</strong> replaces squared error with a hybrid: small residuals
+are penalised quadratically (like OLS), large residuals are penalised
+linearly (less harshly).  The transition point <span class="math notranslate nohighlight">\(c\)</span> is set
+automatically from the data’s median absolute deviation (MAD):</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[\begin{split}\rho(r) = \begin{cases}
 \tfrac12 r^2            &amp; |r| \le c \\
 c(|r| - \tfrac12 c)     &amp; |r| &gt; c
-\end{cases}\end{split}\]</div>
-</div>
-<p>where <span class="math notranslate nohighlight">\(c = 1.345 \, \hat\sigma\)</span> and <span class="math notranslate nohighlight">\(\hat\sigma = \text{MAD} / 0.6745\)</span>.
-The constant 1.345 gives ~95% asymptotic efficiency under Gaussian errors.</p>
-<p>The IRLS algorithm iterates:</p>
-<ol class="arabic simple">
-<li><p>Compute residuals <span class="math notranslate nohighlight">\(r = y - X\hat\beta\)</span>.</p></li>
-<li><p>Compute weights <span class="math notranslate nohighlight">\(w_i = \min\bigl(1, c / |r_i|\bigr)\)</span>.</p></li>
-<li><p>Solve the weighted penalised system with weights <span class="math notranslate nohighlight">\(\sqrt{w_i}\)</span>.</p></li>
-<li><p>Repeat until convergence (default 15 iterations for fit, 10 for grid
-search).</p></li>
-</ol>
-<p>This is equivalent to M-estimation with the Huber ψ-function and is
-implemented by weighting rows of <span class="math notranslate nohighlight">\(X\)</span> and <span class="math notranslate nohighlight">\(y\)</span> by <span class="math notranslate nohighlight">\(\sqrt{w}\)</span>
-before calling the standard PIRLS solver.</p>
-</section>
-<section id="confidence-and-prediction-intervals">
-<h2>Confidence and prediction intervals<a class="headerlink" href="#confidence-and-prediction-intervals" title="Link to this heading">¶</a></h2>
-<p>The variance of the fitted mean at a new point <span class="math notranslate nohighlight">\(x^*\)</span> is:</p>
-<div class="math-wrapper docutils container">
-<div class="math notranslate nohighlight">
-\[\text{Var}\bigl(\hat y(x^*)\bigr)
-= x^{*\top} \, \text{Cov}(\hat\beta) \, x^*.\]</div>
-</div>
-<p>The covariance is:</p>
-<div class="math-wrapper docutils container">
-<div class="math notranslate nohighlight">
-\[\text{Cov}(\hat\beta) = B_{\text{solve}} B_{\text{solve}}^\top \, \hat\sigma^2,
+\end{cases},
 \qquad
-\hat\sigma^2 = \frac{\text{RSS}}{n - \text{EDF}}.\]</div>
+c = 1.345 \cdot \text{MAD} / 0.6745.\end{split}\]</div>
 </div>
-<p><strong>Confidence intervals</strong> (for the mean response) use:</p>
-<div class="math-wrapper docutils container">
-<div class="math notranslate nohighlight">
-\[\hat y(x^*) \pm t_{\alpha/2, \, n-\text{EDF}} \,
-\sqrt{\text{Var}(\hat y(x^*))}.\]</div>
+<p>The constant 1.345 gives ~95% asymptotic efficiency under Gaussian errors
+— when there are no outliers, the robust fit is almost as good as OLS.
+When there are outliers, it’s vastly better.</p>
+<p><strong>IRLS iterates:</strong></p>
+<ol class="arabic simple">
+<li><p>Fit the model with current weights.</p></li>
+<li><p>Compute residuals <span class="math notranslate nohighlight">\(r_i = y_i - \hat y_i\)</span>.</p></li>
+<li><p>Update weights: <span class="math notranslate nohighlight">\(w_i = \min(1, \, c / |r_i|)\)</span>.  Points with
+large residuals get small weights — they’re effectively ignored.</p></li>
+<li><p>Re-fit with the new weights.  Repeat until convergence.</p></li>
+</ol>
+<p>This is equivalent to M-estimation with the Huber ψ-function.  linGAM
+implements it by scaling each row of <span class="math notranslate nohighlight">\(X\)</span> and element of
+<span class="math notranslate nohighlight">\(\mathbf{y}\)</span> by <span class="math notranslate nohighlight">\(\sqrt{w_i}\)</span> before calling the standard
+PIRLS solver — no separate code path needed.</p>
+<p><strong>When to use robust fitting:</strong></p>
+<ul class="simple">
+<li><p>You suspect outliers (always a good default in engineering data).</p></li>
+<li><p>Your residuals show a few extreme values.</p></li>
+<li><p>Standard and robust fits give very different GCV scores – the standard fit is being distorted by outliers.</p></li>
+</ul>
+<p><strong>When NOT to use it:</strong></p>
+<ul class="simple">
+<li><p>Your data is clean and you need maximum speed (robust is ~5x slower due to iterations).</p></li>
+<li><p>Your “outliers” are actually the most important data points (e.g., rare failure events you want to model accurately).</p></li>
+</ul>
+</section>
+<section id="key-takeaways">
+<span id="section-summary"></span><h2>Key takeaways<a class="headerlink" href="#key-takeaways" title="Link to this heading">¶</a></h2>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Concept</p></th>
+<th class="head"><p>One-sentence summary</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>B-spline basis</p></td>
+<td><p>Build any smooth curve from localised LEGO-brick basis functions</p></td>
+</tr>
+<tr class="row-odd"><td><p>Penalty</p></td>
+<td><p>Charge a tax for wiggles; let data pay it only when worthwhile</p></td>
+</tr>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\lambda\)</span></p></td>
+<td><p>The tax rate: 0 = unpenalised, infinity = straight line</p></td>
+</tr>
+<tr class="row-odd"><td><p>EDF</p></td>
+<td><p>How many “effective parameters” the penalty allows the model to use</p></td>
+</tr>
+<tr class="row-even"><td><p>GCV</p></td>
+<td><p>Approximate leave-one-out CV in a single fit; your model-selection compass</p></td>
+</tr>
+<tr class="row-odd"><td><p>SVD solver</p></td>
+<td><p>Numerically stable solution without squaring condition numbers</p></td>
+</tr>
+<tr class="row-even"><td><p>Decomposition</p></td>
+<td><p>Each term is an independent, interpretable piece of the prediction</p></td>
+</tr>
+<tr class="row-odd"><td><p>Grid search</p></td>
+<td><p>Two-phase QR+Cholesky: precompute K-dim work, then evaluate all lambdas in parallel</p></td>
+</tr>
+<tr class="row-even"><td><p>Robust fitting</p></td>
+<td><p>Down-weight outliers so they don’t hijack the curve</p></td>
+</tr>
+</tbody>
+</table>
 </div>
-<p><strong>Prediction intervals</strong> (for a new observation) add the observation noise:</p>
-<div class="math-wrapper docutils container">
-<div class="math notranslate nohighlight">
-\[\hat y(x^*) \pm t_{\alpha/2, \, n-\text{EDF}} \,
-\sqrt{\text{Var}(\hat y(x^*)) + \hat\sigma^2}.\]</div>
-</div>
-<p>The t-distribution is used instead of the normal because <span class="math notranslate nohighlight">\(\sigma\)</span> is
-estimated from data.  Degrees of freedom are <span class="math notranslate nohighlight">\(n - \text{EDF}\)</span> because
-the penalty has already “consumed” EDF degrees of freedom.</p>
 </section>
 </section>
 
@@ -622,15 +934,19 @@ the penalty has already “consumed” EDF degrees of freedom.</p>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Mathematical Foundations</a><ul>
-<li><a class="reference internal" href="#b-spline-bases">B-spline bases</a></li>
-<li><a class="reference internal" href="#penalised-least-squares">Penalised least squares</a></li>
-<li><a class="reference internal" href="#svd-data-augmentation-solver">SVD data-augmentation solver</a></li>
-<li><a class="reference internal" href="#effective-degrees-of-freedom-edf">Effective degrees of freedom (EDF)</a></li>
+<li><a class="reference internal" href="#why-gams">Why GAMs?</a></li>
+<li><a class="reference internal" href="#b-spline-bases-building-curves-from-building-blocks">B-spline bases: building curves from building blocks</a></li>
+<li><a class="reference internal" href="#penalties-why-flexibility-needs-a-cost">Penalties: why flexibility needs a cost</a></li>
+<li><a class="reference internal" href="#the-svd-data-augmentation-solver">The SVD data-augmentation solver</a></li>
+<li><a class="reference internal" href="#effective-degrees-of-freedom-edf">Effective Degrees of Freedom (EDF)</a></li>
 <li><a class="reference internal" href="#generalised-cross-validation-gcv">Generalised Cross Validation (GCV)</a></li>
-<li><a class="reference internal" href="#fast-qr-cholesky-grid-search">Fast QR+Cholesky grid search</a></li>
+<li><a class="reference internal" href="#putting-it-together-the-penalised-fit">Putting it together: the penalised fit</a></li>
 <li><a class="reference internal" href="#tensor-product-interactions">Tensor-product interactions</a></li>
-<li><a class="reference internal" href="#huber-irls-robust-fitting">Huber IRLS (robust fitting)</a></li>
+<li><a class="reference internal" href="#decomposition-how-the-model-explains-its-predictions">Decomposition: how the model explains its predictions</a></li>
 <li><a class="reference internal" href="#confidence-and-prediction-intervals">Confidence and prediction intervals</a></li>
+<li><a class="reference internal" href="#fast-grid-search-how-it-works">Fast grid search: how it works</a></li>
+<li><a class="reference internal" href="#huber-irls-handling-outliers">Huber IRLS: handling outliers</a></li>
+<li><a class="reference internal" href="#key-takeaways">Key takeaways</a></li>
 </ul>
 </li>
 </ul>
@@ -646,6 +962,8 @@ the penalty has already “consumed” EDF degrees of freedom.</p>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "displayMath": [["$$", "$$"], ["\\[", "\\]"]]}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     </body>
