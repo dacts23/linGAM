@@ -32,8 +32,10 @@ dependencies = [
 
 [project.optional-dependencies]
 docs = [
+    "pydata-sphinx-theme",
+    "sphinx-copybutton",
+    "sphinx-autodoc-typehints",
     "sphinx>=5.0",
-    "sphinx-rtd-theme>=1.2",
 ]
 
 [project.urls]

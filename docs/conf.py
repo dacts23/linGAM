@@ -37,6 +37,12 @@ html_theme_options = {
     "show_prev_next": True,
     "pygments_dark_style": "monokai",
 }
+
+html_context = {
+    "github_user": "dacts23",
+    "github_repo": "linGAM",
+    "github_version": "main",
+}
 html_static_path = ['_static']
 html_title = 'linGAM Documentation'
 html_short_title = 'linGAM'

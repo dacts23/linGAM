@@ -1,14 +1,12 @@
 .. raw:: html
 
+   <style>
+     .bd-hero { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 3rem 0 2rem; border-radius: .5rem; margin-bottom: 2rem; }
+     .bd-hero h1 { color: #fff; font-weight: 700; font-size: 2.5rem; margin: 0 0 .5rem; }
+     .bd-hero p { color: rgba(255,255,255,.9); font-size: 1.1rem; max-width: 700px; margin: 0; }
+   </style>
    <div class="bd-hero">
-     <div class="bd-hero__content">
-       <h1>linGAM</h1>
-       <p class="lead">Simple Fast Linear <strong>Generalized Additive Models</strong> — high-performance B-spline smoothing with automatic hyperparameter tuning, shape constraints, and robust fitting.</p>
-       <div class="bd-hero__buttons">
-         <a class="btn btn-primary" href="quickstart.html">Get Started</a>
-         <a class="btn btn-secondary" href="https://github.com/anomalyco/linGAM">GitHub</a>
-       </div>
-     </div>
+     <p>Simple Fast Linear <strong>Generalized Additive Models</strong> — high-performance B-spline smoothing with automatic hyperparameter tuning, shape constraints, and robust fitting.</p>
    </div>
 
 .. toctree::
