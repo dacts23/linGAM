@@ -2,7 +2,7 @@
 
 **Simple Fast Linear GAM** — a minimal Python implementation of **Generalized Additive Models (GAMs)** using penalized B-splines. It supports both single-term smooths (`LinGAM`) and multi-term formula-based models (`GAMCore`) with automatic hyperparameter tuning via GCV grid search.
 
-> **Full documentation:** [https://dacts.github.io/linGAM](https://dacts.github.io/linGAM)
+> **Full documentation:** [https://dacts23.github.io/linGAM/](https://dacts23.github.io/linGAM/)
 
 ## Features
 
@@ -52,7 +52,7 @@ model.gridsearch(x, y)
 
 All API details, mathematical foundations, examples, and advanced usage are hosted on **GitHub Pages**:
 
-### [→ https://dacts.github.io/linGAM](https://dacts.github.io/linGAM)
+### [→ https://dacts23.github.io/linGAM/](https://dacts23.github.io/linGAM/)
 
 ## Demo
 
