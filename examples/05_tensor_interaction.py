@@ -29,7 +29,7 @@ model_add.fit(x, y)
 # Tensor interaction model
 model_te = GAMCore("s(0) + s(1) + te(0, 1, n_splines=6)")
 model_te.fit(x, y)
-model_te.gridsearch(x, y)
+model_te.gridsearch(x, y, search_terms=["s"],lam_grids=[np.logspace(-3, 3, 7),np.logspace(-3, 3, 7)],n_splines_grids=[np.arange(4, 10), np.arange(4, 10)])
 
 print("=== Tensor Interaction ===")
 print(f"Additive  GCV : {model_add.statistics_['GCV']:.4f}")

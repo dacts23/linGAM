@@ -37,6 +37,12 @@ def b_spline_basis(
     K = n_splines
     k = spline_order
 
+    if K <= k:
+        raise ValueError(
+            f"n_splines ({K}) must be greater than spline_order ({k}). "
+            f"Use at least {k + 1}."
+        )
+
     offset = edge_knots[0]
     scale = edge_knots[1] - edge_knots[0]
     if scale == 0.0:

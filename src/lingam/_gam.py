@@ -375,6 +375,44 @@ class GAMCore:
 
     # ── grid construction ────────────────────────────────────────
 
+    def _expand_partial_grids(
+        self,
+        user_grids: list,
+        search_idx: Set[int],
+        grid_type: str,
+    ) -> list:
+        full = []
+        user_idx = 0
+        for i, t in enumerate(self._terms):
+            if grid_type == 'lam':
+                n_slots = t.d if isinstance(t, _TensorTerm) else 1
+            else:
+                n_slots = (
+                    t.d if isinstance(t, _TensorTerm)
+                    else 1 if isinstance(t, _SplineTerm)
+                    else 0
+                )
+
+            if n_slots == 0:
+                continue
+
+            if i in search_idx:
+                full.extend(user_grids[user_idx:user_idx + n_slots])
+                user_idx += n_slots
+            else:
+                if grid_type == 'lam':
+                    if isinstance(t, _TensorTerm):
+                        full.extend([np.array([v]) for v in t.lam_per])
+                    else:
+                        full.append(np.array([t.lam]))
+                else:
+                    if isinstance(t, _TensorTerm):
+                        full.extend([np.array([v]) for v in t.n_splines_per])
+                    else:
+                        full.append(np.array([t.n_splines]))
+
+        return full
+
     def _build_default_grids(
         self,
         x: np.ndarray,
@@ -394,6 +432,16 @@ class GAMCore:
             if isinstance(t, (_SplineTerm, _TensorTerm))
         )
 
+        n_lam_searched = sum(
+            t.d if isinstance(t, _TensorTerm) else 1
+            for i, t in enumerate(self._terms) if i in search_idx
+        )
+        n_nsp_searched = sum(
+            t.d if isinstance(t, _TensorTerm) else 1
+            for i, t in enumerate(self._terms)
+            if i in search_idx and isinstance(t, (_SplineTerm, _TensorTerm))
+        )
+
         if lam_grids is None:
             _default_lam = [np.logspace(-3, 3, 11)]
             lam_grids = []
@@ -402,6 +450,10 @@ class GAMCore:
                 lam_grids.extend(_default_lam * n_slots)
         elif not isinstance(lam_grids, list):
             lam_grids = [np.atleast_1d(lam_grids)] * n_lam_slots
+        elif len(lam_grids) == n_lam_searched and n_lam_searched != n_lam_slots:
+            lam_grids = self._expand_partial_grids(
+                lam_grids, search_idx, 'lam'
+            )
         elif len(lam_grids) == 1 and n_lam_slots > 1:
             lam_grids = lam_grids * n_lam_slots
         elif len(lam_grids) != n_lam_slots:
@@ -409,6 +461,11 @@ class GAMCore:
                 f"lam_grids has {len(lam_grids)} elements, "
                 f"but model requires {n_lam_slots} lam slots "
                 f"({self.formula})."
+                + (
+                    f" When using search_terms, you can provide "
+                    f"{n_lam_searched} element(s) for searched terms only."
+                    if n_lam_searched != n_lam_slots else ""
+                )
             )
 
         if n_splines_grids is None:
@@ -420,6 +477,10 @@ class GAMCore:
                     n_splines_grids.extend([np.arange(4, 8)] * t.d)
         elif not isinstance(n_splines_grids, list):
             n_splines_grids = [np.atleast_1d(n_splines_grids)] * max(n_nsp_slots, 1)
+        elif len(n_splines_grids) == n_nsp_searched and n_nsp_searched != n_nsp_slots:
+            n_splines_grids = self._expand_partial_grids(
+                n_splines_grids, search_idx, 'nsp'
+            )
         elif len(n_splines_grids) == 1 and n_nsp_slots > 1:
             n_splines_grids = n_splines_grids * n_nsp_slots
         elif len(n_splines_grids) != n_nsp_slots:
@@ -427,6 +488,11 @@ class GAMCore:
                 f"n_splines_grids has {len(n_splines_grids)} elements, "
                 f"but model requires {n_nsp_slots} n_splines slots "
                 f"({self.formula})."
+                + (
+                    f" When using search_terms, you can provide "
+                    f"{n_nsp_searched} element(s) for searched terms only."
+                    if n_nsp_searched != n_nsp_slots else ""
+                )
             )
 
         lam_grids = list(lam_grids)
@@ -482,6 +548,17 @@ class GAMCore:
             x, lam_grids, n_splines_grids, search_terms,
         )
         n = len(y)
+
+        min_nsp = self.spline_order + 1
+        for i, grid in enumerate(n_splines_grids):
+            for v in np.atleast_1d(grid):
+                v_int = int(v)
+                if v_int <= self.spline_order:
+                    raise ValueError(
+                        f"n_splines_grids[{i}] has value {v_int}, "
+                        f"must be > spline_order ({self.spline_order}). "
+                        f"Use at least {min_nsp}."
+                    )
 
         nsp_idx = 0
         k_combo_elements: List[List] = []
@@ -608,6 +685,17 @@ class GAMCore:
         )
         n = len(y)
 
+        min_nsp = self.spline_order + 1
+        for i, grid in enumerate(n_splines_grids):
+            for v in np.atleast_1d(grid):
+                v_int = int(v)
+                if v_int <= self.spline_order:
+                    raise ValueError(
+                        f"n_splines_grids[{i}] has value {v_int}, "
+                        f"must be > spline_order ({self.spline_order}). "
+                        f"Use at least {min_nsp}."
+                    )
+
         nsp_idx = 0
         k_combo_elements: List[List] = []
         for t in self._terms:
@@ -705,12 +793,18 @@ class GAMCore:
         n_grid: int = 200,
         extrap_frac: float = 0.15,
         figsize: Optional[Tuple[int, int]] = None,
+        feature_names: Optional[List[str]] = None,
     ) -> Tuple:
         self._check_fitted()
         x_arr = np.asarray(x)
         y_arr = np.asarray(y).ravel()
         if x_arr.ndim == 1:
             x_arr = x_arr.reshape(-1, 1)
+
+        def _fname(idx):
+            if feature_names is not None and idx < len(feature_names):
+                return feature_names[idx]
+            return f'x[{idx}]'
 
         p_predictors = x_arr.shape[1]
         n_terms = len(self._terms)
@@ -757,7 +851,7 @@ class GAMCore:
         ax_overall.axvspan(
             feat_maxs[0], x_hi, alpha=0.06, color='red', label='Extrapolated',
         )
-        ax_overall.set_xlabel('x[0]' if p_predictors > 1 else 'x')
+        ax_overall.set_xlabel(_fname(0) if p_predictors > 1 else 'x')
         ax_overall.set_ylabel('y')
 
         constraint_info = ""
@@ -799,7 +893,7 @@ class GAMCore:
                 ax.axvspan(fv[0], feat_mins[term.feature], alpha=0.06, color='red')
                 ax.axvspan(feat_maxs[term.feature], fv[-1], alpha=0.06, color='red')
                 ax.axhline(0, color='gray', ls='--', lw=0.5)
-                ax.set_xlabel(f'x[{term.feature}]')
+                ax.set_xlabel(_fname(term.feature))
                 ax.set_ylabel('Contribution')
                 title = f's({term.feature})   K={term.n_splines}, lam={term.lam:.3f}'
                 if term.constraint:
@@ -832,15 +926,15 @@ class GAMCore:
                     pdep_2d = pdep.reshape(ng2d, ng2d)
                     im = ax.pcolormesh(f0, f1, pdep_2d, shading='auto', cmap='RdBu_r')
                     plt.colorbar(im, ax=ax, label='Contribution')
-                    ax.set_xlabel(f'x[{term.features[0]}]')
-                    ax.set_ylabel(f'x[{term.features[1]}]')
+                    ax.set_xlabel(_fname(term.features[0]))
+                    ax.set_ylabel(_fname(term.features[1]))
                 else:
                     x_sweep = np.tile(medians, (n_grid, 1))
                     x_sweep[:, term.features[0]] = feat_grids[term.features[0]]
                     pdep = self.partial_dependence(i, x_sweep)
                     fv = feat_grids[term.features[0]]
                     ax.plot(fv, pdep, 'C2-', lw=1.5)
-                    ax.set_xlabel(f'x[{term.features[0]}] (projection)')
+                    ax.set_xlabel(f'{_fname(term.features[0])} (projection)')
                 feats_str = ','.join(str(f) for f in term.features)
                 ks_str = ','.join(str(k) for k in term.n_splines_per)
                 ax.set_title(f'te({feats_str})   K=({ks_str})   {term.n_coefs} coefs')
@@ -875,7 +969,7 @@ class GAMCore:
                 ax.axvspan(fv[0], feat_mins[term.feature], alpha=0.06, color='red')
                 ax.axvspan(feat_maxs[term.feature], fv[-1], alpha=0.06, color='red')
                 ax.axhline(0, color='gray', ls='--', lw=0.5)
-                ax.set_xlabel(f'x[{term.feature}]')
+                ax.set_xlabel(_fname(term.feature))
                 ax.set_ylabel('Contribution')
                 ax.set_title(f'l({term.feature})   beta={beta:.4f}')
 

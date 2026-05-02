@@ -79,6 +79,11 @@ class _SplineTerm(_Term):
                 f"Unknown constraint '{constraint}'. "
                 f"Choose from: {sorted(c for c in _CONSTRAINTS if c is not None)}."
             )
+        if n_splines <= spline_order:
+            raise ValueError(
+                f"n_splines ({n_splines}) must be greater than "
+                f"spline_order ({spline_order}). Use at least {spline_order + 1}."
+            )
         self.feature = feature
         self.n_splines = n_splines
         self.lam = lam
