@@ -38,7 +38,7 @@ penalised to avoid overfitting.  The package supports:
 * **Fast grid search** — QR+Cholesky GCV optimisation with selective term search
 
 Key design goals
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 * **Speed**:  All grid search uses QR precomputation + threaded Cholesky
   evaluation.  NumPy releases the GIL, so ``ThreadPoolExecutor`` parallelises
