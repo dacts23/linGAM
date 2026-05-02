@@ -1,0 +1,231 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quick Start &mdash; linGAM Documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "displayMath": [["$$", "$$"], ["\\[", "\\]"]]}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Mathematical Foundations" href="math.html" />
+    <link rel="prev" title="linGAM" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            linGAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#your-first-model">Your first model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#formula-syntax">Formula syntax</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#single-term-model-lingam">Single-term model (LinGAM)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#robust-fitting">Robust fitting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#partial-dependence">Partial dependence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#plotting">Plotting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="math.html">Mathematical Foundations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="constraints.html">Shape Constraints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gridsearch.html">Grid Search &amp; Hyperparameter Tuning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">linGAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Quick Start</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/quickstart.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="quick-start">
+<h1>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h1>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
+<p>linGAM requires Python ≥3.8 and the following packages:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">numpy</span> <span class="pre">&gt;=</span> <span class="pre">1.20</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">scipy</span> <span class="pre">&gt;=</span> <span class="pre">1.7</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">matplotlib</span> <span class="pre">&gt;=</span> <span class="pre">3.5</span></code></p></li>
+</ul>
+<p>Install from the repository root:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">e</span> <span class="o">.</span>
+</pre></div>
+</div>
+<p>For building documentation locally:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">sphinx</span> <span class="n">sphinx</span><span class="o">-</span><span class="n">rtd</span><span class="o">-</span><span class="n">theme</span>
+<span class="n">cd</span> <span class="n">docs</span>
+<span class="n">make</span> <span class="n">html</span>
+</pre></div>
+</div>
+</section>
+<section id="your-first-model">
+<h2>Your first model<a class="headerlink" href="#your-first-model" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lingam</span><span class="w"> </span><span class="kn">import</span> <span class="n">GAMCore</span>
+
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">n</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="mf">0.3</span> <span class="o">*</span> <span class="n">x</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">GAMCore</span><span class="p">(</span><span class="s2">&quot;s(0, n_splines=12) + l(1)&quot;</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;GCV = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">statistics_</span><span class="p">[</span><span class="s1">&#39;GCV&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;EDF = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">statistics_</span><span class="p">[</span><span class="s1">&#39;edof&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">y_hat</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">ci</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">confidence_intervals</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mf">0.95</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="formula-syntax">
+<h2>Formula syntax<a class="headerlink" href="#formula-syntax" title="Link to this heading"></a></h2>
+<p>Terms are separated by <code class="docutils literal notranslate"><span class="pre">+</span></code>.  Each term has the form <code class="docutils literal notranslate"><span class="pre">type(args,</span> <span class="pre">kwargs)</span></code>.</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">s(feature,</span> <span class="pre">...)</span></code> — univariate spline</dt><dd><p><code class="docutils literal notranslate"><span class="pre">s(0,</span> <span class="pre">n_splines=10,</span> <span class="pre">lam=1.0,</span> <span class="pre">spline_order=3,</span> <span class="pre">constraint=None)</span></code></p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">te(f1,</span> <span class="pre">f2,</span> <span class="pre">...)</span></code> — tensor-product interaction</dt><dd><p><code class="docutils literal notranslate"><span class="pre">te(0,</span> <span class="pre">1,</span> <span class="pre">n_splines=5,</span> <span class="pre">lam=1.0,</span> <span class="pre">spline_order=3)</span></code>
+Per-dimension grids can be lists: <code class="docutils literal notranslate"><span class="pre">n_splines=[5,</span> <span class="pre">8]</span></code></p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">f(feature,</span> <span class="pre">...)</span></code> — categorical factor</dt><dd><p><code class="docutils literal notranslate"><span class="pre">f(2,</span> <span class="pre">lam=1.0,</span> <span class="pre">coding='one-hot')</span></code></p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">l(feature,</span> <span class="pre">...)</span></code> — linear term</dt><dd><p><code class="docutils literal notranslate"><span class="pre">l(3,</span> <span class="pre">lam=0.0)</span></code></p>
+</dd>
+</dl>
+<p>Example formula:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;s(0, n_splines=10, constraint=&#39;mono_inc&#39;) + te(0, 1, n_splines=[6, 8]) + f(2) + l(3)&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="single-term-model-lingam">
+<h2>Single-term model (LinGAM)<a class="headerlink" href="#single-term-model-lingam" title="Link to this heading"></a></h2>
+<p>For a single smooth <span class="math notranslate nohighlight">\(y = f(x) + \varepsilon\)</span>, use <code class="docutils literal notranslate"><span class="pre">LinGAM</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">lingam</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinGAM</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">LinGAM</span><span class="p">(</span><span class="n">n_splines</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">lam</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">spline_order</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">gridsearch</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>          <span class="c1"># fast QR+Cholesky path</span>
+<span class="n">model</span><span class="o">.</span><span class="n">plot_decomposition</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>  <span class="c1"># visualise basis functions</span>
+</pre></div>
+</div>
+<p>Shape constraints work too:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">LinGAM</span><span class="p">(</span><span class="n">n_splines</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">constraint</span><span class="o">=</span><span class="s1">&#39;mono_inc&#39;</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="robust-fitting">
+<h2>Robust fitting<a class="headerlink" href="#robust-fitting" title="Link to this heading"></a></h2>
+<p>Pass <code class="docutils literal notranslate"><span class="pre">robust=True</span></code> to down-weight outliers with Huber IRLS:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">GAMCore</span><span class="p">(</span><span class="s2">&quot;s(0) + l(1)&quot;</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">robust</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>          <span class="c1"># Huber-weighted IRLS</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">gridsearch</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">robust</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>   <span class="c1"># robust grid search</span>
+</pre></div>
+</div>
+<p>Internally this iteratively reweights observations using the Huber loss
+with threshold <span class="math notranslate nohighlight">\(c = 1.345 \, \text{MAD} / 0.6745\)</span>.</p>
+</section>
+<section id="partial-dependence">
+<h2>Partial dependence<a class="headerlink" href="#partial-dependence" title="Link to this heading"></a></h2>
+<p>Inspect the contribution of each term:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pdep_0</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">partial_dependence</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>  <span class="c1"># s(0) contribution</span>
+<span class="n">pdep_1</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">partial_dependence</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>  <span class="c1"># l(1) contribution</span>
+</pre></div>
+</div>
+</section>
+<section id="plotting">
+<h2>Plotting<a class="headerlink" href="#plotting" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">plot_decomposition</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">n_grid</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">extrap_frac</span><span class="o">=</span><span class="mf">0.15</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This shows the overall fit plus one panel per term.  Extrapolated regions
+are shaded red.  Tensor terms produce 2-D heatmaps when <code class="docutils literal notranslate"><span class="pre">d</span> <span class="pre">==</span> <span class="pre">2</span></code>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="linGAM" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="math.html" class="btn btn-neutral float-right" title="Mathematical Foundations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, David Ávila Cortés.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

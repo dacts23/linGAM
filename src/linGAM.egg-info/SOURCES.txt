@@ -1,0 +1,17 @@
+LICENSE
+README.md
+pyproject.toml
+src/linGAM.egg-info/PKG-INFO
+src/linGAM.egg-info/SOURCES.txt
+src/linGAM.egg-info/dependency_links.txt
+src/linGAM.egg-info/requires.txt
+src/linGAM.egg-info/top_level.txt
+src/lingam/__init__.py
+src/lingam/__main__.py
+src/lingam/_bspline.py
+src/lingam/_formula.py
+src/lingam/_gam.py
+src/lingam/_lingam.py
+src/lingam/_penalty.py
+src/lingam/_solver.py
+src/lingam/_terms.py

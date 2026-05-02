@@ -1,0 +1,245 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>linGAM &mdash; linGAM Documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "displayMath": [["$$", "$$"], ["\\[", "\\]"]]}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Quick Start" href="quickstart.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            linGAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="math.html">Mathematical Foundations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="constraints.html">Shape Constraints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gridsearch.html">Grid Search &amp; Hyperparameter Tuning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">linGAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">linGAM</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="lingam">
+<h1>linGAM<a class="headerlink" href="#lingam" title="Link to this heading"></a></h1>
+<p><strong>Simple Fast Linear GAM</strong> — a minimal, high-performance implementation of
+Generalized Additive Models using penalised B-splines.</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#your-first-model">Your first model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#formula-syntax">Formula syntax</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#single-term-model-lingam">Single-term model (LinGAM)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#robust-fitting">Robust fitting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#partial-dependence">Partial dependence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#plotting">Plotting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="math.html">Mathematical Foundations</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="math.html#b-spline-bases">B-spline bases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#penalised-least-squares">Penalised least squares</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#svd-data-augmentation-solver">SVD data-augmentation solver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#effective-degrees-of-freedom-edf">Effective degrees of freedom (EDF)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#generalised-cross-validation-gcv">Generalised Cross Validation (GCV)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#fast-qr-cholesky-grid-search">Fast QR+Cholesky grid search</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#tensor-product-interactions">Tensor-product interactions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#huber-irls-robust-fitting">Huber IRLS (robust fitting)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#confidence-and-prediction-intervals">Confidence and prediction intervals</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.html#public-classes">Public classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#internal-modules">Internal modules</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="constraints.html">Shape Constraints</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="constraints.html#available-constraints">Available constraints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="constraints.html#how-they-work">How they work</a></li>
+<li class="toctree-l2"><a class="reference internal" href="constraints.html#when-to-use-which">When to use which</a></li>
+<li class="toctree-l2"><a class="reference internal" href="constraints.html#caveats">Caveats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="constraints.html#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="gridsearch.html">Grid Search &amp; Hyperparameter Tuning</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gridsearch.html#how-it-works">How it works</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gridsearch.html#default-search-grids">Default search grids</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gridsearch.html#selective-search-search-terms">Selective search (search_terms)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gridsearch.html#custom-grids">Custom grids</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gridsearch.html#robust-grid-search">Robust grid search</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gridsearch.html#lingam-grid-search">LinGAM grid search</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gridsearch.html#tips-for-faster-search">Tips for faster search</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#basic-regression">Basic regression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#grid-search-with-selective-terms">Grid search with selective terms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#categorical-interaction">Categorical + interaction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#robust-fitting-with-outliers">Robust fitting with outliers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#monotonic-dose-response">Monotonic dose-response</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#periodic-seasonal-pattern">Periodic seasonal pattern</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#d-tensor-interaction">2-D tensor interaction</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#version-0-2-0">Version 0.2.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#version-0-1-0">Version 0.1.0</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<section id="what-is-lingam">
+<h2>What is linGAM?<a class="headerlink" href="#what-is-lingam" title="Link to this heading"></a></h2>
+<p>linGAM fits smooth, additive regression models of the form</p>
+<div class="math notranslate nohighlight">
+\[y_i = \beta_0 + \sum_{j=1}^{p} f_j(x_{ij}) + \varepsilon_i\]</div>
+<p>where each <span class="math notranslate nohighlight">\(f_j\)</span> is a flexible smooth function learned from data,
+penalised to avoid overfitting.  The package supports:</p>
+<ul class="simple">
+<li><p><strong>Univariate splines</strong> <code class="docutils literal notranslate"><span class="pre">s()</span></code> — smooth nonlinear trends</p></li>
+<li><p><strong>Tensor-product interactions</strong> <code class="docutils literal notranslate"><span class="pre">te()</span></code> — multidimensional smooths</p></li>
+<li><p><strong>Categorical factors</strong> <code class="docutils literal notranslate"><span class="pre">f()</span></code> — one-hot / dummy encoding</p></li>
+<li><p><strong>Linear terms</strong> <code class="docutils literal notranslate"><span class="pre">l()</span></code> — plain linear coefficients</p></li>
+<li><p><strong>Shape constraints</strong> — monotonicity, convexity, concavity, periodicity</p></li>
+<li><p><strong>Robust fitting</strong> — Huber IRLS for outlier resistance</p></li>
+<li><p><strong>Fast grid search</strong> — QR+Cholesky GCV optimisation with selective term search</p></li>
+</ul>
+<section id="key-design-goals">
+<h3>Key design goals<a class="headerlink" href="#key-design-goals" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Speed</strong>:  All grid search uses QR precomputation + threaded Cholesky
+evaluation.  NumPy releases the GIL, so <code class="docutils literal notranslate"><span class="pre">ThreadPoolExecutor</span></code> parallelises
+CPU-bound linear algebra.</p></li>
+<li><p><strong>Correctness</strong>:  SVD data-augmentation solver avoids squaring condition
+numbers.  No <span class="math notranslate nohighlight">\(X^\top X\)</span> is ever formed explicitly.</p></li>
+<li><p><strong>Simplicity</strong>:  Formula interface <code class="docutils literal notranslate"><span class="pre">s(0)</span> <span class="pre">+</span> <span class="pre">te(1,2)</span> <span class="pre">+</span> <span class="pre">f(3)</span></code> mirrors R/mgcv
+and pyGAM conventions.</p></li>
+<li><p><strong>Flexibility</strong>:  Choose which terms participate in grid search, apply
+shape constraints, or mix standard and robust fitting.</p></li>
+</ul>
+</section>
+</section>
+<section id="quick-example">
+<h2>Quick example<a class="headerlink" href="#quick-example" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lingam</span><span class="w"> </span><span class="kn">import</span> <span class="n">GAMCore</span>
+
+<span class="c1"># Synthetic data</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">y</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">x</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">x</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+
+<span class="c1"># Fit a GAM: smooth for x0, linear for x1</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">GAMCore</span><span class="p">(</span><span class="s2">&quot;s(0, n_splines=10) + l(1)&quot;</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+<span class="c1"># Predict &amp; confidence intervals</span>
+<span class="n">y_hat</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">ci</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">confidence_intervals</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mf">0.95</span><span class="p">)</span>
+
+<span class="c1"># Grid search (fast QR+Cholesky path)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">gridsearch</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">statistics_</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="quickstart.html" class="btn btn-neutral float-right" title="Quick Start" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, David Ávila Cortés.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

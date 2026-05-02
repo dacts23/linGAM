@@ -1,0 +1,399 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mathematical Foundations &mdash; linGAM Documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "displayMath": [["$$", "$$"], ["\\[", "\\]"]]}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API Reference" href="api.html" />
+    <link rel="prev" title="Quick Start" href="quickstart.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            linGAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Mathematical Foundations</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#b-spline-bases">B-spline bases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#penalised-least-squares">Penalised least squares</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svd-data-augmentation-solver">SVD data-augmentation solver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#effective-degrees-of-freedom-edf">Effective degrees of freedom (EDF)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#generalised-cross-validation-gcv">Generalised Cross Validation (GCV)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fast-qr-cholesky-grid-search">Fast QR+Cholesky grid search</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tensor-product-interactions">Tensor-product interactions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#huber-irls-robust-fitting">Huber IRLS (robust fitting)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#confidence-and-prediction-intervals">Confidence and prediction intervals</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="constraints.html">Shape Constraints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gridsearch.html">Grid Search &amp; Hyperparameter Tuning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">linGAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Mathematical Foundations</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/math.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="mathematical-foundations">
+<h1>Mathematical Foundations<a class="headerlink" href="#mathematical-foundations" title="Link to this heading"></a></h1>
+<p>This chapter derives the core mathematics behind linGAM: B-spline bases,
+penalised least squares, the SVD data-augmentation solver, effective degrees
+of freedom, and Generalised Cross Validation (GCV).</p>
+<section id="b-spline-bases">
+<h2>B-spline bases<a class="headerlink" href="#b-spline-bases" title="Link to this heading"></a></h2>
+<p>A B-spline of order <span class="math notranslate nohighlight">\(k\)</span> (polynomial degree <span class="math notranslate nohighlight">\(k-1\)</span>) is built from
+<span class="math notranslate nohighlight">\(K\)</span> basis functions via the De Boor recursion.  Given data
+<span class="math notranslate nohighlight">\(x \in [x_{\min}, x_{\max}]\)</span>, we first map to <span class="math notranslate nohighlight">\([0, 1]\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[z = \frac{x - x_{\min}}{x_{\max} - x_{\min}}.\]</div>
+<p>Internal knots are placed uniformly:</p>
+<div class="math notranslate nohighlight">
+\[\tau_0 = 0, \; \tau_1, \dots, \tau_{K-k+1} = 1.\]</div>
+<p>The augmented knot sequence extends <span class="math notranslate nohighlight">\(k\)</span> knots beyond each boundary.</p>
+<p><strong>De Boor recursion.</strong>  Start with order-1 (piecewise constant) bases:</p>
+<div class="math notranslate nohighlight">
+\[B_{i,1}(z) = \mathbf{1}_{[\tau_i, \tau_{i+1})}(z).\]</div>
+<p>For orders <span class="math notranslate nohighlight">\(m = 2, \dots, k\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[B_{i,m}(z)
+= \frac{z - \tau_i}{\tau_{i+m-1} - \tau_i} \, B_{i,m-1}(z)
++ \frac{\tau_{i+m} - z}{\tau_{i+m} - \tau_{i+1}} \, B_{i+1,m-1}(z).\]</div>
+<p>The result is an <span class="math notranslate nohighlight">\(n \times K\)</span> design matrix <span class="math notranslate nohighlight">\(B\)</span> with the property
+that each row sums to 1 and each column has compact support (localised).</p>
+<p><strong>Linear extrapolation.</strong>  Outside <span class="math notranslate nohighlight">\([0,1]\)</span>, B-splines shoot to zero or
+oscillate wildly.  linGAM replaces the B-spline values with a linear
+extension using the boundary gradient:</p>
+<div class="math notranslate nohighlight">
+\[f(z) \approx f(0) + f'(0) \, z \quad (z &lt; 0),
+\qquad
+f(z) \approx f(1) + f'(1) \, (z-1) \quad (z &gt; 1).\]</div>
+<p>The derivative <span class="math notranslate nohighlight">\(f'(0)\)</span> is computed analytically from the
+<span class="math notranslate nohighlight">\((k-1)\)</span>-order basis saved during recursion.</p>
+<p><strong>Periodic basis.</strong>  When <code class="docutils literal notranslate"><span class="pre">constraint='periodic'</span></code>, the basis is wrapped so
+that the first <span class="math notranslate nohighlight">\(k-1\)</span> columns are added to the last <span class="math notranslate nohighlight">\(k-1\)</span>
+columns.  This enforces <span class="math notranslate nohighlight">\(f(0) = f(1)\)</span> and reduces the coefficient
+count from <span class="math notranslate nohighlight">\(K\)</span> to <span class="math notranslate nohighlight">\(K - k + 1\)</span>.</p>
+</section>
+<section id="penalised-least-squares">
+<h2>Penalised least squares<a class="headerlink" href="#penalised-least-squares" title="Link to this heading"></a></h2>
+<p>The model is</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{y} = X \boldsymbol{\beta} + \boldsymbol{\varepsilon},\]</div>
+<p>where <span class="math notranslate nohighlight">\(X\)</span> stacks all term design matrices (plus an intercept column).
+We minimise the penalised sum of squares:</p>
+<div class="math notranslate nohighlight">
+\[S(\boldsymbol{\beta})
+= \|\mathbf{y} - X \boldsymbol{\beta}\|^2
++ \boldsymbol{\beta}^\top P \boldsymbol{\beta}.\]</div>
+<p>The penalty <span class="math notranslate nohighlight">\(P\)</span> is block-diagonal, with one block per term.  The
+intercept block is zero (unpenalised).</p>
+<p><strong>Second-difference penalty</strong> (smoothness).  For a spline with <span class="math notranslate nohighlight">\(K\)</span>
+coefficients:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}D_2 = \begin{pmatrix}
+1 &amp; -2 &amp; 1 &amp;        &amp;   \\
+  &amp;  1 &amp; -2 &amp; 1     &amp;   \\
+  &amp;    &amp; \ddots &amp; \ddots &amp; \ddots \\
+\end{pmatrix}_{(K-2) \times K},
+\qquad
+P = \lambda \, D_2^\top D_2.\end{split}\]</div>
+<p>This penalises curvature: neighbouring coefficients that differ wildly incur
+a large cost.</p>
+<p><strong>First-difference penalty</strong> (monotonicity).  For <code class="docutils literal notranslate"><span class="pre">constraint='mono_inc'</span></code>
+or <code class="docutils literal notranslate"><span class="pre">'mono_dec'</span></code>:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}D_1 = \begin{pmatrix}
+-1 &amp; 1 &amp;   &amp;   \\
+   &amp; -1 &amp; 1 &amp;   \\
+   &amp;    &amp; \ddots &amp; \ddots
+\end{pmatrix}_{(K-1) \times K},
+\qquad
+P = \lambda \, D_1^\top D_1.\end{split}\]</div>
+<p>Minimising <span class="math notranslate nohighlight">\(\beta^\top D_1^\top D_1 \beta = \sum_i (\beta_{i+1} - \beta_i)^2\)</span>
+forces adjacent coefficients to be similar, which encourages a monotonic
+shape.  Combined with the natural ordering of B-spline basis functions,
+this produces an increasing (or decreasing) smooth.</p>
+<p><strong>Circular second-difference</strong> (periodicity).  For
+<code class="docutils literal notranslate"><span class="pre">constraint='periodic'</span></code>:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split} P_{ij} = \lambda \times \begin{cases}
+ 4  &amp; i = j \\
+-2  &amp; j = (i \pm 1) \bmod K_{\text{eff}} \\
+ 1  &amp; j = (i \pm 2) \bmod K_{\text{eff}} \\
+ 0  &amp; \text{otherwise}
+ \end{cases}\end{split}\]</div>
+<p>This wraps the second-difference operator, connecting the first and last
+coefficients so the curve is closed.</p>
+<p><strong>Ridge penalty.</strong>  For factor and linear terms:</p>
+<div class="math notranslate nohighlight">
+\[P = \lambda I_K.\]</div>
+</section>
+<section id="svd-data-augmentation-solver">
+<h2>SVD data-augmentation solver<a class="headerlink" href="#svd-data-augmentation-solver" title="Link to this heading"></a></h2>
+<p>The normal equations are <span class="math notranslate nohighlight">\((X^\top X + P)\beta = X^\top y\)</span>.  Forming
+<span class="math notranslate nohighlight">\(X^\top X\)</span> squares the condition number and amplifies numerical
+instability.  linGAM uses a <strong>data-augmentation</strong> trick instead.</p>
+<ol class="arabic">
+<li><p><strong>Cholesky of the penalty.</strong>  Factor <span class="math notranslate nohighlight">\(P + \varepsilon I = E^\top E\)</span>
+where <span class="math notranslate nohighlight">\(\varepsilon = \sqrt{\text{machine epsilon}}\)</span> is a tiny ridge
+that guarantees positive definiteness even when <span class="math notranslate nohighlight">\(\lambda = 0\)</span>.</p></li>
+<li><p><strong>QR of the design matrix.</strong>  <span class="math notranslate nohighlight">\(X = QR\)</span> where <span class="math notranslate nohighlight">\(Q\)</span> is
+orthogonal and <span class="math notranslate nohighlight">\(R\)</span> is upper-triangular.  Because <span class="math notranslate nohighlight">\(Q\)</span> preserves
+norms, working with <span class="math notranslate nohighlight">\(R\)</span> (size <span class="math notranslate nohighlight">\(m \times m\)</span>) instead of
+<span class="math notranslate nohighlight">\(X\)</span> (size <span class="math notranslate nohighlight">\(n \times m\)</span>) is numerically safe and cheaper when
+<span class="math notranslate nohighlight">\(n \gg m\)</span>.</p></li>
+<li><p><strong>SVD of the stacked matrix.</strong>  Form <span class="math notranslate nohighlight">\([R; E]\)</span> and decompose:</p>
+<div class="math notranslate nohighlight">
+\[[R; E] = U \, \text{diag}(d) \, V^\top.\]</div>
+<p>This is equivalent to solving the augmented least-squares system</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{pmatrix} X \\ E \end{pmatrix} \beta
+= \begin{pmatrix} y \\ 0 \end{pmatrix}\end{split}\]</div>
+<p>but never forms <span class="math notranslate nohighlight">\(X^\top X\)</span> explicitly.</p>
+</li>
+<li><p><strong>Solution operator.</strong>  Truncate to the first <span class="math notranslate nohighlight">\(\min(m,n)\)</span> singular
+values and compute:</p>
+<div class="math notranslate nohighlight">
+\[B_{\text{solve}} = V \, \text{diag}(d^{-1}) \, U_1^\top Q^\top,
+\qquad
+\hat\beta = B_{\text{solve}} \, y.\]</div>
+<p>Saving <span class="math notranslate nohighlight">\(B_{\text{solve}}\)</span> lets us compute covariance and effective
+degrees of freedom later without re-fitting.</p>
+</li>
+</ol>
+<p><strong>Why this works.</strong>  The stacked SVD is the most numerically stable way to
+solve a penalised linear system.  Tiny singular values are handled gracefully
+(by division, not inversion of a near-singular matrix), and the condition
+number of <span class="math notranslate nohighlight">\([R; E]\)</span> is the square root of the condition number of
+<span class="math notranslate nohighlight">\(X^\top X + P\)</span>.</p>
+</section>
+<section id="effective-degrees-of-freedom-edf">
+<h2>Effective degrees of freedom (EDF)<a class="headerlink" href="#effective-degrees-of-freedom-edf" title="Link to this heading"></a></h2>
+<p>In ordinary linear regression, the degrees of freedom equal the number of
+parameters.  In a penalised spline, the penalty “shrinks” coefficients,
+so each one uses <em>less</em> than one full degree of freedom.</p>
+<p>The EDF is the trace of the <strong>influence</strong> (hat) matrix:</p>
+<div class="math notranslate nohighlight">
+\[\text{EDF} = \text{tr}(H),
+\qquad
+H = X (X^\top X + P)^{-1} X^\top.\]</div>
+<p>Using the SVD augmentation, this simplifies to</p>
+<div class="math notranslate nohighlight">
+\[\text{EDF} = \sum_{i=1}^{\min(m,n)} \sigma_i(U_1)^2
+= \|U_1\|_F^2,\]</div>
+<p>where <span class="math notranslate nohighlight">\(U_1\)</span> is the top-left <span class="math notranslate nohighlight">\(\min(m,n) \times \min(m,n)\)</span> block
+of <span class="math notranslate nohighlight">\(U\)</span>.  This is computed in a single NumPy call with no extra matrix
+inversions.</p>
+<p>Per-coefficient EDF tells us how much each individual parameter contributes:</p>
+<div class="math notranslate nohighlight">
+\[\text{EDF}_j = \sum_i U_{1,ij}^2.\]</div>
+</section>
+<section id="generalised-cross-validation-gcv">
+<h2>Generalised Cross Validation (GCV)<a class="headerlink" href="#generalised-cross-validation-gcv" title="Link to this heading"></a></h2>
+<p>Leave-one-out cross validation is expensive: fit the model <span class="math notranslate nohighlight">\(n\)</span> times,
+dropping one point each time.  GCV is a clever closed-form approximation:</p>
+<div class="math notranslate nohighlight">
+\[\text{GCV} = \frac{n \cdot \text{RSS}}{(n - \gamma \cdot \text{EDF})^2},\]</div>
+<p>where</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(n\)</span> = number of observations,</p></li>
+<li><p><span class="math notranslate nohighlight">\(\text{RSS} = \sum_i (y_i - \hat y_i)^2\)</span> = residual sum of squares,</p></li>
+<li><p><span class="math notranslate nohighlight">\(\text{EDF}\)</span> = effective degrees of freedom,</p></li>
+<li><p><span class="math notranslate nohighlight">\(\gamma\)</span> = complexity penalty multiplier (default 1.4).</p></li>
+</ul>
+<p>The denominator penalises model complexity.  When <span class="math notranslate nohighlight">\(\text{EDF}\)</span> grows,
+the denominator shrinks and GCV explodes — this prevents overfitting.
+Setting <span class="math notranslate nohighlight">\(\gamma &gt; 1\)</span> (e.g. 1.4) is analogous to AIC/BIC corrections
+that prefer slightly simpler models.</p>
+<p><strong>Why GCV and not plain CV?</strong>  GCV requires only a single fit.  It is
+asymptotically equivalent to leave-one-out CV but computes in <span class="math notranslate nohighlight">\(O(1)\)</span>
+extra time after the fit.</p>
+</section>
+<section id="fast-qr-cholesky-grid-search">
+<h2>Fast QR+Cholesky grid search<a class="headerlink" href="#fast-qr-cholesky-grid-search" title="Link to this heading"></a></h2>
+<p>Grid search evaluates every combination of <span class="math notranslate nohighlight">\((K, \lambda)\)</span> candidates.
+A naïve implementation rebuilds <span class="math notranslate nohighlight">\(X\)</span> and solves from scratch for each
+combination.  linGAM’s fast path avoids redundant work.</p>
+<p><strong>Phase 1 — Precompute per :math:`K` (threaded).</strong>
+For each candidate basis count <span class="math notranslate nohighlight">\(K\)</span>:</p>
+<ol class="arabic simple">
+<li><p>Build <span class="math notranslate nohighlight">\(X_K\)</span> and compute its QR decomposition: <span class="math notranslate nohighlight">\(X_K = Q_K R_K\)</span>.</p></li>
+<li><p>Form <span class="math notranslate nohighlight">\(R_K^\top R_K\)</span> and <span class="math notranslate nohighlight">\(R_K^\top Q_K^\top y\)</span>.
+These are <strong>independent of :math:`lambda`</strong>.</p></li>
+<li><p>Precompute the unscaled penalty basis <span class="math notranslate nohighlight">\(S = D^\top D\)</span> (also
+independent of <span class="math notranslate nohighlight">\(\lambda\)</span>).</p></li>
+</ol>
+<p>All of this is done once per <span class="math notranslate nohighlight">\(K\)</span> and cached.</p>
+<p><strong>Phase 2 — Evaluate per :math:`(K, lambda)` (threaded).</strong>
+For each combination:</p>
+<ol class="arabic simple">
+<li><p>Assemble the penalty: <span class="math notranslate nohighlight">\(P = \lambda S\)</span>.</p></li>
+<li><p>Build <span class="math notranslate nohighlight">\(B = R_K^\top R_K + P\)</span>.</p></li>
+<li><p>Cholesky solve: <span class="math notranslate nohighlight">\(\hat\beta = B^{-1} (R_K^\top Q_K^\top y)\)</span>.</p></li>
+<li><p>Compute EDF via <span class="math notranslate nohighlight">\(\text{tr}(B^{-1} R_K^\top R_K)\)</span>.</p></li>
+<li><p>Compute RSS and GCV.</p></li>
+</ol>
+<p>Cholesky costs <span class="math notranslate nohighlight">\(O(m^3/3)\)</span> versus <span class="math notranslate nohighlight">\(O(m^3)\)</span> for SVD, and both
+phases are fully parallel via <code class="docutils literal notranslate"><span class="pre">concurrent.futures.ThreadPoolExecutor</span></code>.</p>
+<p><strong>Precomputed penalty bases.</strong>  For multi-term models, each term’s penalty
+is built from unscaled base matrices (e.g. <span class="math notranslate nohighlight">\(D_2^\top D_2\)</span> at
+<span class="math notranslate nohighlight">\(\lambda = 1\)</span>).  During Phase 2, assembly is just element-wise
+scaling: <span class="math notranslate nohighlight">\(P_{ij} += \lambda_k \cdot S_{ij}\)</span>.  No matrix is rebuilt
+from scratch.</p>
+</section>
+<section id="tensor-product-interactions">
+<h2>Tensor-product interactions<a class="headerlink" href="#tensor-product-interactions" title="Link to this heading"></a></h2>
+<p>A tensor term <code class="docutils literal notranslate"><span class="pre">te(f1,</span> <span class="pre">f2,</span> <span class="pre">...,</span> <span class="pre">fd)</span></code> models interactions without assuming
+additivity.  The design matrix is the <strong>Khatri-Rao</strong> (column-wise
+Kronecker) product of marginal B-spline bases:</p>
+<div class="math notranslate nohighlight">
+\[B_{\text{tensor}} = B_1 \odot B_2 \odot \dots \odot B_d,\]</div>
+<p>where <span class="math notranslate nohighlight">\(\odot\)</span> denotes column-wise product.  If <span class="math notranslate nohighlight">\(B_i\)</span> is
+<span class="math notranslate nohighlight">\(n \times K_i\)</span>, the result is <span class="math notranslate nohighlight">\(n \times (K_1 K_2 \dots K_d)\)</span>.</p>
+<p>The penalty is the <strong>Kronecker sum</strong> of marginal penalties:</p>
+<div class="math notranslate nohighlight">
+\[P_{\text{tensor}}
+= \lambda_1 (P_1 \otimes I_{K_2} \otimes \dots \otimes I_{K_d})
++ \lambda_2 (I_{K_1} \otimes P_2 \otimes \dots \otimes I_{K_d})
++ \dots
++ \lambda_d (I_{K_1} \otimes \dots \otimes I_{K_{d-1}} \otimes P_d).\]</div>
+<p>Each direction can have its own smoothing parameter <span class="math notranslate nohighlight">\(\lambda_i\)</span>.</p>
+<p>For a 2-D tensor <code class="docutils literal notranslate"><span class="pre">te(0,</span> <span class="pre">1)</span></code> with <span class="math notranslate nohighlight">\(K_1 = K_2 = 6\)</span>, the design matrix
+has <span class="math notranslate nohighlight">\(n \times 36\)</span> columns and the penalty is <span class="math notranslate nohighlight">\(36 \times 36\)</span>.</p>
+</section>
+<section id="huber-irls-robust-fitting">
+<h2>Huber IRLS (robust fitting)<a class="headerlink" href="#huber-irls-robust-fitting" title="Link to this heading"></a></h2>
+<p>Ordinary least squares is sensitive to outliers.  Robust fitting replaces the
+squared loss with the <strong>Huber loss</strong>:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\rho(r) = \begin{cases}
+\tfrac12 r^2            &amp; |r| \le c \\
+c(|r| - \tfrac12 c)     &amp; |r| &gt; c
+\end{cases}\end{split}\]</div>
+<p>where <span class="math notranslate nohighlight">\(c = 1.345 \, \hat\sigma\)</span> and <span class="math notranslate nohighlight">\(\hat\sigma = \text{MAD} / 0.6745\)</span>.
+The constant 1.345 gives ~95% asymptotic efficiency under Gaussian errors.</p>
+<p>The IRLS algorithm iterates:</p>
+<ol class="arabic simple">
+<li><p>Compute residuals <span class="math notranslate nohighlight">\(r = y - X\hat\beta\)</span>.</p></li>
+<li><p>Compute weights <span class="math notranslate nohighlight">\(w_i = \min\bigl(1, c / |r_i|\bigr)\)</span>.</p></li>
+<li><p>Solve the weighted penalised system with weights <span class="math notranslate nohighlight">\(\sqrt{w_i}\)</span>.</p></li>
+<li><p>Repeat until convergence (default 15 iterations for fit, 10 for grid
+search).</p></li>
+</ol>
+<p>This is equivalent to M-estimation with the Huber ψ-function and is
+implemented by weighting rows of <span class="math notranslate nohighlight">\(X\)</span> and <span class="math notranslate nohighlight">\(y\)</span> by <span class="math notranslate nohighlight">\(\sqrt{w}\)</span>
+before calling the standard PIRLS solver.</p>
+</section>
+<section id="confidence-and-prediction-intervals">
+<h2>Confidence and prediction intervals<a class="headerlink" href="#confidence-and-prediction-intervals" title="Link to this heading"></a></h2>
+<p>The variance of the fitted mean at a new point <span class="math notranslate nohighlight">\(x^*\)</span> is:</p>
+<div class="math notranslate nohighlight">
+\[\text{Var}\bigl(\hat y(x^*)\bigr)
+= x^{*\top} \, \text{Cov}(\hat\beta) \, x^*.\]</div>
+<p>The covariance is:</p>
+<div class="math notranslate nohighlight">
+\[\text{Cov}(\hat\beta) = B_{\text{solve}} B_{\text{solve}}^\top \, \hat\sigma^2,
+\qquad
+\hat\sigma^2 = \frac{\text{RSS}}{n - \text{EDF}}.\]</div>
+<p><strong>Confidence intervals</strong> (for the mean response) use:</p>
+<div class="math notranslate nohighlight">
+\[\hat y(x^*) \pm t_{\alpha/2, \, n-\text{EDF}} \,
+\sqrt{\text{Var}(\hat y(x^*))}.\]</div>
+<p><strong>Prediction intervals</strong> (for a new observation) add the observation noise:</p>
+<div class="math notranslate nohighlight">
+\[\hat y(x^*) \pm t_{\alpha/2, \, n-\text{EDF}} \,
+\sqrt{\text{Var}(\hat y(x^*)) + \hat\sigma^2}.\]</div>
+<p>The t-distribution is used instead of the normal because <span class="math notranslate nohighlight">\(\sigma\)</span> is
+estimated from data.  Degrees of freedom are <span class="math notranslate nohighlight">\(n - \text{EDF}\)</span> because
+the penalty has already “consumed” EDF degrees of freedom.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="quickstart.html" class="btn btn-neutral float-left" title="Quick Start" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api.html" class="btn btn-neutral float-right" title="API Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, David Ávila Cortés.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

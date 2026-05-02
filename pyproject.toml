@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "linGAM"
-version = "0.1.0"
+version = "0.2.0"
 description = "Simple Fast Linear GAM — a minimal implementation of Generalized Additive Models using penalized B-splines"
 readme = "README.md"
 license = "MIT"
@@ -30,9 +30,15 @@ dependencies = [
     "matplotlib>=3.5",
 ]
 
+[project.optional-dependencies]
+docs = [
+    "sphinx>=5.0",
+    "sphinx-rtd-theme>=1.2",
+]
+
 [project.urls]
 Homepage = "https://github.com/dacts/linGAM"
 Repository = "https://github.com/dacts/linGAM"
 
-[tool.setuptools]
-py-modules = ["linGAM"]
+[tool.setuptools.packages.find]
+where = ["src"]
