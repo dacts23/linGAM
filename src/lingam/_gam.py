@@ -533,48 +533,59 @@ class GAMCore:
             precomputed = list(executor.map(_precompute_k, all_k_combos))
 
         n_k = len(precomputed)
-        n_l = len(lam_combos)
-        n_tasks = n_k * n_l
 
-        def _eval_task(idx):
-            k_idx = idx // n_l
-            l_idx = idx % n_l
+        def _eval_k_combo(k_idx):
             X_pc, RtR, Rt_qty, bases_list, m, terms_pc = precomputed[k_idx]
-            l_combo = lam_combos[l_idx]
+            P_buf = np.zeros((m, m))
+            B_buf = np.empty((m, m))
+            best_gcv_k = np.inf
+            best_l_idx = -1
 
-            P_full = _assemble_penalty_from_bases(
-                bases_list, l_combo, m, self.fit_intercept,
-            )
+            for l_idx, l_combo in enumerate(lam_combos):
+                _assemble_penalty_from_bases(
+                    bases_list, l_combo, m, self.fit_intercept, out=P_buf,
+                )
+                np.add(RtR, P_buf, out=B_buf)
+                B_buf.flat[::m + 1] += 1e-12
+                try:
+                    c_chol, lower = cho_factor(
+                        B_buf, overwrite_a=True, check_finite=False,
+                    )
+                    coef = cho_solve((c_chol, lower), Rt_qty, check_finite=False)
+                    B_inv_RtR = cho_solve(
+                        (c_chol, lower), RtR, check_finite=False,
+                    )
+                    edf = float(np.trace(B_inv_RtR))
+                except Exception:
+                    B_fallback = RtR + P_buf
+                    B_fallback.flat[::m + 1] += 1e-12
+                    coef = np.linalg.solve(B_fallback, Rt_qty)
+                    edf = float(np.trace(np.linalg.solve(B_fallback, RtR)))
 
-            B = RtR + P_full
-            B.flat[::m + 1] += 1e-12
-            try:
-                c_chol, lower = cho_factor(B, overwrite_a=True, check_finite=False)
-                coef = cho_solve((c_chol, lower), Rt_qty, check_finite=False)
-                B_inv_RtR = cho_solve((c_chol, lower), RtR, check_finite=False)
-                edf = np.trace(B_inv_RtR)
-            except Exception:
-                coef = np.linalg.solve(B, Rt_qty)
-                edf = np.trace(np.linalg.solve(B, RtR))
+                residuals = y - X_pc @ coef
+                rss = float(residuals @ residuals)
+                gcv = (n * rss) / max(n - gamma * edf, 1) ** 2
 
-            y_hat = X_pc @ coef
-            rss = np.sum((y - y_hat) ** 2)
-            gcv = (n * rss) / max(n - gamma * edf, 1) ** 2
-            return gcv, k_idx, l_combo
+                if gcv < best_gcv_k:
+                    best_gcv_k = gcv
+                    best_l_idx = l_idx
+
+            return best_gcv_k, k_idx, best_l_idx
 
         with ThreadPoolExecutor() as executor:
-            results = list(executor.map(_eval_task, range(n_tasks)))
+            k_results = list(executor.map(_eval_k_combo, range(n_k)))
 
         best_gcv = np.inf
         best_k_idx = 0
-        best_l_combo: Optional[tuple] = None
-        for gcv_val, k_idx, l_combo in results:
+        best_l_idx = 0
+        for gcv_val, k_idx, l_idx in k_results:
             if gcv_val < best_gcv:
                 best_gcv = gcv_val
                 best_k_idx = k_idx
-                best_l_combo = l_combo
+                best_l_idx = l_idx
 
         _, _, _, _, _, best_terms = precomputed[best_k_idx]
+        best_l_combo = lam_combos[best_l_idx]
         self._terms = best_terms
         _set_lams_from_combo(self._terms, best_l_combo)
         self._compile(x)
@@ -621,10 +632,7 @@ class GAMCore:
         all_k_combos = list(cartesian_product(*k_combo_elements))
         lam_combos = list(cartesian_product(*lam_grids))
 
-        best_gcv = np.inf
-        best_result: Optional[tuple] = None
-
-        for k_combo in all_k_combos:
+        def _precompute_k(k_combo):
             configs_copy = [dict(cfg) for cfg in self._term_configs]
             for ci, cfg in enumerate(configs_copy):
                 k_val = k_combo[ci]
@@ -634,28 +642,36 @@ class GAMCore:
                     cfg['kwargs']['n_splines'] = (
                         list(k_val) if len(k_val) > 1 else k_val[0]
                     )
-
-            terms_k = instantiate_terms(configs_copy, self.spline_order)
-            for t in terms_k:
+            terms_copy = instantiate_terms(configs_copy, self.spline_order)
+            for t in terms_copy:
                 t.compile(x)
-
-            X_full = _build_matrix_from_terms(
-                terms_k, x, self.fit_intercept,
-            )
+            X_k = _build_matrix_from_terms(terms_copy, x, self.fit_intercept)
             bases_list, m = _precompute_penalty_bases(
-                terms_k, self.fit_intercept,
+                terms_copy, self.fit_intercept,
             )
+            return X_k, bases_list, m, terms_copy
+
+        with ThreadPoolExecutor() as executor:
+            precomputed = list(executor.map(_precompute_k, all_k_combos))
+
+        best_gcv = np.inf
+        best_result: Optional[tuple] = None
+
+        for k_idx, k_combo in enumerate(all_k_combos):
+            X_full, bases_list, m, terms_k = precomputed[k_idx]
+            P_buf = np.zeros((m, m))
 
             def _eval_lam(l_combo):
-                P_full = _assemble_penalty_from_bases(
-                    bases_list, l_combo, m, self.fit_intercept,
+                _assemble_penalty_from_bases(
+                    bases_list, l_combo, m, self.fit_intercept, out=P_buf,
                 )
+                P_full = P_buf.copy()
                 coef, U1, _, _, _ = irls_solve(
                     X_full, y, P_full, n_iter=10,
                 )
-                y_hat = X_full @ coef
-                rss = np.sum((y - y_hat) ** 2)
-                edf = np.sum(U1 ** 2)
+                residuals = y - X_full @ coef
+                rss = float(residuals @ residuals)
+                edf = float(np.sum(U1 ** 2))
                 gcv = (n * rss) / max(n - gamma * edf, 1) ** 2
                 return gcv, coef, edf, l_combo
 
@@ -892,8 +908,13 @@ def _assemble_penalty_from_bases(
     l_combo: tuple,
     m: int,
     fit_intercept: bool,
+    out: Optional[np.ndarray] = None,
 ) -> np.ndarray:
-    P = np.zeros((m, m))
+    if out is None:
+        P = np.zeros((m, m))
+    else:
+        out[:] = 0
+        P = out
     lam_idx = 0
     for base_mats, (start, end), n_slots in bases_list:
         for k in range(n_slots):

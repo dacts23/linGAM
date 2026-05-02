@@ -108,7 +108,9 @@ Caveats
 Examples
 --------
 
-Monotonically increasing spline::
+Monotonically increasing spline:
+
+.. code-block:: python
 
    model = GAMCore("s(0, constraint='mono_inc') + l(1)")
    model.fit(x, y)

@@ -101,8 +101,7 @@ def b_spline_basis(
         if n_wrap > 0 and n_wrap < K:
             K_eff = K - n_wrap
             wrapped = result[:, :K_eff].copy()
-            for j in range(n_wrap):
-                wrapped[:, j] += result[:, K_eff + j]
+            wrapped[:, :n_wrap] += result[:, K_eff:K_eff + n_wrap]
             return wrapped
 
     return result

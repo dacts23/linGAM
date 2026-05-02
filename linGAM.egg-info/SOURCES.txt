@@ -1,9 +1,0 @@
-LICENSE
-README.md
-linGAM.py
-pyproject.toml
-linGAM.egg-info/PKG-INFO
-linGAM.egg-info/SOURCES.txt
-linGAM.egg-info/dependency_links.txt
-linGAM.egg-info/requires.txt
-linGAM.egg-info/top_level.txt

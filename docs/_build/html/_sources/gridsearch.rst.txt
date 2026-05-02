@@ -1,5 +1,5 @@
 Grid Search & Hyperparameter Tuning
-===================================
+=====================================
 
 linGAM's grid search automatically selects the optimal number of basis
 functions ``n_splines`` and smoothing parameter ``lam`` for each term by

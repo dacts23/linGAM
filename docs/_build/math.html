@@ -1,0 +1,809 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Mathematical Foundations &#8212; linGAM Documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css?v=af2f89e9" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
+
+    <script src="_static/documentation_options.js?v=938c9ccc"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "displayMath": [["$$", "$$"], ["\\[", "\\]"]]}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'math';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API Reference" href="api.html" />
+    <link rel="prev" title="Quick Start" href="quickstart.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.2" />
+  
+    
+    <script src="_static/searchtools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">linGAM Documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="quickstart.html">
+    Quick Start
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
+    Mathematical Foundations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="constraints.html">
+    Shape Constraints
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="gridsearch.html">
+    Grid Search & Hyperparameter Tuning
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="changelog.html">
+    Changelog
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="quickstart.html">
+    Quick Start
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
+    Mathematical Foundations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="constraints.html">
+    Shape Constraints
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="gridsearch.html">
+    Grid Search & Hyperparameter Tuning
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="changelog.html">
+    Changelog
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar"><svg class="pst-icon svg-inline--fa" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"></div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Mathematical Foundations</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="mathematical-foundations">
+<h1>Mathematical Foundations<a class="headerlink" href="#mathematical-foundations" title="Link to this heading">#</a></h1>
+<p>This chapter derives the core mathematics behind linGAM: B-spline bases,
+penalised least squares, the SVD data-augmentation solver, effective degrees
+of freedom, and Generalised Cross Validation (GCV).</p>
+<section id="b-spline-bases">
+<h2>B-spline bases<a class="headerlink" href="#b-spline-bases" title="Link to this heading">#</a></h2>
+<p>A B-spline of order <span class="math notranslate nohighlight">\(k\)</span> (polynomial degree <span class="math notranslate nohighlight">\(k-1\)</span>) is built from
+<span class="math notranslate nohighlight">\(K\)</span> basis functions via the De Boor recursion.  Given data
+<span class="math notranslate nohighlight">\(x \in [x_{\min}, x_{\max}]\)</span>, we first map to <span class="math notranslate nohighlight">\([0, 1]\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[z = \frac{x - x_{\min}}{x_{\max} - x_{\min}}.\]</div>
+<p>Internal knots are placed uniformly:</p>
+<div class="math notranslate nohighlight">
+\[\tau_0 = 0, \; \tau_1, \dots, \tau_{K-k+1} = 1.\]</div>
+<p>The augmented knot sequence extends <span class="math notranslate nohighlight">\(k\)</span> knots beyond each boundary.</p>
+<p><strong>De Boor recursion.</strong>  Start with order-1 (piecewise constant) bases:</p>
+<div class="math notranslate nohighlight">
+\[B_{i,1}(z) = \mathbf{1}_{[\tau_i, \tau_{i+1})}(z).\]</div>
+<p>For orders <span class="math notranslate nohighlight">\(m = 2, \dots, k\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[B_{i,m}(z)
+= \frac{z - \tau_i}{\tau_{i+m-1} - \tau_i} \, B_{i,m-1}(z)
++ \frac{\tau_{i+m} - z}{\tau_{i+m} - \tau_{i+1}} \, B_{i+1,m-1}(z).\]</div>
+<p>The result is an <span class="math notranslate nohighlight">\(n \times K\)</span> design matrix <span class="math notranslate nohighlight">\(B\)</span> with the property
+that each row sums to 1 and each column has compact support (localised).</p>
+<p><strong>Linear extrapolation.</strong>  Outside <span class="math notranslate nohighlight">\([0,1]\)</span>, B-splines shoot to zero or
+oscillate wildly.  linGAM replaces the B-spline values with a linear
+extension using the boundary gradient:</p>
+<div class="math notranslate nohighlight">
+\[f(z) \approx f(0) + f'(0) \, z \quad (z &lt; 0),
+\qquad
+f(z) \approx f(1) + f'(1) \, (z-1) \quad (z &gt; 1).\]</div>
+<p>The derivative <span class="math notranslate nohighlight">\(f'(0)\)</span> is computed analytically from the
+<span class="math notranslate nohighlight">\((k-1)\)</span>-order basis saved during recursion.</p>
+<p><strong>Periodic basis.</strong>  When <code class="docutils literal notranslate"><span class="pre">constraint='periodic'</span></code>, the basis is wrapped so
+that the first <span class="math notranslate nohighlight">\(k-1\)</span> columns are added to the last <span class="math notranslate nohighlight">\(k-1\)</span>
+columns.  This enforces <span class="math notranslate nohighlight">\(f(0) = f(1)\)</span> and reduces the coefficient
+count from <span class="math notranslate nohighlight">\(K\)</span> to <span class="math notranslate nohighlight">\(K - k + 1\)</span>.</p>
+</section>
+<section id="penalised-least-squares">
+<h2>Penalised least squares<a class="headerlink" href="#penalised-least-squares" title="Link to this heading">#</a></h2>
+<p>The model is</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{y} = X \boldsymbol{\beta} + \boldsymbol{\varepsilon},\]</div>
+<p>where <span class="math notranslate nohighlight">\(X\)</span> stacks all term design matrices (plus an intercept column).
+We minimise the penalised sum of squares:</p>
+<div class="math notranslate nohighlight">
+\[S(\boldsymbol{\beta})
+= \|\mathbf{y} - X \boldsymbol{\beta}\|^2
++ \boldsymbol{\beta}^\top P \boldsymbol{\beta}.\]</div>
+<p>The penalty <span class="math notranslate nohighlight">\(P\)</span> is block-diagonal, with one block per term.  The
+intercept block is zero (unpenalised).</p>
+<p><strong>Second-difference penalty</strong> (smoothness).  For a spline with <span class="math notranslate nohighlight">\(K\)</span>
+coefficients:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}D_2 = \begin{pmatrix}
+1 &amp; -2 &amp; 1 &amp;        &amp;   \\
+  &amp;  1 &amp; -2 &amp; 1     &amp;   \\
+  &amp;    &amp; \ddots &amp; \ddots &amp; \ddots \\
+\end{pmatrix}_{(K-2) \times K},
+\qquad
+P = \lambda \, D_2^\top D_2.\end{split}\]</div>
+<p>This penalises curvature: neighbouring coefficients that differ wildly incur
+a large cost.</p>
+<p><strong>First-difference penalty</strong> (monotonicity).  For <code class="docutils literal notranslate"><span class="pre">constraint='mono_inc'</span></code>
+or <code class="docutils literal notranslate"><span class="pre">'mono_dec'</span></code>:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}D_1 = \begin{pmatrix}
+-1 &amp; 1 &amp;   &amp;   \\
+   &amp; -1 &amp; 1 &amp;   \\
+   &amp;    &amp; \ddots &amp; \ddots
+\end{pmatrix}_{(K-1) \times K},
+\qquad
+P = \lambda \, D_1^\top D_1.\end{split}\]</div>
+<p>Minimising <span class="math notranslate nohighlight">\(\beta^\top D_1^\top D_1 \beta = \sum_i (\beta_{i+1} - \beta_i)^2\)</span>
+forces adjacent coefficients to be similar, which encourages a monotonic
+shape.  Combined with the natural ordering of B-spline basis functions,
+this produces an increasing (or decreasing) smooth.</p>
+<p><strong>Circular second-difference</strong> (periodicity).  For
+<code class="docutils literal notranslate"><span class="pre">constraint='periodic'</span></code>:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split} P_{ij} = \lambda \times \begin{cases}
+ 4  &amp; i = j \\
+-2  &amp; j = (i \pm 1) \bmod K_{\text{eff}} \\
+ 1  &amp; j = (i \pm 2) \bmod K_{\text{eff}} \\
+ 0  &amp; \text{otherwise}
+ \end{cases}\end{split}\]</div>
+<p>This wraps the second-difference operator, connecting the first and last
+coefficients so the curve is closed.</p>
+<p><strong>Ridge penalty.</strong>  For factor and linear terms:</p>
+<div class="math notranslate nohighlight">
+\[P = \lambda I_K.\]</div>
+</section>
+<section id="svd-data-augmentation-solver">
+<h2>SVD data-augmentation solver<a class="headerlink" href="#svd-data-augmentation-solver" title="Link to this heading">#</a></h2>
+<p>The normal equations are <span class="math notranslate nohighlight">\((X^\top X + P)\beta = X^\top y\)</span>.  Forming
+<span class="math notranslate nohighlight">\(X^\top X\)</span> squares the condition number and amplifies numerical
+instability.  linGAM uses a <strong>data-augmentation</strong> trick instead.</p>
+<ol class="arabic">
+<li><p><strong>Cholesky of the penalty.</strong>  Factor <span class="math notranslate nohighlight">\(P + \varepsilon I = E^\top E\)</span>
+where <span class="math notranslate nohighlight">\(\varepsilon = \sqrt{\text{machine epsilon}}\)</span> is a tiny ridge
+that guarantees positive definiteness even when <span class="math notranslate nohighlight">\(\lambda = 0\)</span>.</p></li>
+<li><p><strong>QR of the design matrix.</strong>  <span class="math notranslate nohighlight">\(X = QR\)</span> where <span class="math notranslate nohighlight">\(Q\)</span> is
+orthogonal and <span class="math notranslate nohighlight">\(R\)</span> is upper-triangular.  Because <span class="math notranslate nohighlight">\(Q\)</span> preserves
+norms, working with <span class="math notranslate nohighlight">\(R\)</span> (size <span class="math notranslate nohighlight">\(m \times m\)</span>) instead of
+<span class="math notranslate nohighlight">\(X\)</span> (size <span class="math notranslate nohighlight">\(n \times m\)</span>) is numerically safe and cheaper when
+<span class="math notranslate nohighlight">\(n \gg m\)</span>.</p></li>
+<li><p><strong>SVD of the stacked matrix.</strong>  Form <span class="math notranslate nohighlight">\([R; E]\)</span> and decompose:</p>
+<div class="math notranslate nohighlight">
+\[[R; E] = U \, \text{diag}(d) \, V^\top.\]</div>
+<p>This is equivalent to solving the augmented least-squares system</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{pmatrix} X \\ E \end{pmatrix} \beta
+= \begin{pmatrix} y \\ 0 \end{pmatrix}\end{split}\]</div>
+<p>but never forms <span class="math notranslate nohighlight">\(X^\top X\)</span> explicitly.</p>
+</li>
+<li><p><strong>Solution operator.</strong>  Truncate to the first <span class="math notranslate nohighlight">\(\min(m,n)\)</span> singular
+values and compute:</p>
+<div class="math notranslate nohighlight">
+\[B_{\text{solve}} = V \, \text{diag}(d^{-1}) \, U_1^\top Q^\top,
+\qquad
+\hat\beta = B_{\text{solve}} \, y.\]</div>
+<p>Saving <span class="math notranslate nohighlight">\(B_{\text{solve}}\)</span> lets us compute covariance and effective
+degrees of freedom later without re-fitting.</p>
+</li>
+</ol>
+<p><strong>Why this works.</strong>  The stacked SVD is the most numerically stable way to
+solve a penalised linear system.  Tiny singular values are handled gracefully
+(by division, not inversion of a near-singular matrix), and the condition
+number of <span class="math notranslate nohighlight">\([R; E]\)</span> is the square root of the condition number of
+<span class="math notranslate nohighlight">\(X^\top X + P\)</span>.</p>
+</section>
+<section id="effective-degrees-of-freedom-edf">
+<h2>Effective degrees of freedom (EDF)<a class="headerlink" href="#effective-degrees-of-freedom-edf" title="Link to this heading">#</a></h2>
+<p>In ordinary linear regression, the degrees of freedom equal the number of
+parameters.  In a penalised spline, the penalty “shrinks” coefficients,
+so each one uses <em>less</em> than one full degree of freedom.</p>
+<p>The EDF is the trace of the <strong>influence</strong> (hat) matrix:</p>
+<div class="math notranslate nohighlight">
+\[\text{EDF} = \text{tr}(H),
+\qquad
+H = X (X^\top X + P)^{-1} X^\top.\]</div>
+<p>Using the SVD augmentation, this simplifies to</p>
+<div class="math notranslate nohighlight">
+\[\text{EDF} = \sum_{i=1}^{\min(m,n)} \sigma_i(U_1)^2
+= \|U_1\|_F^2,\]</div>
+<p>where <span class="math notranslate nohighlight">\(U_1\)</span> is the top-left <span class="math notranslate nohighlight">\(\min(m,n) \times \min(m,n)\)</span> block
+of <span class="math notranslate nohighlight">\(U\)</span>.  This is computed in a single NumPy call with no extra matrix
+inversions.</p>
+<p>Per-coefficient EDF tells us how much each individual parameter contributes:</p>
+<div class="math notranslate nohighlight">
+\[\text{EDF}_j = \sum_i U_{1,ij}^2.\]</div>
+</section>
+<section id="generalised-cross-validation-gcv">
+<h2>Generalised Cross Validation (GCV)<a class="headerlink" href="#generalised-cross-validation-gcv" title="Link to this heading">#</a></h2>
+<p>Leave-one-out cross validation is expensive: fit the model <span class="math notranslate nohighlight">\(n\)</span> times,
+dropping one point each time.  GCV is a clever closed-form approximation:</p>
+<div class="math notranslate nohighlight">
+\[\text{GCV} = \frac{n \cdot \text{RSS}}{(n - \gamma \cdot \text{EDF})^2},\]</div>
+<p>where</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(n\)</span> = number of observations,</p></li>
+<li><p><span class="math notranslate nohighlight">\(\text{RSS} = \sum_i (y_i - \hat y_i)^2\)</span> = residual sum of squares,</p></li>
+<li><p><span class="math notranslate nohighlight">\(\text{EDF}\)</span> = effective degrees of freedom,</p></li>
+<li><p><span class="math notranslate nohighlight">\(\gamma\)</span> = complexity penalty multiplier (default 1.4).</p></li>
+</ul>
+<p>The denominator penalises model complexity.  When <span class="math notranslate nohighlight">\(\text{EDF}\)</span> grows,
+the denominator shrinks and GCV explodes — this prevents overfitting.
+Setting <span class="math notranslate nohighlight">\(\gamma &gt; 1\)</span> (e.g. 1.4) is analogous to AIC/BIC corrections
+that prefer slightly simpler models.</p>
+<p><strong>Why GCV and not plain CV?</strong>  GCV requires only a single fit.  It is
+asymptotically equivalent to leave-one-out CV but computes in <span class="math notranslate nohighlight">\(O(1)\)</span>
+extra time after the fit.</p>
+</section>
+<section id="fast-qr-cholesky-grid-search">
+<h2>Fast QR+Cholesky grid search<a class="headerlink" href="#fast-qr-cholesky-grid-search" title="Link to this heading">#</a></h2>
+<p>Grid search evaluates every combination of <span class="math notranslate nohighlight">\((K, \lambda)\)</span> candidates.
+A naïve implementation rebuilds <span class="math notranslate nohighlight">\(X\)</span> and solves from scratch for each
+combination.  linGAM’s fast path avoids redundant work.</p>
+<p><strong>Phase 1 — Precompute per :math:`K` (threaded).</strong>
+For each candidate basis count <span class="math notranslate nohighlight">\(K\)</span>:</p>
+<ol class="arabic simple">
+<li><p>Build <span class="math notranslate nohighlight">\(X_K\)</span> and compute its QR decomposition: <span class="math notranslate nohighlight">\(X_K = Q_K R_K\)</span>.</p></li>
+<li><p>Form <span class="math notranslate nohighlight">\(R_K^\top R_K\)</span> and <span class="math notranslate nohighlight">\(R_K^\top Q_K^\top y\)</span>.
+These are <strong>independent of :math:`lambda`</strong>.</p></li>
+<li><p>Precompute the unscaled penalty basis <span class="math notranslate nohighlight">\(S = D^\top D\)</span> (also
+independent of <span class="math notranslate nohighlight">\(\lambda\)</span>).</p></li>
+</ol>
+<p>All of this is done once per <span class="math notranslate nohighlight">\(K\)</span> and cached.</p>
+<p><strong>Phase 2 — Evaluate per :math:`(K, lambda)` (threaded).</strong>
+For each combination:</p>
+<ol class="arabic simple">
+<li><p>Assemble the penalty: <span class="math notranslate nohighlight">\(P = \lambda S\)</span>.</p></li>
+<li><p>Build <span class="math notranslate nohighlight">\(B = R_K^\top R_K + P\)</span>.</p></li>
+<li><p>Cholesky solve: <span class="math notranslate nohighlight">\(\hat\beta = B^{-1} (R_K^\top Q_K^\top y)\)</span>.</p></li>
+<li><p>Compute EDF via <span class="math notranslate nohighlight">\(\text{tr}(B^{-1} R_K^\top R_K)\)</span>.</p></li>
+<li><p>Compute RSS and GCV.</p></li>
+</ol>
+<p>Cholesky costs <span class="math notranslate nohighlight">\(O(m^3/3)\)</span> versus <span class="math notranslate nohighlight">\(O(m^3)\)</span> for SVD, and both
+phases are fully parallel via <code class="docutils literal notranslate"><span class="pre">concurrent.futures.ThreadPoolExecutor</span></code>.</p>
+<p><strong>Precomputed penalty bases.</strong>  For multi-term models, each term’s penalty
+is built from unscaled base matrices (e.g. <span class="math notranslate nohighlight">\(D_2^\top D_2\)</span> at
+<span class="math notranslate nohighlight">\(\lambda = 1\)</span>).  During Phase 2, assembly is just element-wise
+scaling: <span class="math notranslate nohighlight">\(P_{ij} += \lambda_k \cdot S_{ij}\)</span>.  No matrix is rebuilt
+from scratch.</p>
+</section>
+<section id="tensor-product-interactions">
+<h2>Tensor-product interactions<a class="headerlink" href="#tensor-product-interactions" title="Link to this heading">#</a></h2>
+<p>A tensor term <code class="docutils literal notranslate"><span class="pre">te(f1,</span> <span class="pre">f2,</span> <span class="pre">...,</span> <span class="pre">fd)</span></code> models interactions without assuming
+additivity.  The design matrix is the <strong>Khatri-Rao</strong> (column-wise
+Kronecker) product of marginal B-spline bases:</p>
+<div class="math notranslate nohighlight">
+\[B_{\text{tensor}} = B_1 \odot B_2 \odot \dots \odot B_d,\]</div>
+<p>where <span class="math notranslate nohighlight">\(\odot\)</span> denotes column-wise product.  If <span class="math notranslate nohighlight">\(B_i\)</span> is
+<span class="math notranslate nohighlight">\(n \times K_i\)</span>, the result is <span class="math notranslate nohighlight">\(n \times (K_1 K_2 \dots K_d)\)</span>.</p>
+<p>The penalty is the <strong>Kronecker sum</strong> of marginal penalties:</p>
+<div class="math notranslate nohighlight">
+\[P_{\text{tensor}}
+= \lambda_1 (P_1 \otimes I_{K_2} \otimes \dots \otimes I_{K_d})
++ \lambda_2 (I_{K_1} \otimes P_2 \otimes \dots \otimes I_{K_d})
++ \dots
++ \lambda_d (I_{K_1} \otimes \dots \otimes I_{K_{d-1}} \otimes P_d).\]</div>
+<p>Each direction can have its own smoothing parameter <span class="math notranslate nohighlight">\(\lambda_i\)</span>.</p>
+<p>For a 2-D tensor <code class="docutils literal notranslate"><span class="pre">te(0,</span> <span class="pre">1)</span></code> with <span class="math notranslate nohighlight">\(K_1 = K_2 = 6\)</span>, the design matrix
+has <span class="math notranslate nohighlight">\(n \times 36\)</span> columns and the penalty is <span class="math notranslate nohighlight">\(36 \times 36\)</span>.</p>
+</section>
+<section id="huber-irls-robust-fitting">
+<h2>Huber IRLS (robust fitting)<a class="headerlink" href="#huber-irls-robust-fitting" title="Link to this heading">#</a></h2>
+<p>Ordinary least squares is sensitive to outliers.  Robust fitting replaces the
+squared loss with the <strong>Huber loss</strong>:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\rho(r) = \begin{cases}
+\tfrac12 r^2            &amp; |r| \le c \\
+c(|r| - \tfrac12 c)     &amp; |r| &gt; c
+\end{cases}\end{split}\]</div>
+<p>where <span class="math notranslate nohighlight">\(c = 1.345 \, \hat\sigma\)</span> and <span class="math notranslate nohighlight">\(\hat\sigma = \text{MAD} / 0.6745\)</span>.
+The constant 1.345 gives ~95% asymptotic efficiency under Gaussian errors.</p>
+<p>The IRLS algorithm iterates:</p>
+<ol class="arabic simple">
+<li><p>Compute residuals <span class="math notranslate nohighlight">\(r = y - X\hat\beta\)</span>.</p></li>
+<li><p>Compute weights <span class="math notranslate nohighlight">\(w_i = \min\bigl(1, c / |r_i|\bigr)\)</span>.</p></li>
+<li><p>Solve the weighted penalised system with weights <span class="math notranslate nohighlight">\(\sqrt{w_i}\)</span>.</p></li>
+<li><p>Repeat until convergence (default 15 iterations for fit, 10 for grid
+search).</p></li>
+</ol>
+<p>This is equivalent to M-estimation with the Huber ψ-function and is
+implemented by weighting rows of <span class="math notranslate nohighlight">\(X\)</span> and <span class="math notranslate nohighlight">\(y\)</span> by <span class="math notranslate nohighlight">\(\sqrt{w}\)</span>
+before calling the standard PIRLS solver.</p>
+</section>
+<section id="confidence-and-prediction-intervals">
+<h2>Confidence and prediction intervals<a class="headerlink" href="#confidence-and-prediction-intervals" title="Link to this heading">#</a></h2>
+<p>The variance of the fitted mean at a new point <span class="math notranslate nohighlight">\(x^*\)</span> is:</p>
+<div class="math notranslate nohighlight">
+\[\text{Var}\bigl(\hat y(x^*)\bigr)
+= x^{*\top} \, \text{Cov}(\hat\beta) \, x^*.\]</div>
+<p>The covariance is:</p>
+<div class="math notranslate nohighlight">
+\[\text{Cov}(\hat\beta) = B_{\text{solve}} B_{\text{solve}}^\top \, \hat\sigma^2,
+\qquad
+\hat\sigma^2 = \frac{\text{RSS}}{n - \text{EDF}}.\]</div>
+<p><strong>Confidence intervals</strong> (for the mean response) use:</p>
+<div class="math notranslate nohighlight">
+\[\hat y(x^*) \pm t_{\alpha/2, \, n-\text{EDF}} \,
+\sqrt{\text{Var}(\hat y(x^*))}.\]</div>
+<p><strong>Prediction intervals</strong> (for a new observation) add the observation noise:</p>
+<div class="math notranslate nohighlight">
+\[\hat y(x^*) \pm t_{\alpha/2, \, n-\text{EDF}} \,
+\sqrt{\text{Var}(\hat y(x^*)) + \hat\sigma^2}.\]</div>
+<p>The t-distribution is used instead of the normal because <span class="math notranslate nohighlight">\(\sigma\)</span> is
+estimated from data.  Degrees of freedom are <span class="math notranslate nohighlight">\(n - \text{EDF}\)</span> because
+the penalty has already “consumed” EDF degrees of freedom.</p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="quickstart.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Quick Start</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="api.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">API Reference</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#b-spline-bases">B-spline bases</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#penalised-least-squares">Penalised least squares</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#svd-data-augmentation-solver">SVD data-augmentation solver</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#effective-degrees-of-freedom-edf">Effective degrees of freedom (EDF)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#generalised-cross-validation-gcv">Generalised Cross Validation (GCV)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fast-qr-cholesky-grid-search">Fast QR+Cholesky grid search</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tensor-product-interactions">Tensor-product interactions</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#huber-irls-robust-fitting">Huber IRLS (robust fitting)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#confidence-and-prediction-intervals">Confidence and prediction intervals</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="_sources/math.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2026, David Ávila Cortés.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

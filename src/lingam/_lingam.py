@@ -230,8 +230,7 @@ class LinGAM:
     ) -> "LinGAM":
         n = len(y)
         best_gcv = np.inf
-        best_result: Optional[Tuple] = None
-        results: List[Tuple[float, int, float, np.ndarray, float]] = []
+        best_result: Optional[Tuple[float, int, float, np.ndarray, float]] = None
 
         def _precompute_K(K_int: int):
             K = int(K_int)
@@ -247,54 +246,67 @@ class LinGAM:
             return K, K_eff, Xmat, P_base, RtR, Rt_qty, m
 
         with ThreadPoolExecutor() as executor:
-            precomputed_raw = list(executor.map(_precompute_K, n_splines))
+            precomputed = list(executor.map(_precompute_K, n_splines))
 
         Xmats: Dict[int, np.ndarray] = {}
-        precomputed = []
-        for K, K_eff, Xmat, P_base, RtR, Rt_qty, m in precomputed_raw:
+        precomputed_list = []
+        for K, K_eff, Xmat, P_base, RtR, Rt_qty, m in precomputed:
             Xmats[K] = Xmat
-            precomputed.append((K, K_eff, P_base, RtR, Rt_qty, m))
+            precomputed_list.append((K, K_eff, P_base, RtR, Rt_qty, m))
 
         lam_arr = np.atleast_1d(lam)
 
-        def _eval_candidate(args):
-            K, K_eff, l_val, P_base, RtR, Rt_qty, m = args
-            B = RtR + l_val * P_base
-            B.flat[::m + 1] += 1e-12
+        def _eval_K(K_idx: int):
+            K, K_eff, P_base, RtR, Rt_qty, m = precomputed_list[K_idx]
+            best_gcv_K = np.inf
+            best_l_K = float(lam_arr[0])
+            best_coef_K = None
+            best_edf_K = 0.0
+            B_buf = np.empty((m, m))
 
-            try:
-                c_chol, lower = cho_factor(B, overwrite_a=True, check_finite=False)
-                coef = cho_solve((c_chol, lower), Rt_qty, check_finite=False)
-                B_inv_RtR = cho_solve((c_chol, lower), RtR, check_finite=False)
-                edf = np.trace(B_inv_RtR)
-            except Exception:
-                coef = np.linalg.solve(B, Rt_qty)
-                edf = np.trace(np.linalg.solve(B, RtR))
+            for l_val in lam_arr:
+                np.add(RtR, float(l_val) * P_base, out=B_buf)
+                B_buf.flat[::m + 1] += 1e-12
 
-            return K, l_val, coef, edf
+                try:
+                    c_chol, lower = cho_factor(
+                        B_buf, overwrite_a=True, check_finite=False,
+                    )
+                    coef = cho_solve((c_chol, lower), Rt_qty, check_finite=False)
+                    B_inv_RtR = cho_solve(
+                        (c_chol, lower), RtR, check_finite=False,
+                    )
+                    edf = float(np.trace(B_inv_RtR))
+                except Exception:
+                    B_fallback = RtR + float(l_val) * P_base
+                    B_fallback.flat[::m + 1] += 1e-12
+                    coef = np.linalg.solve(B_fallback, Rt_qty)
+                    edf = float(np.trace(np.linalg.solve(B_fallback, RtR)))
 
-        tasks = [
-            (K, K_eff, float(l_val), P_base, RtR, Rt_qty, m)
-            for K, K_eff, P_base, RtR, Rt_qty, m in precomputed
-            for l_val in lam_arr
-        ]
+                residuals = y - Xmats[K] @ coef
+                rss = float(residuals @ residuals)
+                gcv_score = (n * rss) / (n - gamma * edf) ** 2
+
+                if gcv_score < best_gcv_K:
+                    best_gcv_K = gcv_score
+                    best_l_K = float(l_val)
+                    best_coef_K = coef
+                    best_edf_K = edf
+
+            return best_gcv_K, K, best_l_K, best_coef_K, best_edf_K
 
         with ThreadPoolExecutor() as executor:
-            for K, l_val, coef, edf in executor.map(_eval_candidate, tasks):
-                Xmat = Xmats[K]
-                y_hat = Xmat @ coef
-                rss = np.sum((y - y_hat) ** 2)
-                gcv_score = (n * rss) / (n - gamma * edf) ** 2
-                results.append((gcv_score, K, l_val, coef, edf))
-                if gcv_score < best_gcv:
-                    best_gcv = gcv_score
-                    best_result = (gcv_score, K, l_val, coef, edf)
+            results = list(executor.map(_eval_K, range(len(precomputed_list))))
+
+        for gcv_score, K, l_val, coef, edf in results:
+            if gcv_score < best_gcv:
+                best_gcv = gcv_score
+                best_result = (gcv_score, K, l_val, coef, edf)
 
         assert best_result is not None
         _, best_K, best_l, _, _ = best_result
         self.n_splines = best_K
         self.lam = best_l
-        self.gcv_results_ = results
 
         self._fit_internal(x, y, robust=False)
         return self
@@ -310,7 +322,6 @@ class LinGAM:
         n = len(y)
         best_gcv = np.inf
         best_result: Optional[Tuple] = None
-        results: List[Tuple[float, int, float, np.ndarray, float]] = []
 
         for K_int in n_splines:
             K = int(K_int)
@@ -319,22 +330,23 @@ class LinGAM:
             _, S_pen = self._build_penalty(1.0)
             K_eff = self.n_coefs
             m = K_eff + 1
+            P_buf = np.zeros((m, m))
 
             def _eval_lam(l_val: float):
-                P = np.zeros((m, m))
-                P[:K_eff, :K_eff] = l_val * S_pen
-                coef, U1, _, w, _ = self._irls_solve(Xmat, y, P, n_iter=10)
-                y_hat = Xmat @ coef
-                rss = np.sum(w * (y - y_hat) ** 2)
-                edf = np.sum(U1 ** 2)
+                P_buf[:] = 0
+                P_buf[:K_eff, :K_eff] = l_val * S_pen
+                P_full = P_buf.copy()
+                coef, U1, _, w, _ = self._irls_solve(Xmat, y, P_full, n_iter=10)
+                residuals = y - Xmat @ coef
+                rss = float(np.sum(w * residuals * residuals))
+                edf = float(np.sum(U1 ** 2))
                 gcv_score = (n * rss) / (n - gamma * edf) ** 2
                 return gcv_score, K, l_val, coef, edf
 
             with ThreadPoolExecutor() as executor:
-                futures = [executor.submit(_eval_lam, float(l_val)) for l_val in lam]
-                for future in futures:
-                    res = future.result()
-                    results.append(res)
+                for res in executor.map(
+                    _eval_lam, (float(v) for v in lam),
+                ):
                     if res[0] < best_gcv:
                         best_gcv = res[0]
                         best_result = res
@@ -343,7 +355,6 @@ class LinGAM:
         _, best_K, best_l, _, _ = best_result
         self.n_splines = best_K
         self.lam = best_l
-        self.gcv_results_ = results
 
         self._fit_internal(x, y, robust=True)
         return self

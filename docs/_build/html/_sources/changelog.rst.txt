@@ -6,7 +6,7 @@ Version 0.2.0
 *Released 2026-05-01*
 
 New features
-^^^^^^^^^^^^
+^^^^^^^^^^^^^
 
 * **Shape constraints** for ``s()`` terms and ``LinGAM``:
   ``mono_inc``, ``mono_dec``, ``convex``, ``concave``, ``periodic``.
@@ -19,7 +19,7 @@ New features
   to specific term indices or types.
 
 Improvements
-^^^^^^^^^^^^
+^^^^^^^^^^^^^
 
 * Modular ``src/lingam/`` package layout with ``__slots__`` for memory
   efficiency.

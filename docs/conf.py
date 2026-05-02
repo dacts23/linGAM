@@ -23,16 +23,24 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
+    'sphinx_copybutton',
+    'sphinx_autodoc_typehints',
 ]
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # -- Options for HTML output -------------------------------------------------
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'pydata_sphinx_theme'
+html_theme_options = {
+    "navigation_depth": 3,
+    "show_prev_next": True,
+    "pygments_dark_style": "monokai",
+}
 html_static_path = ['_static']
 html_title = 'linGAM Documentation'
 html_short_title = 'linGAM'
+html_css_files = ['custom.css']
 
 # -- Autodoc -----------------------------------------------------------------
 autodoc_default_options = {

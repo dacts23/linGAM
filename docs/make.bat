@@ -28,3 +28,5 @@ goto end
 
 :end
 popd
+
+PAUSE

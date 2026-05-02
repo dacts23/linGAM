@@ -67,10 +67,10 @@ def circular_second_diff_penalty(k: int, lam: float) -> np.ndarray:
     np.ndarray, shape (k, k)
     """
     D2 = np.zeros((k, k))
-    for i in range(k):
-        D2[i, i] = -2
-        D2[i, (i + 1) % k] += 1
-        D2[i, (i - 1) % k] += 1
+    np.fill_diagonal(D2, -2)
+    idx = np.arange(k)
+    D2[idx, (idx + 1) % k] += 1
+    D2[idx, (idx - 1) % k] += 1
     return lam * (D2.T @ D2)
 
 
