@@ -1,13 +1,8 @@
-.. raw:: html
+linGAM
+======
 
-   <style>
-     .bd-hero { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 3rem 0 2rem; border-radius: .5rem; margin-bottom: 2rem; }
-     .bd-hero h1 { color: #fff; font-weight: 700; font-size: 2.5rem; margin: 0 0 .5rem; }
-     .bd-hero p { color: rgba(255,255,255,.9); font-size: 1.1rem; max-width: 700px; margin: 0; }
-   </style>
-   <div class="bd-hero">
-     <p>Simple Fast Linear <strong>Generalized Additive Models</strong> — high-performance B-spline smoothing with automatic hyperparameter tuning, shape constraints, and robust fitting.</p>
-   </div>
+**Simple Fast Linear GAM** — a minimal, high-performance implementation of
+Generalized Additive Models using penalised B-splines.
 
 .. toctree::
    :maxdepth: 2
@@ -43,7 +38,7 @@ penalised to avoid overfitting.  The package supports:
 * **Fast grid search** — QR+Cholesky GCV optimisation with selective term search
 
 Key design goals
-----------------^
+^^^^^^^^^^^^^^^^
 
 * **Speed**:  All grid search uses QR precomputation + threaded Cholesky
   evaluation.  NumPy releases the GIL, so ``ThreadPoolExecutor`` parallelises
