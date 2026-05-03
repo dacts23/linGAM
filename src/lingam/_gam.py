@@ -979,6 +979,101 @@ class GAMCore:
         )
         return fig, np.array(fig.axes)
 
+    def plot_diagnostics(
+        self,
+        x: ArrayLike,
+        y: ArrayLike,
+        figsize: Optional[Tuple[int, int]] = None,
+    ) -> Tuple:
+        """Diagnostic plots for model validation.
+
+        Produces a 2×2 grid with:
+
+        * Observed vs Fitted (with 1:1 line and :math:`R^2`)
+        * Residuals vs Fitted
+        * Normal Q-Q plot of residuals
+        * Histogram of residuals with normal overlay
+
+        Parameters
+        ----------
+        x, y : array-like
+            Data used for validation (typically the training set).
+        figsize : tuple of int, optional
+            Figure size in inches. Default is ``(10, 9)``.
+
+        Returns
+        -------
+        fig : matplotlib.figure.Figure
+        axes : ndarray of matplotlib.axes.Axes
+        """
+        self._check_fitted()
+        x_arr = np.asarray(x)
+        y_arr = np.asarray(y).ravel()
+        if x_arr.ndim == 1:
+            x_arr = x_arr.reshape(-1, 1)
+
+        y_fit = self.predict(x_arr)
+        residuals = y_arr - y_fit
+        r2 = self.deviance_explained()
+
+        figsize = figsize or (10, 9)
+        fig, axes = plt.subplots(2, 2, figsize=figsize)
+        axes = axes.ravel()
+
+        # 1. Observed vs Fitted
+        ax = axes[0]
+        ax.scatter(y_fit, y_arr, alpha=0.5, edgecolors='k', s=20)
+        lims = [
+            np.min([y_arr.min(), y_fit.min()]),
+            np.max([y_arr.max(), y_fit.max()]),
+        ]
+        ax.plot(lims, lims, 'r--', lw=1.5, label='1:1')
+        ax.set_xlabel('Fitted values')
+        ax.set_ylabel('Observed values')
+        ax.set_title(f'Observed vs Fitted ($R^2$={r2:.3f})')
+        ax.legend()
+
+        # 2. Residuals vs Fitted
+        ax = axes[1]
+        ax.scatter(y_fit, residuals, alpha=0.5, edgecolors='k', s=20)
+        ax.axhline(0, color='r', linestyle='--', lw=1.5)
+        ax.set_xlabel('Fitted values')
+        ax.set_ylabel('Residuals')
+        ax.set_title('Residuals vs Fitted')
+
+        # 3. Normal Q-Q
+        ax = axes[2]
+        stats.probplot(residuals, dist="norm", plot=ax)
+        ax.set_title('Normal Q-Q')
+        ax.get_lines()[0].set_markerfacecolor('steelblue')
+        ax.get_lines()[0].set_markeredgecolor('k')
+        ax.get_lines()[0].set_alpha(0.6)
+        ax.get_lines()[1].set_color('r')
+
+        # 4. Histogram of residuals
+        ax = axes[3]
+        ax.hist(
+            residuals, bins='auto', density=True,
+            color='steelblue', edgecolor='k', alpha=0.7,
+        )
+        sigma = np.std(residuals, ddof=1)
+        x_norm = np.linspace(residuals.min(), residuals.max(), 200)
+        ax.plot(
+            x_norm, stats.norm.pdf(x_norm, 0.0, sigma),
+            'r-', lw=2, label='Normal approx.',
+        )
+        ax.set_xlabel('Residuals')
+        ax.set_ylabel('Density')
+        ax.set_title('Residual Distribution')
+        ax.legend()
+
+        fig.suptitle(
+            f'GAMCore Diagnostics — {self.formula}',
+            fontsize=12, fontweight='bold',
+        )
+        fig.tight_layout(rect=[0, 0.03, 1, 0.97])
+        return fig, axes
+
 
 # ═════════════════════════════════════════════════════════════════════
 #  Module-level helpers

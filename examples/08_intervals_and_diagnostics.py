@@ -72,23 +72,6 @@ ax.legend()
 fig.tight_layout()
 plt.show()
 
-# --- Diagnostics: observed vs fitted & residuals vs fitted ---
-y_fit = model.predict(x)
-residuals = y - y_fit
-
-fig_diag, axes_diag = plt.subplots(1, 2, figsize=(10, 4))
-axes_diag[0].scatter(y, y_fit, c='steelblue', edgecolors='k', s=20, alpha=0.6)
-ymin, ymax = y.min(), y.max()
-axes_diag[0].plot([ymin, ymax], [ymin, ymax], 'r--', lw=1.5, label='1:1 line')
-axes_diag[0].set_xlabel('Observed y')
-axes_diag[0].set_ylabel('Fitted y')
-axes_diag[0].set_title('Observed vs Fitted')
-axes_diag[0].legend()
-
-axes_diag[1].scatter(y_fit, residuals, c='steelblue', edgecolors='k', s=20, alpha=0.6)
-axes_diag[1].axhline(0, color='r', linestyle='--', lw=1.5)
-axes_diag[1].set_xlabel('Fitted y')
-axes_diag[1].set_ylabel('Residuals')
-axes_diag[1].set_title('Residuals vs Fitted')
-fig_diag.tight_layout()
+# --- Built-in diagnostics plot ---
+fig_diag, axes_diag = model.plot_diagnostics(x, y)
 plt.show()
