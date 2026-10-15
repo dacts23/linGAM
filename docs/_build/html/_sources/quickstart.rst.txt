@@ -16,111 +16,108 @@ Install from the repository root::
 
 For building documentation locally::
 
-   pip install sphinx sphinx-rtd-theme
+   pip install sphinx furo sphinx-copybutton
    cd docs
    make html
 
 
-Your first model
-----------------
+Unified API & Backends
+----------------------
+
+linGAM provides two backends via the unified :class:`LinGAM` and :class:`GAMCore` classes:
+
+* ``backend='mgcv'`` — Simon Wood's R ``mgcv`` algorithm (continuous REML or GCV optimization, multiple basis families, and R-style summary tables).
+* ``backend='pygam'`` (default) — B-spline basis with discrete GCV grid search and soft shape constraints.
+
+
+1. R mgcv Backend (Automatic REML)
+----------------------------------
+
+In the R ``mgcv`` engine, smoothing parameters are estimated automatically during fit via REML
+(Restricted Maximum Likelihood) or GCV, so no discrete grid search is necessary.
 
 .. code-block:: python
 
    import numpy as np
-   from lingam import GAMCore
+   from lingam import LinGAM, GAMCore
 
    np.random.seed(42)
    n = 200
-   x = np.random.uniform(0, 10, (n, 2))
-   y = np.sin(x[:, 0]) + 0.3 * x[:, 1] + np.random.normal(0, 0.2, n)
+   x = np.linspace(0, 1, n)
+   y = np.sin(2 * np.pi * x) + np.random.normal(0, 0.2, n)
 
-   model = GAMCore("s(0, n_splines=12) + l(1)")
+   # Single-term model with cubic regression splines (cr)
+   model = LinGAM(k=10, bs="cr", backend="mgcv")
    model.fit(x, y)
 
-   print(f"GCV = {model.statistics_['GCV']:.3f}")
-   print(f"EDF = {model.statistics_['edof']:.2f}")
+   # Print R-style summary table
+   print(model.summary())
 
+   # Predictions & Bayesian confidence intervals
    y_hat = model.predict(x)
    ci = model.confidence_intervals(x, width=0.95)
+
+Multi-term formula with tensor products:
+
+.. code-block:: python
+
+   X = np.random.uniform(0, 10, (200, 3))
+   y = np.sin(X[:, 0]) + 0.5 * X[:, 1] + 1.2 * X[:, 2] + np.random.normal(0, 0.2, 200)
+
+   gam = GAMCore("te(0, 1, k=5, bs='cr') + l(2)", backend="mgcv")
+   gam.fit(X, y)
+   print(gam.summary())
+
+
+2. PyGAM Backend (GCV Grid Search)
+----------------------------------
+
+The pyGAM engine uses B-splines and GCV grid search over candidate lambda and spline count grids:
+
+.. code-block:: python
+
+   from lingam import LinGAM, GAMCore
+
+   model = LinGAM(n_splines=12, backend="pygam")
+   model.gridsearch(x, y)          # Fast QR+Cholesky GCV evaluation
+   model.plot_decomposition(x, y)  # Visualise basis decomposition
+
+Shape constraints:
+
+.. code-block:: python
+
+   model = LinGAM(n_splines=12, constraint='mono_inc', backend="pygam")
+   model.fit(x, y)
 
 
 Formula syntax
 --------------
 
-Terms are separated by ``+``.  Each term has the form ``type(args, kwargs)``.
+Terms are separated by ``+``. Each term has the form ``type(args, kwargs)``.
 
 ``s(feature, ...)`` — univariate spline
-   ``s(0, n_splines=10, lam=1.0, spline_order=3, constraint=None)``
+   Accepts both mgcv syntax (``k=10``, ``bs='cr'``, ``sp=0.5``) and pyGAM syntax
+   (``n_splines=10``, ``lam=1.0``, ``constraint='mono_inc'``).
 
 ``te(f1, f2, ...)`` — tensor-product interaction
-   ``te(0, 1, n_splines=5, lam=1.0, spline_order=3)``
-   Per-dimension grids can be lists: ``n_splines=[5, 8]``
+   ``te(0, 1, k=5, bs='cr')`` or ``te(0, 1, n_splines=5)``.
 
 ``f(feature, ...)`` — categorical factor
-   ``f(2, lam=1.0, coding='one-hot')``
+   ``f(2, coding='dummy')`` or ``f(2, coding='one-hot')``.
 
 ``l(feature, ...)`` — linear term
-   ``l(3, lam=0.0)``
-
-Example formula::
-
-   "s(0, n_splines=10, constraint='mono_inc') + te(0, 1, n_splines=[6, 8]) + f(2) + l(3)"
+   ``l(3)`` (parametric unpenalized or ridge-penalized linear effect).
 
 
-Single-term model (LinGAM)
---------------------------
+Partial dependence & Decomposition
+----------------------------------
 
-For a single smooth :math:`y = f(x) + \varepsilon`, use ``LinGAM``:
+Inspect the additive contribution of individual terms:
 
 .. code-block:: python
 
-   from lingam import LinGAM
+   pdep_0 = model.partial_dependence(0, x)  # Component effect of term 0
+   pdep_1 = model.partial_dependence(1, x)  # Component effect of term 1
 
-   model = LinGAM(n_splines=12, lam=1.0, spline_order=3)
-   model.fit(x, y)
-
-   model.gridsearch(x, y)          # fast QR+Cholesky path
-   model.plot_decomposition(x, y)  # visualise basis functions
-
-Shape constraints work too::
-
-   model = LinGAM(n_splines=12, constraint='mono_inc')
-   model.fit(x, y)
-
-
-Robust fitting
---------------
-
-Pass ``robust=True`` to down-weight outliers with Huber IRLS:
-
-.. code-block:: python
-
-   model = GAMCore("s(0) + l(1)")
-   model.fit(x, y, robust=True)          # Huber-weighted IRLS
-
-   model.gridsearch(x, y, robust=True)   # robust grid search
-
-Internally this iteratively reweights observations using the Huber loss
-with threshold :math:`c = 1.345 \, \text{MAD} / 0.6745`.
-
-
-Partial dependence
-------------------
-
-Inspect the contribution of each term:
-
-.. code-block:: python
-
-   pdep_0 = model.partial_dependence(0, x)  # s(0) contribution
-   pdep_1 = model.partial_dependence(1, x)  # l(1) contribution
-
-
-Plotting
---------
-
-.. code-block:: python
-
-   fig, axes = model.plot_decomposition(x, y, n_grid=200, extrap_frac=0.15)
-
-This shows the overall fit plus one panel per term.  Extrapolated regions
-are shaded red.  Tensor terms produce 2-D heatmaps when ``d == 2``.
+   # Multi-panel visualization (one panel per term)
+   fig, axes = model.plot_decomposition(x, y)

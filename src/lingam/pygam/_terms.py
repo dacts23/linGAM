@@ -47,18 +47,16 @@ class _SplineTerm(_Term):
     spline_order : int
         B-spline order (polynomial degree + 1).
     constraint : str or None
-        Shape constraint. One of ``None``, ``'mono_inc'``,
+        Shape constraint regularisation. One of ``None``, ``'mono_inc'``,
         ``'mono_dec'``, ``'convex'``, ``'concave'``, ``'periodic'``.
 
-        * ``None`` — standard second-difference penalty (smoothness).
-        * ``'mono_inc'`` — first-difference penalty (encourages
-          monotonically increasing trend).
-        * ``'mono_dec'`` — first-difference penalty (encourages
-          monotonically decreasing trend).
-        * ``'convex'`` — second-difference penalty (encourages convexity).
-        * ``'concave'`` — second-difference penalty (encourages concavity).
-        * ``'periodic'`` — circular second-difference penalty with
-          wrapped basis (enforces f(0)=f(1)).
+        * ``None`` — standard second-difference penalty (curvature smoothness).
+        * ``'mono_inc'``, ``'mono_dec'`` — first-difference penalty (shrinks
+          variation in adjacent coefficients toward a flat constant slope).
+        * ``'convex'``, ``'concave'`` — second-difference penalty (shrinks
+          curvature variation toward a linear trend).
+        * ``'periodic'`` — circular second-difference penalty with wrapped
+          basis (enforces f(0)=f(1)).
     """
 
     __slots__ = (
@@ -326,31 +324,42 @@ def instantiate_terms(
         kw = dict(cfg['kwargs'])
         term_order = kw.pop('spline_order', spline_order)
 
+        # Support both pyGAM (n_splines, lam) and mgcv (k, sp) aliases
+        k_val = kw.pop('n_splines', None)
+        k_alias = kw.pop('k', None)
+        if k_val is None:
+            k_val = k_alias
+
+        lam_val = kw.pop('lam', None)
+        sp_alias = kw.pop('sp', None)
+        if lam_val is None:
+            lam_val = sp_alias
+
         if t == 's':
             terms.append(_SplineTerm(
                 feats[0],
-                kw.pop('n_splines', 10),
-                kw.pop('lam', 1.0),
+                k_val if k_val is not None else 10,
+                lam_val if lam_val is not None else 1.0,
                 term_order,
                 constraint=kw.pop('constraint', None),
             ))
         elif t == 'te':
             terms.append(_TensorTerm(
                 feats,
-                kw.pop('n_splines', 5),
-                kw.pop('lam', 1.0),
+                k_val if k_val is not None else 5,
+                lam_val if lam_val is not None else 1.0,
                 term_order,
             ))
         elif t == 'f':
             terms.append(_FactorTerm(
                 feats[0],
-                kw.pop('lam', 1.0),
+                lam_val if lam_val is not None else 1.0,
                 kw.pop('coding', 'one-hot'),
             ))
         elif t == 'l':
             terms.append(_LinearTerm(
                 feats[0],
-                kw.pop('lam', 0.0),
+                lam_val if lam_val is not None else 0.0,
             ))
         else:
             raise ValueError(f"Unknown term type: {t}")

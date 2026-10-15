@@ -80,27 +80,26 @@ Categorical + interaction
    pdep_f = model.partial_dependence(2, x)
 
 
-Robust fitting with outliers
-----------------------------
+R mgcv backend & summary table
+-------------------------------
 
 .. code-block:: python
 
+   import numpy as np
+   from lingam import LinGAM
+
    np.random.seed(42)
-   x = np.random.uniform(0, 10, 200)
-   y = np.sin(x) + np.random.normal(0, 0.2, 200)
-   y[10] += 8   # massive outlier
-   y[50] -= 6   # another outlier
+   n = 200
+   x = np.linspace(0, 1, n)
+   y = np.sin(2 * np.pi * x) + np.random.normal(0, 0.15, n)
 
-   # Standard fit — outlier pulls the curve
-   model_std = LinGAM(n_splines=12)
-   model_std.fit(x, y)
+   # In mgcv, lambda (sp) is estimated automatically during fit via REML
+   model = LinGAM(k=10, bs="cr", backend="mgcv")
+   model.fit(x, y)
 
-   # Robust fit — outlier is down-weighted
-   model_rob = LinGAM(n_splines=12)
-   model_rob.fit(x, y, robust=True)
-
-   print("Standard RSS:", model_std.statistics_['rss'])
-   print("Robust RSS:  ", model_rob.statistics_['rss'])
+   # Formatted R-style summary table (Wood 2013)
+   print(model.summary())
+   print("Deviance explained:", model.deviance_explained())
 
 
 Monotonic dose-response

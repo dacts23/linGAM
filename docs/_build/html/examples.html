@@ -3,7 +3,7 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="Changelog" href="changelog.html"><link rel="prev" title="Grid Search &amp; Hyperparameter Tuning" href="gridsearch.html">
+<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="Changelog" href="changelog.html"><link rel="prev" title="Smoothing Parameter Optimization &amp; Tuning" href="gridsearch.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
         <title>Examples - linGAM Documentation</title>
@@ -199,10 +199,14 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="api.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="generated/lingam.GAMCore.html">lingam.GAMCore</a></li>
 <li class="toctree-l2"><a class="reference internal" href="generated/lingam.LinGAM.html">lingam.LinGAM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/lingam.pygam.LinGAM.html">lingam.pygam.LinGAM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/lingam.pygam.GAMCore.html">lingam.pygam.GAMCore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/lingam.mgcv.LinGAM.html">lingam.mgcv.LinGAM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/lingam.mgcv.GAMCore.html">lingam.mgcv.GAMCore</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="constraints.html">Shape Constraints</a></li>
-<li class="toctree-l1"><a class="reference internal" href="gridsearch.html">Grid Search &amp; Hyperparameter Tuning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gridsearch.html">Smoothing Parameter Optimization &amp; Tuning</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
 </ul>
@@ -317,24 +321,23 @@
 </pre></div>
 </div>
 </section>
-<section id="robust-fitting-with-outliers">
-<h2>Robust fitting with outliers<a class="headerlink" href="#robust-fitting-with-outliers" title="Link to this heading">¶</a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
-<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
-<span class="n">y</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">8</span>   <span class="c1"># massive outlier</span>
-<span class="n">y</span><span class="p">[</span><span class="mi">50</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">6</span>   <span class="c1"># another outlier</span>
+<section id="r-mgcv-backend-summary-table">
+<h2>R mgcv backend &amp; summary table<a class="headerlink" href="#r-mgcv-backend-summary-table" title="Link to this heading">¶</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lingam</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinGAM</span>
 
-<span class="c1"># Standard fit — outlier pulls the curve</span>
-<span class="n">model_std</span> <span class="o">=</span> <span class="n">LinGAM</span><span class="p">(</span><span class="n">n_splines</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
-<span class="n">model_std</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">n</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
 
-<span class="c1"># Robust fit — outlier is down-weighted</span>
-<span class="n">model_rob</span> <span class="o">=</span> <span class="n">LinGAM</span><span class="p">(</span><span class="n">n_splines</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
-<span class="n">model_rob</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">robust</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="c1"># In mgcv, lambda (sp) is estimated automatically during fit via REML</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">LinGAM</span><span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">bs</span><span class="o">=</span><span class="s2">&quot;cr&quot;</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;mgcv&quot;</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Standard RSS:&quot;</span><span class="p">,</span> <span class="n">model_std</span><span class="o">.</span><span class="n">statistics_</span><span class="p">[</span><span class="s1">&#39;rss&#39;</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Robust RSS:  &quot;</span><span class="p">,</span> <span class="n">model_rob</span><span class="o">.</span><span class="n">statistics_</span><span class="p">[</span><span class="s1">&#39;rss&#39;</span><span class="p">])</span>
+<span class="c1"># Formatted R-style summary table (Wood 2013)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Deviance explained:&quot;</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">deviance_explained</span><span class="p">())</span>
 </pre></div>
 </div>
 </section>
@@ -425,7 +428,7 @@
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Grid Search &amp; Hyperparameter Tuning</div>
+                <div class="title">Smoothing Parameter Optimization &amp; Tuning</div>
                 
               </div>
             </a>
@@ -463,7 +466,7 @@
 <li><a class="reference internal" href="#basic-regression">Basic regression</a></li>
 <li><a class="reference internal" href="#grid-search-with-selective-terms">Grid search with selective terms</a></li>
 <li><a class="reference internal" href="#categorical-interaction">Categorical + interaction</a></li>
-<li><a class="reference internal" href="#robust-fitting-with-outliers">Robust fitting with outliers</a></li>
+<li><a class="reference internal" href="#r-mgcv-backend-summary-table">R mgcv backend &amp; summary table</a></li>
 <li><a class="reference internal" href="#monotonic-dose-response">Monotonic dose-response</a></li>
 <li><a class="reference internal" href="#periodic-seasonal-pattern">Periodic seasonal pattern</a></li>
 <li><a class="reference internal" href="#d-tensor-interaction">2-D tensor interaction</a></li>
@@ -478,7 +481,7 @@
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=938c9ccc"></script>
+</div><script src="_static/documentation_options.js?v=e259d695"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

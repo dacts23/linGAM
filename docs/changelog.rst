@@ -1,6 +1,38 @@
 Changelog
 =========
 
+Version 0.3.0
+-------------
+*Released 2026-10-15*
+
+New features
+^^^^^^^^^^^^^
+
+* **R mgcv backend**: Native implementation of Simon Wood's R ``mgcv`` package
+  supporting thin plate splines (``'tp'``, ``'ts'``), cubic regression splines
+  (``'cr'``, ``'cs'``), cyclic cubic splines (``'cc'``), P-splines (``'ps'``,
+  ``'cp'``), B-splines (``'bs'``), random effects / ridge (``'re'``), and tensor
+  products (``'te'``).
+* **Automatic REML smoothing optimization**: Smoothing parameters are solved
+  continuously via Newton-Raphson / BFGS minimization of REML or GCV criteria
+  without needing discrete grid searches.
+* **R-style summary tables**: ``model.summary()`` provides parametric coefficients,
+  effective degrees of freedom (EDF), approximate F-tests, and p-values matching
+  R's ``summary.gam`` (Wood 2013).
+* **Symmetric dual-engine architecture**: Symmetrically organized into
+  ``lingam.pygam`` and ``lingam.mgcv`` with unified ``LinGAM`` and ``GAMCore``
+  factory dispatchers.
+
+Improvements
+^^^^^^^^^^^^
+
+* **Simplified and unbloated**: Removed thread management overhead and unused
+  Huber IRLS iterations.
+* **Fixed R² computation**: Corrected deviance explained calculation against the
+  sample mean null deviance.
+* **Input validation**: Enforced NaN and Inf validation across all fit methods.
+* **Extrapolation**: Explicit linear extrapolation for predictions beyond boundary knots.
+
 Version 0.2.0
 -------------
 *Released 2026-05-01*

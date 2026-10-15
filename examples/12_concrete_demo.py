@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from lingam import GAMCore
-from lingam._terms import _FactorTerm, _LinearTerm, _SplineTerm, _TensorTerm
+from lingam.pygam._terms import _FactorTerm, _LinearTerm, _SplineTerm, _TensorTerm
 
 
 def _concrete_demo():
@@ -178,23 +178,15 @@ def _concrete_demo():
     print("    f(2)     = cement type (categorical)")
     print("    l(3)     = curing temperature (linear)")
 
-    # Standard fit
-    print("\n  -- Standard fit --")
+    # Fit
+    print("\n  -- Model fit --")
     model_std = GAMCore(formula)
-    model_std.fit(X, strength, robust=False)
+    model_std.fit(X, strength)
     s_std = model_std.statistics_
     print(f"    GCV = {s_std['GCV']:.3f}")
     print(f"    EDF = {s_std['edof']:.2f}")
     print(f"    RSS = {s_std['rss']:.1f}")
     print(f"    sigma_hat = {s_std['scale']:.2f} MPa")
-
-    # Robust fit
-    print("\n  -- Robust fit (Huber IRLS) --")
-    model_rob = GAMCore(formula)
-    model_rob.fit(X, strength, robust=True)
-    stats_r = model_rob.statistics_
-    print(f"    GCV = {stats_r['GCV']:.3f}")
-    print(f"    RSS = {stats_r['rss']:.1f}")
 
     # Per-term contributions
     print("\n  -- Per-term additive contributions --")
@@ -243,12 +235,10 @@ def _concrete_demo():
 
     # -- Observed vs Fitted --
     y_hat_std = model_std.predict(X)
-    y_hat_rob = model_rob.predict(X)
     residuals_std = strength - y_hat_std
     r2_std = 1 - np.var(residuals_std) / np.var(strength)
-    r2_rob = 1 - np.var(strength - y_hat_rob) / np.var(strength)
 
-    fig_fit, (axf1, axf2, axf3) = plt.subplots(1, 3, figsize=(18, 5.5))
+    fig_fit, (axf1, axf2) = plt.subplots(1, 2, figsize=(13, 5.5))
 
     axf1.scatter(strength, y_hat_std, c='steelblue', alpha=0.5, s=14,
                  edgecolors='k', linewidth=0.3)
@@ -258,33 +248,22 @@ def _concrete_demo():
     axf1.set_xlim(lims); axf1.set_ylim(lims)
     axf1.set_xlabel('Observed Strength (MPa)')
     axf1.set_ylabel('Fitted Strength (MPa)')
-    axf1.set_title(f'Standard GAM: Observed vs Fitted\n'
+    axf1.set_title(f'GAM: Observed vs Fitted\n'
                    f'R2 = {r2_std:.3f}  |  GCV = {s_std["GCV"]:.3f}')
     axf1.legend(fontsize=8)
     axf1.set_aspect('equal')
 
-    axf2.scatter(strength, y_hat_rob, c='darkorange', alpha=0.5, s=14,
+    axf2.scatter(y_hat_std, residuals_std, c='steelblue', alpha=0.5, s=14,
                  edgecolors='k', linewidth=0.3)
-    axf2.plot(lims, lims, 'r--', lw=1.5, label='1:1 line')
-    axf2.set_xlim(lims); axf2.set_ylim(lims)
-    axf2.set_xlabel('Observed Strength (MPa)')
-    axf2.set_ylabel('Fitted Strength (MPa)')
-    axf2.set_title(f'Robust GAM: Observed vs Fitted\n'
-                   f'R2 = {r2_rob:.3f}  |  GCV = {stats_r["GCV"]:.3f}')
-    axf2.legend(fontsize=8)
-    axf2.set_aspect('equal')
-
-    axf3.scatter(y_hat_std, residuals_std, c='steelblue', alpha=0.5, s=14,
-                 edgecolors='k', linewidth=0.3)
-    axf3.axhline(0, color='red', ls='--', lw=1.5)
-    axf3.set_xlabel('Fitted Strength (MPa)')
-    axf3.set_ylabel('Residuals (MPa)')
-    axf3.set_title('Residuals vs Fitted (Standard)')
+    axf2.axhline(0, color='red', ls='--', lw=1.5)
+    axf2.set_xlabel('Fitted Strength (MPa)')
+    axf2.set_ylabel('Residuals (MPa)')
+    axf2.set_title('Residuals vs Fitted')
     outlier_mask = np.abs(residuals_std) > 3 * np.std(residuals_std)
     if outlier_mask.any():
-        axf3.scatter(y_hat_std[outlier_mask], residuals_std[outlier_mask],
+        axf2.scatter(y_hat_std[outlier_mask], residuals_std[outlier_mask],
                       c='red', s=30, edgecolors='k', linewidth=1, label='>3s outlier')
-        axf3.legend(fontsize=8)
+        axf2.legend(fontsize=8)
 
     fig_fit.suptitle('Model Fit Diagnostics', fontsize=13, fontweight='bold')
     fig_fit.tight_layout()

@@ -199,10 +199,14 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="api.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="generated/lingam.GAMCore.html">lingam.GAMCore</a></li>
 <li class="toctree-l2"><a class="reference internal" href="generated/lingam.LinGAM.html">lingam.LinGAM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/lingam.pygam.LinGAM.html">lingam.pygam.LinGAM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/lingam.pygam.GAMCore.html">lingam.pygam.GAMCore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/lingam.mgcv.LinGAM.html">lingam.mgcv.LinGAM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/lingam.mgcv.GAMCore.html">lingam.mgcv.GAMCore</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="constraints.html">Shape Constraints</a></li>
-<li class="toctree-l1"><a class="reference internal" href="gridsearch.html">Grid Search &amp; Hyperparameter Tuning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gridsearch.html">Smoothing Parameter Optimization &amp; Tuning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Changelog</a></li>
 </ul>
@@ -245,11 +249,45 @@
         <article role="main" id="furo-main-content">
           <section id="changelog">
 <h1>Changelog<a class="headerlink" href="#changelog" title="Link to this heading">¶</a></h1>
+<section id="version-0-3-0">
+<h2>Version 0.3.0<a class="headerlink" href="#version-0-3-0" title="Link to this heading">¶</a></h2>
+<p><em>Released 2026-10-15</em></p>
+<section id="new-features">
+<h3>New features<a class="headerlink" href="#new-features" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>R mgcv backend</strong>: Native implementation of Simon Wood’s R <code class="docutils literal notranslate"><span class="pre">mgcv</span></code> package
+supporting thin plate splines (<code class="docutils literal notranslate"><span class="pre">'tp'</span></code>, <code class="docutils literal notranslate"><span class="pre">'ts'</span></code>), cubic regression splines
+(<code class="docutils literal notranslate"><span class="pre">'cr'</span></code>, <code class="docutils literal notranslate"><span class="pre">'cs'</span></code>), cyclic cubic splines (<code class="docutils literal notranslate"><span class="pre">'cc'</span></code>), P-splines (<code class="docutils literal notranslate"><span class="pre">'ps'</span></code>,
+<code class="docutils literal notranslate"><span class="pre">'cp'</span></code>), B-splines (<code class="docutils literal notranslate"><span class="pre">'bs'</span></code>), random effects / ridge (<code class="docutils literal notranslate"><span class="pre">'re'</span></code>), and tensor
+products (<code class="docutils literal notranslate"><span class="pre">'te'</span></code>).</p></li>
+<li><p><strong>Automatic REML smoothing optimization</strong>: Smoothing parameters are solved
+continuously via Newton-Raphson / BFGS minimization of REML or GCV criteria
+without needing discrete grid searches.</p></li>
+<li><p><strong>R-style summary tables</strong>: <code class="docutils literal notranslate"><span class="pre">model.summary()</span></code> provides parametric coefficients,
+effective degrees of freedom (EDF), approximate F-tests, and p-values matching
+R’s <code class="docutils literal notranslate"><span class="pre">summary.gam</span></code> (Wood 2013).</p></li>
+<li><p><strong>Symmetric dual-engine architecture</strong>: Symmetrically organized into
+<code class="docutils literal notranslate"><span class="pre">lingam.pygam</span></code> and <code class="docutils literal notranslate"><span class="pre">lingam.mgcv</span></code> with unified <code class="docutils literal notranslate"><span class="pre">LinGAM</span></code> and <code class="docutils literal notranslate"><span class="pre">GAMCore</span></code>
+factory dispatchers.</p></li>
+</ul>
+</section>
+<section id="improvements">
+<h3>Improvements<a class="headerlink" href="#improvements" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>Simplified and unbloated</strong>: Removed thread management overhead and unused
+Huber IRLS iterations.</p></li>
+<li><p><strong>Fixed R² computation</strong>: Corrected deviance explained calculation against the
+sample mean null deviance.</p></li>
+<li><p><strong>Input validation</strong>: Enforced NaN and Inf validation across all fit methods.</p></li>
+<li><p><strong>Extrapolation</strong>: Explicit linear extrapolation for predictions beyond boundary knots.</p></li>
+</ul>
+</section>
+</section>
 <section id="version-0-2-0">
 <h2>Version 0.2.0<a class="headerlink" href="#version-0-2-0" title="Link to this heading">¶</a></h2>
 <p><em>Released 2026-05-01</em></p>
-<section id="new-features">
-<h3>New features<a class="headerlink" href="#new-features" title="Link to this heading">¶</a></h3>
+<section id="id1">
+<h3>New features<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Shape constraints</strong> for <code class="docutils literal notranslate"><span class="pre">s()</span></code> terms and <code class="docutils literal notranslate"><span class="pre">LinGAM</span></code>:
 <code class="docutils literal notranslate"><span class="pre">mono_inc</span></code>, <code class="docutils literal notranslate"><span class="pre">mono_dec</span></code>, <code class="docutils literal notranslate"><span class="pre">convex</span></code>, <code class="docutils literal notranslate"><span class="pre">concave</span></code>, <code class="docutils literal notranslate"><span class="pre">periodic</span></code>.</p></li>
@@ -262,8 +300,8 @@
 to specific term indices or types.</p></li>
 </ul>
 </section>
-<section id="improvements">
-<h3>Improvements<a class="headerlink" href="#improvements" title="Link to this heading">¶</a></h3>
+<section id="id2">
+<h3>Improvements<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Modular <code class="docutils literal notranslate"><span class="pre">src/lingam/</span></code> package layout with <code class="docutils literal notranslate"><span class="pre">__slots__</span></code> for memory
 efficiency.</p></li>
@@ -338,9 +376,14 @@ plotting.</p></li>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Changelog</a><ul>
-<li><a class="reference internal" href="#version-0-2-0">Version 0.2.0</a><ul>
+<li><a class="reference internal" href="#version-0-3-0">Version 0.3.0</a><ul>
 <li><a class="reference internal" href="#new-features">New features</a></li>
 <li><a class="reference internal" href="#improvements">Improvements</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#version-0-2-0">Version 0.2.0</a><ul>
+<li><a class="reference internal" href="#id1">New features</a></li>
+<li><a class="reference internal" href="#id2">Improvements</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#version-0-1-0">Version 0.1.0</a></li>
@@ -355,7 +398,7 @@ plotting.</p></li>
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=938c9ccc"></script>
+</div><script src="_static/documentation_options.js?v=e259d695"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

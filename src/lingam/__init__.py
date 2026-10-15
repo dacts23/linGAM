@@ -1,28 +1,71 @@
-"""linGAM — Simple Fast Linear GAM.
+"""linGAM — Simple Fast Linear GAM with PyGAM and R mgcv backends."""
 
-A minimal implementation of Generalized Additive Models using
-penalised B-splines. Supports single-term (``LinGAM``) and multi-term
-with a formula interface (``GAMCore``).
+from . import mgcv, pygam
+from .mgcv import (
+    GAMCore as MgcvGAMCore,
+    LinGAM as MgcvLinGAM,
+)
+from .pygam import (
+    GAMCore as PygamGAMCore,
+    LinGAM as PygamLinGAM,
+)
 
-Shape constraints
------------------
-Spline terms (``s()``) and ``LinGAM`` accept a ``constraint`` parameter:
+__version__ = "0.3.0"
 
-- ``None``              — standard smoothness (second-difference penalty)
-- ``'mono_inc'``        — encourages monotonically increasing trend
-- ``'mono_dec'``        — encourages monotonically decreasing trend
-- ``'convex'``          — encourages convexity (soft constraint)
-- ``'concave'``         — encourages concavity (soft constraint)
-- ``'periodic'``        — periodic B-spline with wrapped penalty
 
-Example::
+class LinGAM:
+    """Single-term GAM supporting both pyGAM and R mgcv backends.
 
-    model = GAMCore("s(0, constraint='mono_inc') + s(1, constraint='periodic')")
-    lingam = LinGAM(n_splines=12, constraint='mono_inc')
-"""
+    Parameters
+    ----------
+    backend : {'pygam', 'mgcv'}, default 'pygam'
+        Which engine to use:
 
-from ._gam import GAMCore
-from ._lingam import LinGAM
+        - 'pygam': Fast B-splines with GCV grid search.
+        - 'mgcv': Exact R mgcv implementation with REML (or GCV) smoothing
+          parameter optimization, multiple basis types ('tp', 'cr',
+          'ps', 'cc', etc.), and exact penalty rescaling.
+    """
 
-__version__ = "0.2.0"
-__all__ = ["GAMCore", "LinGAM", "__version__"]
+    def __new__(cls, *args, backend: str = "pygam", **kwargs):
+        backend = str(backend).lower()
+        if backend == "mgcv":
+            return MgcvLinGAM(*args, **kwargs)
+        elif backend == "pygam":
+            return PygamLinGAM(*args, **kwargs)
+        else:
+            raise ValueError(f"Unknown backend '{backend}'. Choose 'pygam' or 'mgcv'.")
+
+
+class GAMCore:
+    """Multi-term GAM supporting both pyGAM and R mgcv backends.
+
+    Parameters
+    ----------
+    formula : str
+        Model specification.
+    backend : {'pygam', 'mgcv'}, default 'pygam'
+        Which engine to use ('pygam' or 'mgcv').
+    """
+
+    def __new__(cls, *args, backend: str = "pygam", **kwargs):
+        backend = str(backend).lower()
+        if backend == "mgcv":
+            return MgcvGAMCore(*args, **kwargs)
+        elif backend == "pygam":
+            return PygamGAMCore(*args, **kwargs)
+        else:
+            raise ValueError(f"Unknown backend '{backend}'. Choose 'pygam' or 'mgcv'.")
+
+
+__all__ = [
+    "LinGAM",
+    "GAMCore",
+    "PygamLinGAM",
+    "PygamGAMCore",
+    "MgcvLinGAM",
+    "MgcvGAMCore",
+    "pygam",
+    "mgcv",
+    "__version__",
+]

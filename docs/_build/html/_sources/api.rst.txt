@@ -1,13 +1,15 @@
 API Reference
 =============
 
-This page documents every public class, method, and function in linGAM.
-Source code for each module is shown at the bottom of its section.
+This page documents the public API and internal engines in linGAM.
 
 .. currentmodule:: lingam
 
-Public classes
---------------
+Public Unified API
+------------------
+
+The top-level :class:`LinGAM` and :class:`GAMCore` classes dynamically dispatch
+to either the pyGAM or R mgcv engine based on the ``backend`` argument.
 
 .. autosummary::
    :toctree: generated/
@@ -17,29 +19,15 @@ Public classes
    LinGAM
 
 
-Internal modules
-----------------
-
-These modules are private (single leading underscore) but are documented here
-for contributors and advanced users.
-
-.. currentmodule:: lingam._bspline
-
-lingam._bspline
-^^^^^^^^^^^^^^^
-
-.. automodule:: lingam._bspline
-   :members:
-
-.. literalinclude:: ../src/lingam/_bspline.py
-   :language: python
-   :linenos:
-
+Shared Architecture
+-------------------
 
 .. currentmodule:: lingam._formula
 
 lingam._formula
 ^^^^^^^^^^^^^^^
+
+Shared additive model formula parser for ``s()``, ``te()``, ``f()``, and ``l()`` terms.
 
 .. automodule:: lingam._formula
    :members:
@@ -49,69 +37,168 @@ lingam._formula
    :linenos:
 
 
-.. currentmodule:: lingam._gam
+pyGAM Engine (``lingam.pygam``)
+-------------------------------
 
-lingam._gam
-^^^^^^^^^^^
+B-spline additive models with discrete GCV grid search and soft shape constraints.
 
-.. automodule:: lingam._gam
+.. currentmodule:: lingam.pygam
+
+Classes
+^^^^^^^
+
+.. autosummary::
+   :toctree: generated/
+   :nosignatures:
+
+   LinGAM
+   GAMCore
+
+Modules
+^^^^^^^
+
+.. currentmodule:: lingam.pygam._bspline
+
+lingam.pygam._bspline
+"""""""""""""""""""""
+.. automodule:: lingam.pygam._bspline
+   :members:
+
+.. literalinclude:: ../src/lingam/pygam/_bspline.py
+   :language: python
+   :linenos:
+
+.. currentmodule:: lingam.pygam._penalty
+
+lingam.pygam._penalty
+"""""""""""""""""""""
+.. automodule:: lingam.pygam._penalty
+   :members:
+
+.. literalinclude:: ../src/lingam/pygam/_penalty.py
+   :language: python
+   :linenos:
+
+.. currentmodule:: lingam.pygam._solver
+
+lingam.pygam._solver
+""""""""""""""""""""
+.. automodule:: lingam.pygam._solver
+   :members:
+
+.. literalinclude:: ../src/lingam/pygam/_solver.py
+   :language: python
+   :linenos:
+
+.. currentmodule:: lingam.pygam._terms
+
+lingam.pygam._terms
+"""""""""""""""""""
+.. automodule:: lingam.pygam._terms
+   :members:
+   :exclude-members: _khatri_rao, _kron_sum
+
+.. literalinclude:: ../src/lingam/pygam/_terms.py
+   :language: python
+   :linenos:
+
+.. currentmodule:: lingam.pygam._lingam
+
+lingam.pygam._lingam
+""""""""""""""""""""
+.. automodule:: lingam.pygam._lingam
+   :members:
+
+.. literalinclude:: ../src/lingam/pygam/_lingam.py
+   :language: python
+   :linenos:
+
+.. currentmodule:: lingam.pygam._gam
+
+lingam.pygam._gam
+"""""""""""""""""
+.. automodule:: lingam.pygam._gam
    :members:
    :exclude-members: _set_lams_from_combo, _assemble_penalty_from_bases,
                      _precompute_penalty_bases, _build_matrix_from_terms
 
-.. literalinclude:: ../src/lingam/_gam.py
+.. literalinclude:: ../src/lingam/pygam/_gam.py
    :language: python
    :linenos:
 
 
-.. currentmodule:: lingam._lingam
+R mgcv Engine (``lingam.mgcv``)
+-------------------------------
 
-lingam._lingam
-^^^^^^^^^^^^^^
+Exact Python implementation of Wood's R ``mgcv`` package: multiple basis types,
+null-space constraint absorption, and outer REML / GCV smoothing optimization.
 
-.. automodule:: lingam._lingam
+.. currentmodule:: lingam.mgcv
+
+Classes
+^^^^^^^
+
+.. autosummary::
+   :toctree: generated/
+   :nosignatures:
+
+   LinGAM
+   GAMCore
+
+Modules
+^^^^^^^
+
+.. currentmodule:: lingam.mgcv._smooths
+
+lingam.mgcv._smooths
+""""""""""""""""""""
+.. automodule:: lingam.mgcv._smooths
    :members:
 
-.. literalinclude:: ../src/lingam/_lingam.py
+.. literalinclude:: ../src/lingam/mgcv/_smooths.py
    :language: python
    :linenos:
 
+.. currentmodule:: lingam.mgcv._optimizer
 
-.. currentmodule:: lingam._penalty
-
-lingam._penalty
-^^^^^^^^^^^^^^^
-
-.. automodule:: lingam._penalty
+lingam.mgcv._optimizer
+""""""""""""""""""""""
+.. automodule:: lingam.mgcv._optimizer
    :members:
 
-.. literalinclude:: ../src/lingam/_penalty.py
+.. literalinclude:: ../src/lingam/mgcv/_optimizer.py
    :language: python
    :linenos:
 
+.. currentmodule:: lingam.mgcv._terms
 
-.. currentmodule:: lingam._solver
-
-lingam._solver
-^^^^^^^^^^^^^^
-
-.. automodule:: lingam._solver
+lingam.mgcv._terms
+""""""""""""""""""
+.. automodule:: lingam.mgcv._terms
    :members:
 
-.. literalinclude:: ../src/lingam/_solver.py
+.. literalinclude:: ../src/lingam/mgcv/_terms.py
    :language: python
    :linenos:
 
+.. currentmodule:: lingam.mgcv._lingam
 
-.. currentmodule:: lingam._terms
-
-lingam._terms
-^^^^^^^^^^^^^
-
-.. automodule:: lingam._terms
+lingam.mgcv._lingam
+"""""""""""""""""""
+.. automodule:: lingam.mgcv._lingam
    :members:
-   :exclude-members: _khatri_rao, _kron_sum
 
-.. literalinclude:: ../src/lingam/_terms.py
+.. literalinclude:: ../src/lingam/mgcv/_lingam.py
+   :language: python
+   :linenos:
+
+.. currentmodule:: lingam.mgcv._gam
+
+lingam.mgcv._gam
+""""""""""""""""
+.. automodule:: lingam.mgcv._gam
+   :members:
+
+.. literalinclude:: ../src/lingam/mgcv/_gam.py
    :language: python
    :linenos:

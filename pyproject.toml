@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "linGAM"
-version = "0.2.0"
+version = "0.3.0"
 description = "Simple Fast Linear GAM — a minimal implementation of Generalized Additive Models using penalized B-splines"
 readme = "README.md"
 license = "MIT"

@@ -1,5 +1,4 @@
-"""Single-term penalised B-spline GAM — LinGAM class."""
-
+import os
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -15,6 +14,7 @@ from ._penalty import (
     first_diff_penalty,
     second_diff_penalty,
 )
+from ._solver import solve_pirls
 
 
 class LinGAM:
@@ -128,67 +128,8 @@ class LinGAM:
         P[:K_eff, :K_eff] = lam * S_pen
         return P, S_pen
 
-    # ── solver ───────────────────────────────────────────────────
-
-    def _solve_pirls(
-        self,
-        X: np.ndarray,
-        y: np.ndarray,
-        P: np.ndarray,
-        Q: Optional[np.ndarray] = None,
-        R: Optional[np.ndarray] = None,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        n, m = X.shape
-        eps = np.finfo(float).eps
-
-        S_ridge = np.diag(np.ones(m) * np.sqrt(eps))
-        E = np.linalg.cholesky(S_ridge + P).T
-
-        if Q is None or R is None:
-            Q, R_ = np.linalg.qr(X)
-        else:
-            R_ = R
-
-        min_nm = min(m, n)
-        U, d, Vt = np.linalg.svd(np.vstack([R_, E]), full_matrices=False)
-
-        U1 = U[:min_nm, :min_nm]
-        Vt = Vt[:min_nm]
-        d_inv = 1.0 / d[:min_nm]
-
-        B_solve = (Vt.T * d_inv) @ U1.T @ Q.T
-        coef = B_solve @ y
-
-        return coef, U1, B_solve
-
-    def _irls_solve(
-        self,
-        X: np.ndarray,
-        y: np.ndarray,
-        P: np.ndarray,
-        n_iter: int = 15,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        n = len(y)
-        med_y = np.median(y)
-        residuals = y - med_y
-        w = np.ones(n)
-        coef, U1, B_solve = None, None, None
-
-        for _ in range(n_iter):
-            mad = np.median(np.abs(residuals - np.median(residuals)))
-            scale_est = mad / 0.6745 if mad > 1e-6 else 1e-6
-            c = 1.345 * scale_est
-            abs_r = np.abs(residuals)
-            w = np.where(abs_r <= c, 1.0, c / np.maximum(abs_r, 1e-6))
-
-            W_sqrt = np.sqrt(w).reshape(-1, 1)
-            X_w = X * W_sqrt
-            y_w = y * np.sqrt(w)
-            Qw, Rw = np.linalg.qr(X_w)
-            coef, U1, B_solve = self._solve_pirls(X_w, y_w, P, Q=Qw, R=Rw)
-            residuals = y - X @ coef
-
-        return coef, U1, B_solve, w, residuals
+    # ── solver aliases ───────────────────────────────────────────
+    _solve_pirls = staticmethod(solve_pirls)
 
     # ── grid search ──────────────────────────────────────────────
 
@@ -199,26 +140,17 @@ class LinGAM:
         lam: Optional[ArrayLike] = None,
         n_splines: Optional[ArrayLike] = None,
         gamma: float = 1.4,
-        robust: bool = False,
+        n_jobs: int = 1,
     ) -> "LinGAM":
-        """Select optimal (lam, n_splines) by minimising GCV.
-
-        Always uses the fast QR+Cholesky path for standard fits.
-        When robust=True, uses Huber IRLS within each candidate
-        evaluation.
-        """
+        """Select optimal (lam, n_splines) by minimising GCV."""
         x, y = np.asarray(x).ravel(), np.asarray(y).ravel()
         if lam is None:
             lam = np.logspace(-3, 3, 11)
         if n_splines is None:
-            n_splines = np.arange(5, 25, 2)
+            n_splines = [self.n_splines]
 
         self.edge_knots_ = np.array([x.min(), x.max()])
-        n = len(y)
-
-        if robust:
-            return self._gridsearch_robust(x, y, lam, n_splines, gamma)
-        return self._gridsearch(x, y, lam, n_splines, gamma)
+        return self._gridsearch(x, y, lam, n_splines, gamma, n_jobs=n_jobs)
 
     def _gridsearch(
         self,
@@ -227,8 +159,10 @@ class LinGAM:
         lam: np.ndarray,
         n_splines: np.ndarray,
         gamma: float,
+        n_jobs: int = 1,
     ) -> "LinGAM":
         n = len(y)
+        yty = float(np.dot(y, y))
         best_gcv = np.inf
         best_result: Optional[Tuple[float, int, float, np.ndarray, float]] = None
 
@@ -237,27 +171,28 @@ class LinGAM:
             K_eff = K - self.spline_order + 1 if self.constraint == 'periodic' else K
             Xmat = self._build_design_matrix(x, n_splines=K)
             Q, R = np.linalg.qr(Xmat)
+            qty = Q.T @ y
+            ss_orth = max(0.0, yty - float(np.dot(qty, qty)))
             _, S_pen = self._build_penalty(1.0, n_splines=K)
             m = K_eff + 1
             RtR = R.T @ R
-            Rt_qty = R.T @ (Q.T @ y)
+            Rt_qty = R.T @ qty
             P_base = np.zeros((m, m))
             P_base[:K_eff, :K_eff] = S_pen
-            return K, K_eff, Xmat, P_base, RtR, Rt_qty, m
+            return K, K_eff, P_base, RtR, Rt_qty, R, qty, ss_orth, m
 
-        with ThreadPoolExecutor() as executor:
-            precomputed = list(executor.map(_precompute_K, n_splines))
-
-        Xmats: Dict[int, np.ndarray] = {}
-        precomputed_list = []
-        for K, K_eff, Xmat, P_base, RtR, Rt_qty, m in precomputed:
-            Xmats[K] = Xmat
-            precomputed_list.append((K, K_eff, P_base, RtR, Rt_qty, m))
+        n_K = len(n_splines)
+        if n_jobs != 1 and n_K > 1:
+            workers = os.cpu_count() or 4 if n_jobs == -1 else max(1, int(n_jobs))
+            with ThreadPoolExecutor(max_workers=min(workers, n_K)) as ex:
+                precomputed_list = list(ex.map(_precompute_K, n_splines))
+        else:
+            precomputed_list = [_precompute_K(K) for K in n_splines]
 
         lam_arr = np.atleast_1d(lam)
 
         def _eval_K(K_idx: int):
-            K, K_eff, P_base, RtR, Rt_qty, m = precomputed_list[K_idx]
+            K, K_eff, P_base, RtR, Rt_qty, R, qty, ss_orth, m = precomputed_list[K_idx]
             best_gcv_K = np.inf
             best_l_K = float(lam_arr[0])
             best_coef_K = None
@@ -266,7 +201,7 @@ class LinGAM:
 
             for l_val in lam_arr:
                 np.add(RtR, float(l_val) * P_base, out=B_buf)
-                B_buf.flat[::m + 1] += 1e-12
+                B_buf.flat[::m + 1] += 1e-8
 
                 try:
                     c_chol, lower = cho_factor(
@@ -279,12 +214,13 @@ class LinGAM:
                     edf = float(np.trace(B_inv_RtR))
                 except Exception:
                     B_fallback = RtR + float(l_val) * P_base
-                    B_fallback.flat[::m + 1] += 1e-12
-                    coef = np.linalg.solve(B_fallback, Rt_qty)
-                    edf = float(np.trace(np.linalg.solve(B_fallback, RtR)))
+                    B_fallback.flat[::m + 1] += 1e-8
+                    coef, _, _, _ = np.linalg.lstsq(B_fallback, Rt_qty, rcond=1e-10)
+                    edf = float(np.trace(np.linalg.pinv(B_fallback, rcond=1e-10) @ RtR))
 
-                residuals = y - Xmats[K] @ coef
-                rss = float(residuals @ residuals)
+                # Never sweep giant design matrix X: compute RSS strictly in reduced M-coordinate space
+                r_diff = qty - R @ coef
+                rss = max(0.0, ss_orth + float(np.dot(r_diff, r_diff)))
                 gcv_score = (n * rss) / (n - gamma * edf) ** 2
 
                 if gcv_score < best_gcv_K:
@@ -295,8 +231,12 @@ class LinGAM:
 
             return best_gcv_K, K, best_l_K, best_coef_K, best_edf_K
 
-        with ThreadPoolExecutor() as executor:
-            results = list(executor.map(_eval_K, range(len(precomputed_list))))
+        if n_jobs != 1 and n_K > 1:
+            workers = os.cpu_count() or 4 if n_jobs == -1 else max(1, int(n_jobs))
+            with ThreadPoolExecutor(max_workers=min(workers, n_K)) as ex:
+                results = list(ex.map(_eval_K, range(len(precomputed_list))))
+        else:
+            results = [_eval_K(i) for i in range(len(precomputed_list))]
 
         for gcv_score, K, l_val, coef, edf in results:
             if gcv_score < best_gcv:
@@ -308,67 +248,21 @@ class LinGAM:
         self.n_splines = best_K
         self.lam = best_l
 
-        self._fit_internal(x, y, robust=False)
-        return self
-
-    def _gridsearch_robust(
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        lam: np.ndarray,
-        n_splines: np.ndarray,
-        gamma: float,
-    ) -> "LinGAM":
-        n = len(y)
-        best_gcv = np.inf
-        best_result: Optional[Tuple] = None
-
-        for K_int in n_splines:
-            K = int(K_int)
-            self.n_splines = K
-            Xmat = self._build_design_matrix(x)
-            _, S_pen = self._build_penalty(1.0)
-            K_eff = self.n_coefs
-            m = K_eff + 1
-            P_buf = np.zeros((m, m))
-
-            def _eval_lam(l_val: float):
-                P_buf[:] = 0
-                P_buf[:K_eff, :K_eff] = l_val * S_pen
-                P_full = P_buf.copy()
-                coef, U1, _, w, _ = self._irls_solve(Xmat, y, P_full, n_iter=10)
-                residuals = y - Xmat @ coef
-                rss = float(np.sum(w * residuals * residuals))
-                edf = float(np.sum(U1 ** 2))
-                gcv_score = (n * rss) / (n - gamma * edf) ** 2
-                return gcv_score, K, l_val, coef, edf
-
-            with ThreadPoolExecutor() as executor:
-                for res in executor.map(
-                    _eval_lam, (float(v) for v in lam),
-                ):
-                    if res[0] < best_gcv:
-                        best_gcv = res[0]
-                        best_result = res
-
-        assert best_result is not None
-        _, best_K, best_l, _, _ = best_result
-        self.n_splines = best_K
-        self.lam = best_l
-
-        self._fit_internal(x, y, robust=True)
+        self._fit_internal(x, y)
         return self
 
     # ── fit ──────────────────────────────────────────────────────
 
-    def fit(self, x: ArrayLike, y: ArrayLike, robust: bool = False) -> "LinGAM":
+    def fit(self, x: ArrayLike, y: ArrayLike) -> "LinGAM":
         """Fit the model with current hyper-parameters."""
         x, y = np.asarray(x).ravel(), np.asarray(y).ravel()
+        if not np.all(np.isfinite(x)) or not np.all(np.isfinite(y)):
+            raise ValueError("Input data contains NaN or infinity.")
         self.edge_knots_ = np.array([x.min(), x.max()])
-        self._fit_internal(x, y, robust=robust)
+        self._fit_internal(x, y)
         return self
 
-    def _fit_internal(self, x: np.ndarray, y: np.ndarray, robust: bool = False) -> None:
+    def _fit_internal(self, x: np.ndarray, y: np.ndarray) -> None:
         n = len(x)
         k = self.spline_order
         K = self.n_splines
@@ -385,20 +279,15 @@ class LinGAM:
         self.design_matrix_ = X
         P, _ = self._build_penalty(self.lam)
 
-        if robust:
-            self.coef_, U1, B_solve, w, _ = self._irls_solve(X, y, P, n_iter=15)
-            self._B_solve = B_solve
-            y_hat = X @ self.coef_
-            rss = np.sum(w * (y - y_hat) ** 2)
-        else:
-            self.coef_, U1, B_solve = self._solve_pirls(X, y, P)
-            self._B_solve = B_solve
-            y_hat = X @ self.coef_
-            rss = np.sum((y - y_hat) ** 2)
+        self.coef_, U1, B_solve = self._solve_pirls(X, y, P)
+        self._B_solve = B_solve
+        y_hat = X @ self.coef_
+        rss = np.sum((y - y_hat) ** 2)
 
         edof_per_coef = np.sum(U1 ** 2, axis=1)
         edof = np.sum(edof_per_coef)
 
+        null_deviance = float(np.sum((y - np.mean(y)) ** 2))
         scale_val = np.sqrt(rss / max(n - edof, 1))
         cov = (B_solve @ B_solve.T) * scale_val ** 2
         se = np.sqrt(np.diag(cov))
@@ -410,6 +299,7 @@ class LinGAM:
             'cov': cov,
             'se': se,
             'rss': rss,
+            'null_deviance': null_deviance,
             'n_samples': n,
             'GCV': (n * rss) / max(n - 1.4 * edof, 1) ** 2,
         }
@@ -475,12 +365,10 @@ class LinGAM:
     def deviance_explained(self) -> float:
         """Fraction of null deviance explained (pseudo R-squared)."""
         self._check_is_fitted()
-        y = self.design_matrix_ @ self.coef_
-        y_mean = np.mean(y)
-        tss = np.sum((y - y_mean) ** 2) + self.statistics_['rss']
-        if tss == 0:
+        null_dev = self.statistics_.get('null_deviance')
+        if null_dev is None or null_dev == 0.0:
             return 0.0
-        return max(0.0, 1.0 - self.statistics_['rss'] / tss)
+        return max(0.0, 1.0 - self.statistics_['rss'] / null_dev)
 
     # ── plotting ─────────────────────────────────────────────────
 

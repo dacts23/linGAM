@@ -1,8 +1,8 @@
 linGAM
 ======
 
-**Simple Fast Linear GAM** — a minimal, high-performance implementation of
-Generalized Additive Models using penalised B-splines.
+**Simple Fast Linear GAM** — a high-performance Python implementation of
+Generalized Additive Models supporting both **PyGAM** and native **R mgcv** backends.
 
 .. toctree::
    :maxdepth: 2
@@ -29,80 +29,70 @@ linGAM fits smooth, additive regression models of the form
 where each :math:`f_j` is a flexible smooth function *learned from data*,
 penalised to avoid overfitting.
 
-In plain language: instead of assuming "y goes up by 2.3 for every unit of x"
-(a straight line), the model figures out the *shape* of the relationship on
-its own.  It can find saturation curves, optimal operating points,
-diminishing returns, and interactions — all while keeping each effect
-separate and interpretable.
+The package provides two complementary engines accessible through a single, unified interface:
+
+1. **R mgcv Backend** (``backend='mgcv'``):
+   Faithful Python implementation of Simon Wood's R ``mgcv`` package.
+   Supports multiple basis types (``'tp'``, ``'ts'``, ``'cr'``, ``'cs'``, ``'cc'``,
+   ``'ps'``, ``'cp'``, ``'bs'``, ``'re'``, ``'te'``), null-space constraint absorption,
+   and **automatic REML / GCV smoothing parameter optimization** (no grid search required).
+   Outputs formatted R-style summary tables with approximate F-tests and p-values (Wood 2013).
+
+2. **PyGAM Backend** (``backend='pygam'``):
+   Clean, fast B-splines with discrete GCV grid search and soft shape constraints
+   (monotonic increasing/decreasing, convex, concave, periodic).
 
 The package supports:
 
-* **Univariate splines** ``s()`` — smooth nonlinear trends (e.g., "how does
-  temperature affect blade life?")
-* **Tensor-product interactions** ``te()`` — multidimensional smooths (e.g.,
-  "does high temperature + high vibration make things worse than either
-  alone?")
-* **Categorical factors** ``f()`` — one-hot / dummy encoding (e.g., "does
-  coating type A last longer than B?")
-* **Linear terms** ``l()`` — plain linear coefficients (e.g., "more cooling
-  flow → linearly longer life")
+* **Univariate splines** ``s()`` — smooth nonlinear trends
+* **Tensor-product interactions** ``te()`` — multidimensional interactions
+* **Categorical factors** ``f()`` — dummy / one-hot coding
+* **Linear terms** ``l()`` — parametric linear effects
 * **Shape constraints** — monotonicity, convexity, concavity, periodicity
-  (encode what physics tells you)
-* **Robust fitting** — Huber IRLS for resistance to sensor outliers
-* **Fast grid search** — QR+Cholesky GCV optimisation with selective term
-  search (automatically find the right amount of smoothing)
-
-Key design goals
-^^^^^^^^^^^^^^^^
-
-* **Speed**:  All grid search uses QR precomputation + threaded Cholesky
-  evaluation.  NumPy releases the GIL, so ``ThreadPoolExecutor`` parallelises
-  CPU-bound linear algebra.
-* **Correctness**:  SVD data-augmentation solver avoids squaring condition
-  numbers.  No :math:`X^\top X` is ever formed explicitly.
-* **Simplicity**:  Formula interface ``s(0) + te(1,2) + f(3)`` mirrors R/mgcv
-  and pyGAM conventions.
-* **Flexibility**:  Choose which terms participate in grid search, apply
-  shape constraints, or mix standard and robust fitting.
+* **Fast evaluation** — QR decomposition with SVD data-augmentation to avoid squaring condition numbers
+* **Confidence & prediction intervals** — Bayesian posterior covariance and frequentist intervals
 
 When to use linGAM
 ^^^^^^^^^^^^^^^^^^
 
-* You need more flexibility than linear regression but more interpretability
-  than a neural network.
-* You have domain knowledge about shapes (monotonic, concave, periodic) that
-  you want to bake into the model.
-* You need to *explain* predictions to colleagues — each term produces a
-  plot, not a black-box score.
-* Your data has outliers and you want the fit to ignore them automatically.
-* You want automatic hyperparameter tuning via grid search over smoothing
-  parameters.
+* You need more flexibility than linear regression but full interpretability without black-box complexity.
+* You want the exact statistical rigor and bases of R's ``mgcv`` in pure Python.
+* You have domain constraints (monotonic, concave, periodic) to enforce on model components.
+* You need to *explain* predictions to domain experts — each term produces a component plot.
 
 
 Quick example
 -------------
 
+Using the **R mgcv backend** with automatic REML smoothing parameter estimation:
+
 .. code-block:: python
 
    import numpy as np
-   from lingam import GAMCore
+   from lingam import LinGAM, GAMCore
 
-   # Synthetic data
    np.random.seed(42)
-   x = np.random.uniform(0, 10, (200, 2))
-   y = 2 * x[:, 0] + 0.5 * x[:, 1] ** 2 + np.random.normal(0, 0.5, 200)
+   x = np.linspace(0, 1, 200)
+   y = np.sin(2 * np.pi * x) + np.random.normal(0, 0.2, 200)
 
-   # Fit a GAM: smooth for x0, linear for x1
-   model = GAMCore("s(0, n_splines=10) + l(1)")
+   # Single-term model with cubic regression splines and REML estimation
+   model = LinGAM(k=10, bs="cr", backend="mgcv")
    model.fit(x, y)
 
-   # Predict & confidence intervals
+   # Formatted R-style summary table
+   print(model.summary())
+
+   # Predictions & Bayesian confidence intervals
    y_hat = model.predict(x)
    ci = model.confidence_intervals(x, width=0.95)
 
-   # Grid search (fast QR+Cholesky path)
-   model.gridsearch(x, y)
-   print(model.statistics_)
+Multi-term formula with tensor products:
+
+.. code-block:: python
+
+   gam = GAMCore("te(0, 1, k=5) + l(2)", backend="mgcv")
+   gam.fit(X, y)
+   print(gam.summary())
 
 
 Indices and tables

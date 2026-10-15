@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from itertools import product as cartesian_product
+import os
 from concurrent.futures import ThreadPoolExecutor
+from itertools import product as cartesian_product
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import matplotlib.pyplot as plt
@@ -12,8 +13,8 @@ from numpy.typing import ArrayLike
 from scipy import stats
 from scipy.linalg import block_diag, cho_factor, cho_solve
 
-from ._formula import parse_formula
-from ._solver import irls_solve, solve_pirls
+from .._formula import parse_formula
+from ._solver import solve_pirls
 from ._terms import (
     _FactorTerm,
     _LinearTerm,
@@ -121,22 +122,22 @@ class GAMCore:
         self,
         x: ArrayLike,
         y: ArrayLike,
-        robust: bool = False,
     ) -> "GAMCore":
         x_arr = np.asarray(x)
         y_arr = np.asarray(y).ravel()
+        if not np.all(np.isfinite(x_arr)) or not np.all(np.isfinite(y_arr)):
+            raise ValueError("Input data contains NaN or infinity.")
         if x_arr.ndim == 1:
             x_arr = x_arr.reshape(-1, 1)
         if not self.is_fitted:
             self._compile(x_arr)
-        self._fit_internal(x_arr, y_arr, robust=robust)
+        self._fit_internal(x_arr, y_arr)
         return self
 
     def _fit_internal(
         self,
         x: np.ndarray,
         y: np.ndarray,
-        robust: bool = False,
     ) -> None:
         n = len(x)
         X = self._build_model_matrix(x)
@@ -144,14 +145,9 @@ class GAMCore:
         P = self._build_penalty()
         self._compute_coef_slices()
 
-        if robust:
-            coef, U1, B_solve, w, _ = irls_solve(X, y, P, n_iter=15)
-            y_hat = X @ coef
-            rss = np.sum(w * (y - y_hat) ** 2)
-        else:
-            coef, U1, B_solve = solve_pirls(X, y, P)
-            y_hat = X @ coef
-            rss = np.sum((y - y_hat) ** 2)
+        coef, U1, B_solve = solve_pirls(X, y, P)
+        y_hat = X @ coef
+        rss = np.sum((y - y_hat) ** 2)
 
         self.coef_ = coef
         self._B_solve = B_solve
@@ -159,6 +155,7 @@ class GAMCore:
         edof_per_coef = np.sum(U1 ** 2, axis=1)
         edof = np.sum(edof_per_coef)
 
+        null_deviance = float(np.sum((y - np.mean(y)) ** 2))
         scale = np.sqrt(rss / max(n - edof, 1))
         cov = (B_solve @ B_solve.T) * scale ** 2
         se = np.sqrt(np.diag(cov))
@@ -170,6 +167,7 @@ class GAMCore:
             'cov': cov,
             'se': se,
             'rss': rss,
+            'null_deviance': null_deviance,
             'n_samples': n,
             'GCV': (n * rss) / max(n - 1.4 * edof, 1) ** 2,
         }
@@ -251,21 +249,12 @@ class GAMCore:
         return -2 * self.loglikelihood() + np.log(n) * k
 
     def deviance_explained(self) -> float:
-        """Fraction of null deviance explained (pseudo R-squared).
-
-        Computed as ``1 - RSS / TSS`` where TSS is the total sum of
-        squares around the mean of y.
-        """
+        """Fraction of null deviance explained (pseudo R-squared)."""
         self._check_fitted()
-        y = self._design_matrix_ @ self.coef_ + self.statistics_['rss'] / self.statistics_['n_samples']
-        n = self.statistics_['n_samples']
-        X = self._design_matrix_
-        y_hat = X @ self.coef_
-        y_mean = np.mean(y_hat + np.sqrt(self.statistics_['rss'] / n))
-        tss = np.sum((y_hat - y_mean) ** 2) + self.statistics_['rss']
-        if tss == 0:
+        null_dev = self.statistics_.get('null_deviance')
+        if null_dev is None or null_dev == 0.0:
             return 0.0
-        return max(0.0, 1.0 - self.statistics_['rss'] / tss)
+        return max(0.0, 1.0 - self.statistics_['rss'] / null_dev)
 
     # ════════════════════════════════════════════════════════════════
     #  Grid Search
@@ -275,58 +264,68 @@ class GAMCore:
         self,
         x: ArrayLike,
         y: ArrayLike,
-        lam_grids: Optional[List[ArrayLike]] = None,
-        n_splines_grids: Optional[List[ArrayLike]] = None,
+        lam: Optional[Union[List[ArrayLike], ArrayLike]] = None,
+        n_splines: Optional[Union[List[ArrayLike], ArrayLike]] = None,
         gamma: float = 1.4,
-        robust: bool = False,
         search_terms: Optional[Union[List[Union[int, str]], str]] = None,
+        n_jobs: int = 1,
+        **kwargs,
     ) -> "GAMCore":
         """Select optimal hyper-parameters via GCV grid search.
 
-        Always uses the fast QR+Cholesky path.  When ``robust=True``,
-        each candidate is evaluated with Huber IRLS (iterative
-        reweighting inside the Cholesky solve).
+        Replicates official pyGAM's interface, design space, and search philosophy:
+        - By default, searches only smoothing parameter `lam` along the diagonal
+          (11 logarithmically spaced points where smooth terms share the same lambda).
+        - `n_splines` is kept fixed at each term's configured value unless explicitly specified.
+        - Avoids sweeping the giant design matrix inside the candidate evaluation loop
+          by operating in reduced QR coordinate space (O(M^2) per model).
+        - Supports parallel evaluation of candidate configurations via `n_jobs`.
 
         Parameters
         ----------
         x, y : array-like
             Training data.
-        lam_grids : list of array-like, optional
-            Per-slot candidate lambda arrays. Default: logspace(-3, 3, 11).
-        n_splines_grids : list of array-like, optional
-            Per-slot candidate n_splines arrays (s/te only).
-            Default: arange(5, 25, 2) for s(), arange(4, 8) for te().
+        lam : array-like or list of array-like, optional
+            Candidate lambda grid (named `lam` matching official pyGAM, alias: `lam_grids`):
+            - Default: `np.logspace(-3, 3, 11)` evaluated diagonally across smooth terms.
+            - 1D array: Evaluated diagonally across searched smooth terms (len(grid) models).
+            - 2D array: Evaluates each row directly across terms (for random/custom search).
+            - List of 1D arrays: Cartesian product across the specified subgrids.
+        n_splines : array-like or list of array-like, optional
+            Candidate n_splines arrays (s/te only, alias: `n_splines_grids`).
+            Default: None (keeps current term values, matching pyGAM).
         gamma : float, default 1.4
             EDF penalty multiplier in GCV denominator.
-        robust : bool, default False
-            Use Huber IRLS for evaluation.
         search_terms : None | str | list of int/str, optional
-            Which terms to search hyper-parameters for.
+            Which terms to search hyper-parameters for. Default: all penalised terms.
+        n_jobs : int, default 1
+            Number of parallel threads for model evaluation. Use -1 for all CPU cores.
 
         Returns
         -------
         GAMCore
             Fitted model with best hyper-parameters.
         """
+        # Support aliases
+        if lam is None and 'lam_grids' in kwargs:
+            lam = kwargs.pop('lam_grids')
+        if n_splines is None and 'n_splines_grids' in kwargs:
+            n_splines = kwargs.pop('n_splines_grids')
+        if kwargs:
+            raise ValueError(f"Unrecognised kwargs for gridsearch(): {list(kwargs.keys())}")
+
         x_arr = np.asarray(x)
         y_arr = np.asarray(y).ravel()
         if x_arr.ndim == 1:
             x_arr = x_arr.reshape(-1, 1)
 
-        if robust:
-            return self._gridsearch_robust(
-                x_arr, y_arr,
-                lam_grids=lam_grids,
-                n_splines_grids=n_splines_grids,
-                gamma=gamma,
-                search_terms=search_terms,
-            )
         return self._gridsearch(
             x_arr, y_arr,
-            lam_grids=lam_grids,
-            n_splines_grids=n_splines_grids,
+            lam=lam,
+            n_splines=n_splines,
             gamma=gamma,
             search_terms=search_terms,
+            n_jobs=n_jobs,
         )
 
     # ── search_terms resolution ──────────────────────────────────
@@ -336,7 +335,11 @@ class GAMCore:
         search_terms: Optional[Union[List[Union[int, str]], str]],
     ) -> Set[int]:
         if search_terms is None:
-            return set(range(len(self._terms)))
+            penalised = {
+                i for i, t in enumerate(self._terms)
+                if not isinstance(t, _LinearTerm)
+            }
+            return penalised if penalised else set(range(len(self._terms)))
         if isinstance(search_terms, str):
             if search_terms == "all":
                 return set(range(len(self._terms)))
@@ -413,125 +416,168 @@ class GAMCore:
 
         return full
 
-    def _build_default_grids(
+    def _build_combos(
         self,
         x: np.ndarray,
-        lam_grids: Optional[List[ArrayLike]],
-        n_splines_grids: Optional[List[ArrayLike]],
+        lam_grids: Optional[Union[List[ArrayLike], ArrayLike]],
+        n_splines_grids: Optional[Union[List[ArrayLike], ArrayLike]],
         search_terms: Optional[Union[List[Union[int, str]], str]] = None,
-    ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+    ) -> Tuple[List[Any], List[Tuple[float, ...]]]:
         search_idx = self._resolve_search_terms(search_terms)
 
-        n_lam_slots = sum(
-            t.d if isinstance(t, _TensorTerm) else 1
-            for t in self._terms
-        )
-        n_nsp_slots = sum(
-            t.d if isinstance(t, _TensorTerm) else 1
-            for t in self._terms
-            if isinstance(t, (_SplineTerm, _TensorTerm))
-        )
-
-        n_lam_searched = sum(
-            t.d if isinstance(t, _TensorTerm) else 1
-            for i, t in enumerate(self._terms) if i in search_idx
-        )
-        n_nsp_searched = sum(
-            t.d if isinstance(t, _TensorTerm) else 1
-            for i, t in enumerate(self._terms)
-            if i in search_idx and isinstance(t, (_SplineTerm, _TensorTerm))
-        )
-
-        if lam_grids is None:
-            _default_lam = [np.logspace(-3, 3, 11)]
-            lam_grids = []
-            for t in self._terms:
-                n_slots = t.d if isinstance(t, _TensorTerm) else 1
-                lam_grids.extend(_default_lam * n_slots)
-        elif not isinstance(lam_grids, list):
-            lam_grids = [np.atleast_1d(lam_grids)] * n_lam_slots
-        elif len(lam_grids) == n_lam_searched and n_lam_searched != n_lam_slots:
-            lam_grids = self._expand_partial_grids(
-                lam_grids, search_idx, 'lam'
-            )
-        elif len(lam_grids) == 1 and n_lam_slots > 1:
-            lam_grids = lam_grids * n_lam_slots
-        elif len(lam_grids) != n_lam_slots:
-            raise ValueError(
-                f"lam_grids has {len(lam_grids)} elements, "
-                f"but model requires {n_lam_slots} lam slots "
-                f"({self.formula})."
-                + (
-                    f" When using search_terms, you can provide "
-                    f"{n_lam_searched} element(s) for searched terms only."
-                    if n_lam_searched != n_lam_slots else ""
-                )
-            )
-
+        # ── 1. Spline basis grid (all_k_combos) ───────────────────
+        # By default (matching pyGAM), n_splines is NOT searched.
         if n_splines_grids is None:
-            n_splines_grids = []
+            k_combo = []
             for t in self._terms:
                 if isinstance(t, _SplineTerm):
-                    n_splines_grids.append(np.arange(5, 25, 2))
+                    k_combo.append(int(t.n_splines))
                 elif isinstance(t, _TensorTerm):
-                    n_splines_grids.extend([np.arange(4, 8)] * t.d)
-        elif not isinstance(n_splines_grids, list):
-            n_splines_grids = [np.atleast_1d(n_splines_grids)] * max(n_nsp_slots, 1)
-        elif len(n_splines_grids) == n_nsp_searched and n_nsp_searched != n_nsp_slots:
-            n_splines_grids = self._expand_partial_grids(
-                n_splines_grids, search_idx, 'nsp'
-            )
-        elif len(n_splines_grids) == 1 and n_nsp_slots > 1:
-            n_splines_grids = n_splines_grids * n_nsp_slots
-        elif len(n_splines_grids) != n_nsp_slots:
-            raise ValueError(
-                f"n_splines_grids has {len(n_splines_grids)} elements, "
-                f"but model requires {n_nsp_slots} n_splines slots "
-                f"({self.formula})."
-                + (
-                    f" When using search_terms, you can provide "
-                    f"{n_nsp_searched} element(s) for searched terms only."
-                    if n_nsp_searched != n_nsp_slots else ""
-                )
-            )
-
-        lam_grids = list(lam_grids)
-        n_splines_grids = list(n_splines_grids)
-
-        lam_idx = 0
-        nsp_idx = 0
-        for i, t in enumerate(self._terms):
-            if isinstance(t, _TensorTerm):
-                n_lam = t.d
-                n_nsp = t.d
-            elif isinstance(t, _SplineTerm):
-                n_lam = 1
-                n_nsp = 1
-            elif isinstance(t, (_FactorTerm, _LinearTerm)):
-                n_lam = 1
-                n_nsp = 0
-            else:
-                n_lam = 1
-                n_nsp = 0
-
-            if i not in search_idx:
-                if isinstance(t, _TensorTerm):
-                    lam_grids[lam_idx:lam_idx + n_lam] = [
-                        np.array([v]) for v in t.lam_per
-                    ]
-                    n_splines_grids[nsp_idx:nsp_idx + n_nsp] = [
-                        np.array([v]) for v in t.n_splines_per
-                    ]
+                    k_combo.append(tuple(int(k) for k in t.n_splines_per))
                 else:
-                    lam_grids[lam_idx] = np.array([t.lam])
-                    if isinstance(t, _SplineTerm):
-                        n_splines_grids[nsp_idx] = np.array([t.n_splines])
+                    k_combo.append(None)
+            all_k_combos = [tuple(k_combo)]
+        else:
+            n_nsp_slots = sum(
+                t.d if isinstance(t, _TensorTerm) else 1
+                for t in self._terms
+                if isinstance(t, (_SplineTerm, _TensorTerm))
+            )
+            n_nsp_searched = sum(
+                t.d if isinstance(t, _TensorTerm) else 1
+                for i, t in enumerate(self._terms)
+                if i in search_idx and isinstance(t, (_SplineTerm, _TensorTerm))
+            )
 
-            lam_idx += n_lam
-            nsp_idx += n_nsp
+            if not isinstance(n_splines_grids, list):
+                n_splines_grids = [np.atleast_1d(n_splines_grids)] * max(n_nsp_slots, 1)
+            elif len(n_splines_grids) == n_nsp_searched and n_nsp_searched != n_nsp_slots:
+                n_splines_grids = self._expand_partial_grids(
+                    n_splines_grids, search_idx, 'nsp'
+                )
+            elif len(n_splines_grids) == 1 and n_nsp_slots > 1:
+                n_splines_grids = n_splines_grids * n_nsp_slots
+            elif len(n_splines_grids) != n_nsp_slots:
+                raise ValueError(
+                    f"n_splines_grids has {len(n_splines_grids)} elements, "
+                    f"but model requires {n_nsp_slots} n_splines slots "
+                    f"({self.formula})."
+                )
+
+            min_nsp = self.spline_order + 1
+            for i, grid in enumerate(n_splines_grids):
+                for v in np.atleast_1d(grid):
+                    v_int = int(v)
+                    if v_int <= self.spline_order:
+                        raise ValueError(
+                            f"n_splines_grids[{i}] has value {v_int}, "
+                            f"must be > spline_order ({self.spline_order}). "
+                            f"Use at least {min_nsp}."
+                        )
+
+            nsp_idx = 0
+            k_combo_elements: List[List] = []
+            for t in self._terms:
+                if isinstance(t, _SplineTerm):
+                    grid = np.atleast_1d(n_splines_grids[nsp_idx])
+                    k_combo_elements.append([int(v) for v in grid])
+                    nsp_idx += 1
+                elif isinstance(t, _TensorTerm):
+                    grids = [
+                        np.atleast_1d(g)
+                        for g in n_splines_grids[nsp_idx:nsp_idx + t.d]
+                    ]
+                    combos = [
+                        tuple(int(v) for v in c)
+                        for c in cartesian_product(*grids)
+                    ]
+                    k_combo_elements.append(combos)
+                    nsp_idx += t.d
+                else:
+                    k_combo_elements.append([None])
+
+            all_k_combos = list(cartesian_product(*k_combo_elements))
+
+        # ── 2. Lambda grid (lam_combos) ───────────────────────────
+        slot_term_map: List[Tuple[int, int]] = []
+        default_fixed: List[float] = []
+        for ti, t in enumerate(self._terms):
+            if isinstance(t, _TensorTerm):
+                for d_i in range(t.d):
+                    slot_term_map.append((ti, d_i))
+                    default_fixed.append(float(t.lam_per[d_i]))
+            else:
+                slot_term_map.append((ti, 0))
+                default_fixed.append(float(t.lam))
+
+        total_slots = len(slot_term_map)
+        searched_slot_indices = [
+            si for si, (ti, _) in enumerate(slot_term_map) if ti in search_idx
+        ]
+
+        if lam_grids is None:
+            # Official pyGAM default: 11 points diagonally across lambda space
+            diag_grid = np.logspace(-3, 3, 11)
+            lam_combos = []
+            for val in diag_grid:
+                combo = list(default_fixed)
+                for si in searched_slot_indices:
+                    combo[si] = float(val)
+                lam_combos.append(tuple(combo))
+
+        elif isinstance(lam_grids, np.ndarray) and lam_grids.ndim == 2:
+            n_rows, n_cols = lam_grids.shape
+            if n_cols == len(searched_slot_indices):
+                lam_combos = []
+                for row in lam_grids:
+                    combo = list(default_fixed)
+                    for si, val in zip(searched_slot_indices, row):
+                        combo[si] = float(val)
+                    lam_combos.append(tuple(combo))
+            elif n_cols == total_slots:
+                lam_combos = [tuple(float(v) for v in row) for row in lam_grids]
+            else:
+                raise ValueError(
+                    f"2D lam_grids has {n_cols} columns, expected {len(searched_slot_indices)} "
+                    f"for searched slots or {total_slots} for all slots."
+                )
+
+        elif isinstance(lam_grids, list) and len(lam_grids) > 1:
+            # Multiple subgrids passed: Cartesian product across subgrids
+            n_searched = len(searched_slot_indices)
+            if len(lam_grids) == n_searched and n_searched != total_slots:
+                lam_grids = self._expand_partial_grids(
+                    lam_grids, search_idx, 'lam'
+                )
+            elif len(lam_grids) != total_slots:
+                raise ValueError(
+                    f"lam_grids has {len(lam_grids)} elements, "
+                    f"but model requires {total_slots} lam slots "
+                    f"({self.formula})."
+                )
+            raw_combos = list(cartesian_product(*[np.atleast_1d(g) for g in lam_grids]))
+            final_combos = []
+            for c in raw_combos:
+                combo = list(c)
+                for si, (ti, _) in enumerate(slot_term_map):
+                    if ti not in search_idx:
+                        combo[si] = default_fixed[si]
+                final_combos.append(tuple(float(v) for v in combo))
+            lam_combos = list(dict.fromkeys(final_combos))
+
+        else:
+            # 1D array or single-element list: DIAGONAL SEARCH
+            sub = lam_grids[0] if isinstance(lam_grids, list) else lam_grids
+            diag_grid = np.atleast_1d(sub)
+            lam_combos = []
+            for val in diag_grid:
+                combo = list(default_fixed)
+                for si in searched_slot_indices:
+                    combo[si] = float(val)
+                lam_combos.append(tuple(combo))
 
         self._compile(x)
-        return lam_grids, n_splines_grids
+        return all_k_combos, lam_combos
 
     # ── fast grid search (Cholesky) ───────────────────────────────
 
@@ -539,53 +585,20 @@ class GAMCore:
         self,
         x: np.ndarray,
         y: np.ndarray,
-        lam_grids: Optional[List[ArrayLike]] = None,
-        n_splines_grids: Optional[List[ArrayLike]] = None,
+        lam: Optional[Union[List[ArrayLike], ArrayLike]] = None,
+        n_splines: Optional[Union[List[ArrayLike], ArrayLike]] = None,
         gamma: float = 1.4,
         search_terms: Optional[Union[List[Union[int, str]], str]] = None,
+        n_jobs: int = 1,
     ) -> "GAMCore":
-        lam_grids, n_splines_grids = self._build_default_grids(
-            x, lam_grids, n_splines_grids, search_terms,
+        all_k_combos, lam_combos = self._build_combos(
+            x, lam, n_splines, search_terms,
         )
         n = len(y)
-
-        min_nsp = self.spline_order + 1
-        for i, grid in enumerate(n_splines_grids):
-            for v in np.atleast_1d(grid):
-                v_int = int(v)
-                if v_int <= self.spline_order:
-                    raise ValueError(
-                        f"n_splines_grids[{i}] has value {v_int}, "
-                        f"must be > spline_order ({self.spline_order}). "
-                        f"Use at least {min_nsp}."
-                    )
-
-        nsp_idx = 0
-        k_combo_elements: List[List] = []
-        for t in self._terms:
-            if isinstance(t, _SplineTerm):
-                grid = np.atleast_1d(n_splines_grids[nsp_idx])
-                k_combo_elements.append([int(v) for v in grid])
-                nsp_idx += 1
-            elif isinstance(t, _TensorTerm):
-                grids = [
-                    np.atleast_1d(g)
-                    for g in n_splines_grids[nsp_idx:nsp_idx + t.d]
-                ]
-                combos = [
-                    tuple(int(v) for v in c)
-                    for c in cartesian_product(*grids)
-                ]
-                k_combo_elements.append(combos)
-                nsp_idx += t.d
-            else:
-                k_combo_elements.append([None])
-
-        all_k_combos = list(cartesian_product(*k_combo_elements))
-        lam_combos = list(cartesian_product(*lam_grids))
+        yty = float(np.dot(y, y))
 
         def _precompute_k(k_combo):
-            configs_copy = [dict(cfg) for cfg in self._term_configs]
+            configs_copy = [{**cfg, 'kwargs': dict(cfg['kwargs'])} for cfg in self._term_configs]
             for ci, cfg in enumerate(configs_copy):
                 k_val = k_combo[ci]
                 if cfg['type'] == 's' and k_val is not None:
@@ -599,20 +612,25 @@ class GAMCore:
                 t.compile(x)
             X_k = _build_matrix_from_terms(terms_copy, x, self.fit_intercept)
             Q, R = np.linalg.qr(X_k)
+            qty = Q.T @ y
             RtR = R.T @ R
-            Rt_qty = R.T @ (Q.T @ y)
+            Rt_qty = R.T @ qty
+            ss_orth = max(0.0, yty - float(np.dot(qty, qty)))
             bases_list, m = _precompute_penalty_bases(
                 terms_copy, self.fit_intercept,
             )
-            return X_k, RtR, Rt_qty, bases_list, m, terms_copy
+            return R, RtR, Rt_qty, qty, ss_orth, bases_list, m, terms_copy
 
-        with ThreadPoolExecutor() as executor:
-            precomputed = list(executor.map(_precompute_k, all_k_combos))
-
-        n_k = len(precomputed)
+        n_k = len(all_k_combos)
+        if n_jobs != 1 and n_k > 1:
+            workers = os.cpu_count() or 4 if n_jobs == -1 else max(1, int(n_jobs))
+            with ThreadPoolExecutor(max_workers=min(workers, n_k)) as ex:
+                precomputed = list(ex.map(_precompute_k, all_k_combos))
+        else:
+            precomputed = [_precompute_k(c) for c in all_k_combos]
 
         def _eval_k_combo(k_idx):
-            X_pc, RtR, Rt_qty, bases_list, m, terms_pc = precomputed[k_idx]
+            R, RtR, Rt_qty, qty, ss_orth, bases_list, m, terms_pc = precomputed[k_idx]
             P_buf = np.zeros((m, m))
             B_buf = np.empty((m, m))
             best_gcv_k = np.inf
@@ -623,7 +641,7 @@ class GAMCore:
                     bases_list, l_combo, m, self.fit_intercept, out=P_buf,
                 )
                 np.add(RtR, P_buf, out=B_buf)
-                B_buf.flat[::m + 1] += 1e-12
+                B_buf.flat[::m + 1] += 1e-8
                 try:
                     c_chol, lower = cho_factor(
                         B_buf, overwrite_a=True, check_finite=False,
@@ -635,12 +653,13 @@ class GAMCore:
                     edf = float(np.trace(B_inv_RtR))
                 except Exception:
                     B_fallback = RtR + P_buf
-                    B_fallback.flat[::m + 1] += 1e-12
-                    coef = np.linalg.solve(B_fallback, Rt_qty)
-                    edf = float(np.trace(np.linalg.solve(B_fallback, RtR)))
+                    B_fallback.flat[::m + 1] += 1e-8
+                    coef, _, _, _ = np.linalg.lstsq(B_fallback, Rt_qty, rcond=1e-10)
+                    edf = float(np.trace(np.linalg.pinv(B_fallback, rcond=1e-10) @ RtR))
 
-                residuals = y - X_pc @ coef
-                rss = float(residuals @ residuals)
+                # Never sweep giant design matrix X: compute RSS strictly in reduced M-coordinate space
+                r_diff = qty - R @ coef
+                rss = max(0.0, ss_orth + float(np.dot(r_diff, r_diff)))
                 gcv = (n * rss) / max(n - gamma * edf, 1) ** 2
 
                 if gcv < best_gcv_k:
@@ -649,8 +668,12 @@ class GAMCore:
 
             return best_gcv_k, k_idx, best_l_idx
 
-        with ThreadPoolExecutor() as executor:
-            k_results = list(executor.map(_eval_k_combo, range(n_k)))
+        if n_jobs != 1 and n_k > 1:
+            workers = os.cpu_count() or 4 if n_jobs == -1 else max(1, int(n_jobs))
+            with ThreadPoolExecutor(max_workers=min(workers, n_k)) as ex:
+                k_results = list(ex.map(_eval_k_combo, range(n_k)))
+        else:
+            k_results = [_eval_k_combo(i) for i in range(n_k)]
 
         best_gcv = np.inf
         best_k_idx = 0
@@ -661,127 +684,12 @@ class GAMCore:
                 best_k_idx = k_idx
                 best_l_idx = l_idx
 
-        _, _, _, _, _, best_terms = precomputed[best_k_idx]
+        best_terms = precomputed[best_k_idx][-1]
         best_l_combo = lam_combos[best_l_idx]
         self._terms = best_terms
         _set_lams_from_combo(self._terms, best_l_combo)
         self._compile(x)
-        self._fit_internal(x, y, robust=False)
-        return self
-
-    # ── robust grid search (IRLS) ─────────────────────────────────
-
-    def _gridsearch_robust(
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        lam_grids: Optional[List[ArrayLike]] = None,
-        n_splines_grids: Optional[List[ArrayLike]] = None,
-        gamma: float = 1.4,
-        search_terms: Optional[Union[List[Union[int, str]], str]] = None,
-    ) -> "GAMCore":
-        lam_grids, n_splines_grids = self._build_default_grids(
-            x, lam_grids, n_splines_grids, search_terms,
-        )
-        n = len(y)
-
-        min_nsp = self.spline_order + 1
-        for i, grid in enumerate(n_splines_grids):
-            for v in np.atleast_1d(grid):
-                v_int = int(v)
-                if v_int <= self.spline_order:
-                    raise ValueError(
-                        f"n_splines_grids[{i}] has value {v_int}, "
-                        f"must be > spline_order ({self.spline_order}). "
-                        f"Use at least {min_nsp}."
-                    )
-
-        nsp_idx = 0
-        k_combo_elements: List[List] = []
-        for t in self._terms:
-            if isinstance(t, _SplineTerm):
-                grid = np.atleast_1d(n_splines_grids[nsp_idx])
-                k_combo_elements.append([int(v) for v in grid])
-                nsp_idx += 1
-            elif isinstance(t, _TensorTerm):
-                grids = [
-                    np.atleast_1d(g)
-                    for g in n_splines_grids[nsp_idx:nsp_idx + t.d]
-                ]
-                combos = [
-                    tuple(int(v) for v in c)
-                    for c in cartesian_product(*grids)
-                ]
-                k_combo_elements.append(combos)
-                nsp_idx += t.d
-            else:
-                k_combo_elements.append([None])
-
-        all_k_combos = list(cartesian_product(*k_combo_elements))
-        lam_combos = list(cartesian_product(*lam_grids))
-
-        def _precompute_k(k_combo):
-            configs_copy = [dict(cfg) for cfg in self._term_configs]
-            for ci, cfg in enumerate(configs_copy):
-                k_val = k_combo[ci]
-                if cfg['type'] == 's' and k_val is not None:
-                    cfg['kwargs']['n_splines'] = k_val
-                elif cfg['type'] == 'te' and k_val is not None:
-                    cfg['kwargs']['n_splines'] = (
-                        list(k_val) if len(k_val) > 1 else k_val[0]
-                    )
-            terms_copy = instantiate_terms(configs_copy, self.spline_order)
-            for t in terms_copy:
-                t.compile(x)
-            X_k = _build_matrix_from_terms(terms_copy, x, self.fit_intercept)
-            bases_list, m = _precompute_penalty_bases(
-                terms_copy, self.fit_intercept,
-            )
-            return X_k, bases_list, m, terms_copy
-
-        with ThreadPoolExecutor() as executor:
-            precomputed = list(executor.map(_precompute_k, all_k_combos))
-
-        best_gcv = np.inf
-        best_result: Optional[tuple] = None
-
-        for k_idx, k_combo in enumerate(all_k_combos):
-            X_full, bases_list, m, terms_k = precomputed[k_idx]
-            P_buf = np.zeros((m, m))
-
-            def _eval_lam(l_combo):
-                _assemble_penalty_from_bases(
-                    bases_list, l_combo, m, self.fit_intercept, out=P_buf,
-                )
-                P_full = P_buf.copy()
-                coef, U1, _, _, _ = irls_solve(
-                    X_full, y, P_full, n_iter=10,
-                )
-                residuals = y - X_full @ coef
-                rss = float(residuals @ residuals)
-                edf = float(np.sum(U1 ** 2))
-                gcv = (n * rss) / max(n - gamma * edf, 1) ** 2
-                return gcv, coef, edf, l_combo
-
-            with ThreadPoolExecutor() as executor:
-                results = list(executor.map(_eval_lam, lam_combos))
-
-            for gcv_val, coef_val, edf_val, l_combo in results:
-                if gcv_val < best_gcv:
-                    best_gcv = gcv_val
-                    best_result = (
-                        gcv_val, k_combo, l_combo,
-                        coef_val, edf_val, terms_k,
-                    )
-
-        if best_result is None:
-            raise RuntimeError("Grid search failed: no valid result.")
-
-        _, best_k_combo, best_l_combo, best_coef_vec, best_edf, best_terms = best_result
-        self._terms = best_terms
-        _set_lams_from_combo(self._terms, best_l_combo)
-        self._compile(x)
-        self._fit_internal(x, y, robust=True)
+        self._fit_internal(x, y)
         return self
 
     # ── plotting ─────────────────────────────────────────────────

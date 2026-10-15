@@ -10,8 +10,8 @@ sys.path.insert(0, os.path.abspath('../src'))
 project = 'linGAM'
 copyright = '2026, David Ávila Cortés'
 author = 'David Ávila Cortés'
-release = '0.2.0'
-version = '0.2'
+release = '0.3.0'
+version = '0.3'
 
 extensions = [
     'sphinx.ext.autodoc',
