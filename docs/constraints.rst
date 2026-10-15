@@ -53,10 +53,10 @@ forces adjacent B-spline coefficients to be similar.  Because B-spline basis
 functions are ordered left-to-right across the domain, similar coefficients
 produce a curve that does not reverse direction — hence monotonic.
 
-* ``mono_inc`` applies the penalty as-is.
-* ``mono_dec`` applies the same penalty; the data + negative trend
-  naturally produces a decreasing fit because the unpenalised OLS direction
-  is downward.
+* ``mono_inc`` and ``mono_dec`` both apply the same sign-symmetric
+  first-difference penalty :math:`\lambda D_1^\top D_1` (which shrinks
+  toward a flat constant; the upward or downward direction comes from the
+  data's own trend, while :math:`D_1^\top D_1` damps local reversals).
 
 **Periodicity** wraps the basis and penalty:
 
@@ -67,11 +67,11 @@ produce a curve that does not reverse direction — hence monotonic.
 * The second-difference penalty connects index :math:`K_{\text{eff}}` back
   to index 1, so :math:`\beta_{K_{\text{eff}}} \approx \beta_1`.
 
-**Convexity / concavity** use the standard second-difference penalty.  The
-difference is subtle: convexity is a property of the *second derivative*,
-which is already penalised by :math:`D_2^\top D_2`.  The constraint keyword
-is primarily a signal to the user and may be combined with stronger
-:math:`\lambda` values to more aggressively penalise inflection points.
+**Convexity / concavity** (``convex`` and ``concave``) use the standard
+symmetric second-difference penalty :math:`\lambda D_2^\top D_2` (the same
+penalty matrix as ``constraint=None``), which penalises curvature variation
+toward a linear trend while recording the intended shape metadata on the
+term.
 
 When to use which
 -----------------

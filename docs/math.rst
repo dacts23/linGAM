@@ -134,9 +134,9 @@ fixed (usually at the median).  This is the "all else equal" effect.
     relative to the reference level.  Tall bars mean big differences between
     categories.
 
-  - ``l()`` panel: a straight line.  The slope (beta coefficient) is shown
-    in the title.  The line passes through zero at the median of the
-    predictor.
+  - ``l()`` panel: a straight line :math:`\hat\beta_j x_j`.  The slope
+    (:math:`\hat\beta_j` coefficient) is shown in the title, and the line
+    passes through zero at :math:`x_j = 0`.
 
 * **Red shaded regions:** Extrapolation — the model is predicting outside
   the range of the training data.  Treat these regions with caution; the
@@ -262,19 +262,20 @@ Each :math:`B_j(x)` is one basis function; :math:`\beta_j` is how tall
 you make it; :math:`K` is how many bricks you use (``n_splines`` in the
 API).
 
-**The De Boor recursion.**  A B-spline of order :math:`k` (polynomial
-degree :math:`k-1`) is built recursively.  Given data
-:math:`x \in [x_{\min}, x_{\max}]`, we map to :math:`[0, 1]`:
+**The De Boor recursion.**  A B-spline of polynomial degree :math:`k`
+(order :math:`k+1`, ``spline_order=k`` in the API) is built recursively.
+Given data :math:`x \in [x_{\min}, x_{\max}]`, we map to :math:`[0, 1]`:
 
 .. math::
 
    z = \frac{x - x_{\min}}{x_{\max} - x_{\min}}.
 
-Uniform interior knots divide :math:`[0, 1]` into segments:
+Uniform interior knots (:math:`1 + K - k` points) divide :math:`[0, 1]`
+into :math:`K - k` segments:
 
 .. math::
 
-   \tau_0 = 0, \; \tau_1, \dots, \tau_{K-k+1} = 1.
+   \tau_0 = 0, \; \tau_1, \dots, \tau_{K-k} = 1.
 
 The augmented knot sequence extends :math:`k` knots beyond each boundary
 to handle the edges.
@@ -377,10 +378,12 @@ curves we expect.
    \qquad
    P = \lambda \, D_2^\top D_2.
 
-*First-difference penalty (monotonicity):*  Penalises *changes* between
-adjacent coefficients.  If all adjacent coefficients are similar, the
-curve can't reverse direction — hence the curve is pushed toward being
-monotonic.
+*First-difference penalty (``mono_inc`` / ``mono_dec``):*  Penalises
+*changes* between adjacent coefficients, :math:`\sum_i (\beta_{i+1} -
+\beta_i)^2` (a discrete first-derivative penalty whose null space is
+constants only).  Because adjacent coefficients are pulled toward each
+other, local oscillations are damped so a strong underlying upward or
+downward trend in the data remains monotone.
 
 .. math::
 
@@ -401,14 +404,16 @@ mathematical equivalent of gluing the two ends of the curve together.
 all coefficients toward zero by the same amount.  (Linear ``l()`` terms
 default to :math:`\lambda = 0`: unpenalised.)
 
-**A honest caveat about "constraints".**  The ``constraint=`` argument maps
-mono_inc/mono_dec to the first-difference penalty and convex/concave to
-the second-difference penalty.  These are *soft* pushes, not hard
-constraints: a heavily penalised first-difference fit is almost monotonic
-but is never forced to be exactly monotonic.  For hard guarantees you would
-need an inequality-constrained solver — a different mathematical problem
-altogether (and one reason the mgcv backend does not offer these options
-at all).
+**An honest caveat about "constraints".**  The ``constraint=`` argument maps
+both ``'mono_inc'`` and ``'mono_dec'`` to the same sign-symmetric
+first-difference penalty :math:`\lambda D_1^\top D_1` (which shrinks toward
+a flat constant and does not distinguish :math:`+` from :math:`-` slopes),
+and maps both ``'convex'`` and ``'concave'`` to the standard
+second-difference penalty :math:`\lambda D_2^\top D_2` (identical to
+``constraint=None``).  Only ``constraint='periodic'`` alters the basis and
+penalty structure asymmetrically (wrapping the basis and circularly
+connecting :math:`D_2`).  Enforcing true directional monotonicity or
+convexity/concavity requires an asymmetric or inequality-constrained solver.
 
 **The role of** :math:`\boldsymbol{\lambda}` **cannot be overstated.**
 :math:`\lambda` determines how much information the model extracts from the
@@ -531,14 +536,18 @@ computed in a single NumPy call with no matrix inversion.
 * ``EDF`` growing while GCV stays flat: you're overfitting — the extra
   wiggle doesn't help prediction.
 
-Per-coefficient EDF tells you *which* basis functions are doing the work:
+Per-direction EDF is stored in ``statistics_['edof_per_coef']``:
 
 .. math::
 
-   \text{EDF}_j = \sum_i U_{1,ij}^2.
+   \text{EDF}_j = \sum_i U_{1,ji}^2 = (U_1 U_1^\top)_{jj}.
 
-A coefficient with EDF :math:`\approx 0` is essentially ignored by the
-model — its basis function could be removed without consequence.
+Note that in the pygam SVD solver, the rows of :math:`U_1` correspond to
+the :math:`m` QR-orthogonalised directions of :math:`R` (:math:`Q^\top H Q
+= U_1 U_1^\top`), whereas the mgcv backend reports the diagonal of the
+coefficient influence matrix :math:`F = (X^\top X + S_\lambda)^{-1}
+X^\top X` directly in the spline basis coordinates; both sum to the exact
+same total :math:`\text{EDF} = \operatorname{tr}(H)`.
 
 
 .. _section-gcv:
@@ -1570,10 +1579,10 @@ the differences; the subsections after it explain the ones that matter.
      - mgcv backend
    * - Basis families
      - One: uniform B-spline, cubic default, linear extrapolation, periodic folding
-     - Seven+: ``tp``, ``ts``, ``cr``, ``cs``, ``cc``, ``ps``, ``re`` (+ ``cp`` stub), mixable per tensor margin
+     - Eight: ``tp``, ``ts``, ``cr``, ``cs``, ``cc``, ``ps``, ``cp``, ``re``, mixable per tensor margin
    * - Knot placement
      - Uniform over :math:`[\min x, \max x]`
-     - Quantiles (``cr``/``cs``), even spread through unique values (``cc``), equally spaced (``ps``), knot-free eigen-basis (``tp``)
+     - Quantiles (``cr``/``cs``), even spread through unique values (``cc``), equally spaced (``ps``/``cp``), knot-free eigen-basis (``tp``/``ts``)
    * - Smoothing parameters
      - One :math:`\lambda` per term (per tensor dimension); grid can be broadcast to all
      - One :math:`\lambda` per penalty matrix; each estimated independently
@@ -1599,11 +1608,11 @@ the differences; the subsections after it explain the ones that matter.
      - None — compare GCV scores between models
      - Wood (2013) approximate F-tests with p-values
    * - Model metrics
-     - GCV
-     - REML/GCV score, AIC, BIC, deviance explained, adjusted :math:`R^2`
+     - GCV, AIC, BIC, log-likelihood, deviance explained
+     - REML/GCV score, AIC, BIC, log-likelihood, deviance explained, adjusted :math:`R^2`
    * - Shape constraints
-     - Soft: mono inc/dec, convex, concave via :math:`D_1`/:math:`D_2` penalties; periodic via wrapped basis
-     - Periodic via ``cc`` (``cp`` pending); no monotonic/convex options
+     - Soft: ``mono_inc``/``mono_dec`` (:math:`D_1` penalty), ``convex``/``concave`` (:math:`D_2` penalty), ``periodic`` (wrapped basis + circular :math:`D_2`)
+     - Periodic via ``cc`` and ``cp``; no monotonic/convex options
    * - Robust fitting
      - Huber IRLS, MAD-scaled
      - Not available (plain penalised least squares)
