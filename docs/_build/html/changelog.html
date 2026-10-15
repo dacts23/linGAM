@@ -274,8 +274,19 @@ factory dispatchers.</p></li>
 <section id="improvements">
 <h3>Improvements<a class="headerlink" href="#improvements" title="Link to this heading">¶</a></h3>
 <ul class="simple">
-<li><p><strong>Simplified and unbloated</strong>: Removed thread management overhead and unused
-Huber IRLS iterations.</p></li>
+<li><p><strong>Shared ``_GAMBase`` lifecycle</strong>: <code class="docutils literal notranslate"><span class="pre">lingam._base</span></code> now holds the
+code both engines inherit — <code class="docutils literal notranslate"><span class="pre">predict</span></code>, <code class="docutils literal notranslate"><span class="pre">partial_dependence</span></code>,
+confidence/prediction intervals, <code class="docutils literal notranslate"><span class="pre">loglikelihood</span></code>/<code class="docutils literal notranslate"><span class="pre">aic</span></code>/<code class="docutils literal notranslate"><span class="pre">bic</span></code>/
+<code class="docutils literal notranslate"><span class="pre">deviance_explained</span></code>, and all decomposition/diagnostic plotting.
+Note the scale convention it abstracts: pygam stores <code class="docutils literal notranslate"><span class="pre">scale</span></code> as
+σ (uses <code class="docutils literal notranslate"><span class="pre">s**2</span></code> as variance), mgcv stores it as σ² directly.</p></li>
+<li><p><strong>Huber IRLS robust fitting</strong>: <code class="docutils literal notranslate"><span class="pre">fit(x,</span> <span class="pre">y,</span> <span class="pre">robust=True)</span></code> (pygam
+backend) runs <code class="docutils literal notranslate"><span class="pre">irls_solve</span></code> — up to 15 MAD-scaled (<code class="docutils literal notranslate"><span class="pre">c=1.345</span></code>)
+re-weighting iterations with weighted RSS in the reported statistics.</p></li>
+<li><p><strong>Cyclic P-splines (``’cp’``)</strong>: no longer fall back to <code class="docutils literal notranslate"><span class="pre">'ps'</span></code> —
+dedicated basis with wrapped knots and a wrapped difference penalty.</p></li>
+<li><p><strong>Thin-plate shrinkage (``’ts’``)</strong>: now charges the null-space
+(smallest) eigenvalues as in R mgcv, instead of the largest ones.</p></li>
 <li><p><strong>Fixed R² computation</strong>: Corrected deviance explained calculation against the
 sample mean null deviance.</p></li>
 <li><p><strong>Input validation</strong>: Enforced NaN and Inf validation across all fit methods.</p></li>

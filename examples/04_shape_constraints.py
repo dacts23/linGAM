@@ -76,24 +76,35 @@ axes[5].axis('off')
 fig.tight_layout()
 plt.show()
 
-# --- Diagnostics: observed vs fitted & residuals vs fitted ---
-# Use the monotonic-increasing model as representative
-y_fit = model_inc.predict(dose)
-residuals = response - y_fit
+# --- Built-in diagnostics plot ---
+model_inc.plot_diagnostics(dose, response)
+plt.show()
 
-fig_diag, axes_diag = plt.subplots(1, 2, figsize=(10, 4))
-axes_diag[0].scatter(response, y_fit, c='steelblue', edgecolors='k', s=20, alpha=0.6)
-ymin, ymax = response.min(), response.max()
-axes_diag[0].plot([ymin, ymax], [ymin, ymax], 'r--', lw=1.5, label='1:1 line')
-axes_diag[0].set_xlabel('Observed y')
-axes_diag[0].set_ylabel('Fitted y')
-axes_diag[0].set_title('Observed vs Fitted (mono_inc)')
-axes_diag[0].legend()
+# --- Backend comparison: pyGAM vs R mgcv (side-by-side) ---
+# Soft shape constraints (mono_inc/mono_dec/convex/concave) are a pyGAM-backend
+# feature; the mgcv backend natively supports only the periodic constraint
+# (cyclic cubic splines, bs='cc'). So only the seasonal model has an mgcv
+# counterpart — it should match the pyGAM periodic fit up to basis differences.
+mgcv_per = LinGAM(k=14, bs="cc", backend="mgcv")
+mgcv_per.fit(hour, temp)
+print("\n--- Backend comparison: periodic fit on both backends ---")
+print(f"{'Metric':<18}{'pyGAM periodic':>16}{'mgcv (cc)':>12}")
+print(f"{'EDF':<18}{model_per.statistics_['edof']:>16.2f}{mgcv_per.statistics_['edof']:>12.2f}")
+print(f"{'RSS':<18}{model_per.statistics_['rss']:>16.4f}{mgcv_per.statistics_['rss']:>12.4f}")
+print(f"{'R^2':<18}{model_per.deviance_explained():>16.4f}{mgcv_per.deviance_explained():>12.4f}")
+print(f"pyGAM wrap diff |f(6)-f(30)|  = {abs(model_per.predict([6])[0] - model_per.predict([30])[0]):.4f}")
+print(f"mgcv  wrap diff |f(6)-f(30)|  = {abs(mgcv_per.predict([6])[0] - mgcv_per.predict([30])[0]):.4f}")
+print("(mono_inc/mono_dec/convex/concave have no mgcv equivalent — pyGAM-only.)")
 
-axes_diag[1].scatter(y_fit, residuals, c='steelblue', edgecolors='k', s=20, alpha=0.6)
-axes_diag[1].axhline(0, color='r', linestyle='--', lw=1.5)
-axes_diag[1].set_xlabel('Fitted y')
-axes_diag[1].set_ylabel('Residuals')
-axes_diag[1].set_title('Residuals vs Fitted (mono_inc)')
-fig_diag.tight_layout()
+# --- Same-plot overlay: periodic fits from both backends ---
+hour_grid = np.linspace(0, 48, 500)
+fig_cmp, ax_cmp = plt.subplots(figsize=(9, 4))
+ax_cmp.scatter(hour, temp, c='lightgray', s=10, label='Data')
+ax_cmp.plot(hour_grid, model_per.predict(hour_grid), 'b-', lw=2, label='pyGAM periodic')
+ax_cmp.plot(hour_grid, mgcv_per.predict(hour_grid), 'r-.', lw=2, label="mgcv (bs='cc')")
+ax_cmp.set_xlabel('Hour')
+ax_cmp.set_ylabel('Temperature')
+ax_cmp.set_title('Backend Overlay: periodic fits')
+ax_cmp.legend()
+fig_cmp.tight_layout()
 plt.show()

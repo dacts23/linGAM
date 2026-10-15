@@ -1,61 +1,36 @@
 """linGAM — Simple Fast Linear GAM with PyGAM and R mgcv backends."""
 
 from . import mgcv, pygam
-from .mgcv import (
-    GAMCore as MgcvGAMCore,
-    LinGAM as MgcvLinGAM,
-)
-from .pygam import (
-    GAMCore as PygamGAMCore,
-    LinGAM as PygamLinGAM,
-)
+from .mgcv import GAMCore as MgcvGAMCore, LinGAM as MgcvLinGAM
+from .pygam import GAMCore as PygamGAMCore, LinGAM as PygamLinGAM
 
 __version__ = "0.3.0"
 
+_BACKENDS = {
+    "pygam": (PygamLinGAM, PygamGAMCore),
+    "mgcv": (MgcvLinGAM, MgcvGAMCore),
+}
+
+
+def _dispatch(idx: int, backend: str, *args, **kwargs):
+    key = str(backend).lower()
+    if key not in _BACKENDS:
+        raise ValueError(f"Unknown backend '{backend}'. Choose 'pygam' or 'mgcv'.")
+    return _BACKENDS[key][idx](*args, **kwargs)
+
 
 class LinGAM:
-    """Single-term GAM supporting both pyGAM and R mgcv backends.
-
-    Parameters
-    ----------
-    backend : {'pygam', 'mgcv'}, default 'pygam'
-        Which engine to use:
-
-        - 'pygam': Fast B-splines with GCV grid search.
-        - 'mgcv': Exact R mgcv implementation with REML (or GCV) smoothing
-          parameter optimization, multiple basis types ('tp', 'cr',
-          'ps', 'cc', etc.), and exact penalty rescaling.
-    """
+    """Single-term GAM supporting both pyGAM and R mgcv backends."""
 
     def __new__(cls, *args, backend: str = "pygam", **kwargs):
-        backend = str(backend).lower()
-        if backend == "mgcv":
-            return MgcvLinGAM(*args, **kwargs)
-        elif backend == "pygam":
-            return PygamLinGAM(*args, **kwargs)
-        else:
-            raise ValueError(f"Unknown backend '{backend}'. Choose 'pygam' or 'mgcv'.")
+        return _dispatch(0, backend, *args, **kwargs)
 
 
 class GAMCore:
-    """Multi-term GAM supporting both pyGAM and R mgcv backends.
-
-    Parameters
-    ----------
-    formula : str
-        Model specification.
-    backend : {'pygam', 'mgcv'}, default 'pygam'
-        Which engine to use ('pygam' or 'mgcv').
-    """
+    """Multi-term GAM supporting both pyGAM and R mgcv backends."""
 
     def __new__(cls, *args, backend: str = "pygam", **kwargs):
-        backend = str(backend).lower()
-        if backend == "mgcv":
-            return MgcvGAMCore(*args, **kwargs)
-        elif backend == "pygam":
-            return PygamGAMCore(*args, **kwargs)
-        else:
-            raise ValueError(f"Unknown backend '{backend}'. Choose 'pygam' or 'mgcv'.")
+        return _dispatch(1, backend, *args, **kwargs)
 
 
 __all__ = [

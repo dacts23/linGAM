@@ -30,7 +30,11 @@ In the R ``mgcv`` backend, smoothing parameters are estimated automatically duri
    print(g.summary())
 
 How it works:
-* Uses Newton-Raphson / BFGS optimization of the Restricted Maximum Likelihood (REML) or Generalized Cross Validation (``method='GCV.Cp'``) criterion in continuous log-lambda space.
+
+* Uses Brent's bounded scalar search (single free :math:`\lambda`) or L-BFGS-B
+  (multiple free :math:`\lambda`, e.g. one per tensor dimension) on the Restricted
+  Maximum Likelihood (REML) or Generalized Cross Validation (``method='GCV.Cp'``)
+  criterion in continuous log-lambda space (:math:`\rho = \log\lambda \in [-15, 15]`).
 * Outer iteration updates :math:`\log \boldsymbol{\lambda}`; inner step computes penalized least-squares coefficients :math:`\boldsymbol{\beta}` and hat matrix traces.
 * Avoids the discretization error, manual grid configuration, and combinatorial scaling of discrete grids.
 
@@ -57,13 +61,16 @@ Two-phase fast QR+Cholesky evaluation
 
 2. **Phase 2 (Lambda evaluation)** — For each candidate :math:`\lambda`, assemble penalty matrix :math:`P = \lambda S`,
    solve :math:`(R^\top R + P) \boldsymbol{\beta} = R^\top Q^\top y` via Cholesky factorization, compute EDF from the
-   eigen-structure, and record GCV.
+   Cholesky-based trace :math:`\operatorname{tr}(H^{-1} R^\top R)`, and record GCV.
+   Both phases run under ``ThreadPoolExecutor`` when ``n_jobs != 1`` (serial by default).
 
 Default search grids
 ^^^^^^^^^^^^^^^^^^^^
 
-* **Lambda** — ``np.logspace(-3, 3, 11)`` per slot (11 values from 0.001 to 1000).
-* **n_splines** — ``np.arange(5, 25, 2)`` for ``s()`` (10 values), and ``np.arange(4, 8)`` per dimension for ``te()``.
+* **Lambda** — ``np.logspace(-3, 3, 11)`` (11 values from 0.001 to 1000), applied
+  diagonally: every searched slot shares the same candidate value per evaluation.
+* **n_splines** — not searched by default; each term keeps its configured value unless
+  explicit ``n_splines`` grids are passed.
 
 Selective search (``search_terms``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

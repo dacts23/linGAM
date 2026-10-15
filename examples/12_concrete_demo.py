@@ -272,6 +272,39 @@ def _concrete_demo():
     model_std.plot_decomposition(X, strength, extrap_frac=0.15)
     plt.show()
 
+    # -- Backend comparison: pyGAM vs R mgcv (side-by-side) --
+    # Same s() + te() + f() + l() formula on both backends: the pyGAM fit
+    # above uses B-splines with default penalties, mgcv uses penalised
+    # regression splines with REML-estimated smoothing in a single fit.
+    # Note: f() defaults differ (pyGAM one-hot + ridge vs mgcv dummy).
+    print("\n  -- Backend comparison: pyGAM (above) vs R mgcv (REML) --")
+    model_mgcv = GAMCore(formula, backend="mgcv")
+    model_mgcv.fit(X, strength)
+    s_mg = model_mgcv.statistics_
+    print(f"    {'Metric':<8}{'pyGAM':>10}{'mgcv':>10}")
+    print(f"    {'GCV':<8}{s_std['GCV']:>10.3f}{s_mg['GCV']:>10.3f}")
+    print(f"    {'EDF':<8}{s_std['edof']:>10.2f}{s_mg['edof']:>10.2f}")
+    print(f"    {'RSS':<8}{s_std['rss']:>10.1f}{s_mg['rss']:>10.1f}")
+    r2_py = 1 - np.var(strength - model_std.predict(X)) / np.var(strength)
+    r2_mg = 1 - np.var(strength - model_mgcv.predict(X)) / np.var(strength)
+    print(f"    {'R2':<8}{r2_py:>10.3f}{r2_mg:>10.3f}")
+    print("    (See 13_pygam_vs_mgcv_comparison.py for the head-to-head with plots.)")
+
+    # --- Same-plot overlay: observed vs predicted for both backends ---
+    y_hat_mg = model_mgcv.predict(X)
+    lims = [float(min(strength.min(), y_hat_std.min(), y_hat_mg.min())),
+            float(max(strength.max(), y_hat_std.max(), y_hat_mg.max()))]
+    fig_cmp, ax_cmp = plt.subplots(figsize=(6, 6))
+    ax_cmp.scatter(strength, y_hat_std, c='blue', alpha=0.4, s=12, label='pyGAM backend')
+    ax_cmp.scatter(strength, y_hat_mg, c='red', alpha=0.4, s=12, label='mgcv backend')
+    ax_cmp.plot(lims, lims, 'k--', lw=1.5, label='1:1')
+    ax_cmp.set_xlabel('Observed Strength (MPa)')
+    ax_cmp.set_ylabel('Predicted Strength (MPa)')
+    ax_cmp.set_title('Backend Overlay: observed vs predicted')
+    ax_cmp.legend()
+    fig_cmp.tight_layout()
+    plt.show()
+
 
 if __name__ == "__main__":
     _concrete_demo()

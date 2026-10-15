@@ -49,12 +49,18 @@ try:
 except ImportError:
     print("\n(pyGAM not installed — skipping comparison)")
 
+# mgcv has no robust mode — fit its standard (outlier-sensitive) counterpart
+# here so it can join the same axes: it should track the pyGAM standard fit.
+mgcv_model = LinGAM(k=14, bs="cr", backend="mgcv")
+mgcv_model.fit(x, y)
+
 x_grid = np.linspace(0, 10, 500)
 
 fig, ax = plt.subplots(figsize=(9, 4))
 ax.scatter(x, y, c='lightgray', s=15, label='Data (with outliers)')
 ax.plot(x_grid, model_std.predict(x_grid), 'r--', lw=2, label='Standard fit')
 ax.plot(x_grid, model_rob.predict(x_grid), 'g-', lw=2, label='Robust fit (Huber IRLS)')
+ax.plot(x_grid, mgcv_model.predict(x_grid), 'b-.', lw=2, label='mgcv backend (std fit)')
 ax.set_xlabel('x')
 ax.set_ylabel('y')
 ax.set_title('Standard vs Robust Fit')
@@ -62,24 +68,18 @@ ax.legend()
 fig.tight_layout()
 plt.show()
 
-# --- Diagnostics: observed vs fitted & residuals vs fitted ---
-for label, model in [("Standard", model_std), ("Robust", model_rob)]:
-    y_fit = model.predict(x)
-    residuals = y - y_fit
-
-    fig_diag, axes_diag = plt.subplots(1, 2, figsize=(10, 4))
-    axes_diag[0].scatter(y, y_fit, c='steelblue', edgecolors='k', s=20, alpha=0.6)
-    ymin, ymax = y.min(), y.max()
-    axes_diag[0].plot([ymin, ymax], [ymin, ymax], 'r--', lw=1.5, label='1:1 line')
-    axes_diag[0].set_xlabel('Observed y')
-    axes_diag[0].set_ylabel('Fitted y')
-    axes_diag[0].set_title(f'{label} — Observed vs Fitted')
-    axes_diag[0].legend()
-
-    axes_diag[1].scatter(y_fit, residuals, c='steelblue', edgecolors='k', s=20, alpha=0.6)
-    axes_diag[1].axhline(0, color='r', linestyle='--', lw=1.5)
-    axes_diag[1].set_xlabel('Fitted y')
-    axes_diag[1].set_ylabel('Residuals')
-    axes_diag[1].set_title(f'{label} — Residuals vs Fitted')
-    fig_diag.tight_layout()
+# --- Built-in diagnostics plot ---
+for model in (model_std, model_rob):
+    model.plot_diagnostics(x, y)
     plt.show()
+
+# --- Backend comparison: pyGAM vs R mgcv (side-by-side) ---
+# Huber IRLS robust fitting is a pyGAM-backend feature; the mgcv backend has
+# no robust mode, so it can only run the standard (outlier-sensitive) fit.
+# It should land near the pyGAM standard fit, far from the robust one.
+# (mgcv standard fit already computed above for the overlay plot)
+print("\n--- Backend comparison: robust is pyGAM-only; mgcv shown for reference ---")
+print(f"{'Metric':<18}{'pyGAM std':>12}{'pyGAM robust':>14}{'mgcv std':>12}")
+print(f"{'EDF':<18}{model_std.statistics_['edof']:>12.2f}{model_rob.statistics_['edof']:>14.2f}{mgcv_model.statistics_['edof']:>12.2f}")
+print(f"{'RSS':<18}{model_std.statistics_['rss']:>12.4f}{model_rob.statistics_['rss']:>14.4f}{mgcv_model.statistics_['rss']:>12.4f}")
+print(f"{'R^2':<18}{model_std.deviance_explained():>12.4f}{model_rob.deviance_explained():>14.4f}{mgcv_model.deviance_explained():>12.4f}")

@@ -45,23 +45,19 @@ print(f"Interaction partial dependence shape: {pdep_te.shape}")
 fig, axes = model_te.plot_decomposition(x, y)
 plt.show()
 
-# --- Diagnostics: observed vs fitted & residuals vs fitted ---
-y_fit = model_te.predict(x)
-residuals = y - y_fit
-
-fig_diag, axes_diag = plt.subplots(1, 2, figsize=(10, 4))
-axes_diag[0].scatter(y, y_fit, c='steelblue', edgecolors='k', s=20, alpha=0.6)
-ymin, ymax = y.min(), y.max()
-axes_diag[0].plot([ymin, ymax], [ymin, ymax], 'r--', lw=1.5, label='1:1 line')
-axes_diag[0].set_xlabel('Observed y')
-axes_diag[0].set_ylabel('Fitted y')
-axes_diag[0].set_title('Observed vs Fitted')
-axes_diag[0].legend()
-
-axes_diag[1].scatter(y_fit, residuals, c='steelblue', edgecolors='k', s=20, alpha=0.6)
-axes_diag[1].axhline(0, color='r', linestyle='--', lw=1.5)
-axes_diag[1].set_xlabel('Fitted y')
-axes_diag[1].set_ylabel('Residuals')
-axes_diag[1].set_title('Residuals vs Fitted')
-fig_diag.tight_layout()
+# --- Built-in diagnostics plot ---
+model_te.plot_diagnostics(x, y)
 plt.show()
+
+# --- Backend comparison: pyGAM vs R mgcv (side-by-side) ---
+# Same tensor formula on both backends: pyGAM uses B-splines with the GCV-tuned
+# penalties from the grid search above; mgcv builds a tensor product of cubic
+# regression splines with one REML-estimated smoothing parameter per margin.
+mgcv_te = GAMCore("s(0) + s(1) + te(0, 1, n_splines=6)", backend="mgcv")
+mgcv_te.fit(x, y)
+print("\n--- Backend comparison: tensor interaction on both backends ---")
+print(f"{'Metric':<18}{'pyGAM':>12}{'mgcv':>12}")
+print(f"{'EDF':<18}{model_te.statistics_['edof']:>12.2f}{mgcv_te.statistics_['edof']:>12.2f}")
+print(f"{'GCV':<18}{model_te.statistics_['GCV']:>12.4f}{mgcv_te.statistics_['GCV']:>12.4f}")
+print(f"{'R^2':<18}{model_te.deviance_explained():>12.4f}{mgcv_te.deviance_explained():>12.4f}")
+print("(See 13_pygam_vs_mgcv_comparison.py for the full head-to-head with plots.)")

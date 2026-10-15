@@ -15,6 +15,8 @@ Demonstrates and contrasts the two GAM philosophies implemented in linGAM:
 """
 
 import time
+from pathlib import Path
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -124,28 +126,19 @@ def run_comparison():
     # =========================================================================
     fig = plt.figure(figsize=(15, 10))
 
-    # --- Row 1: Univariate Comparison ---
-    ax1 = fig.add_subplot(2, 2, 1)
+    # --- Row 1: Univariate overlay — both backends on the same axes ---
+    ax1 = fig.add_subplot(2, 1, 1)
     ax1.scatter(x, y, color="#7f7f7f", alpha=0.5, s=18, label="Data")
     ax1.plot(x_grid, y_grid_true, "k--", lw=1.5, label="True function")
     ax1.plot(x_grid, pred_py, color="#1f77b4", lw=2, label=f"pyGAM (EDF={m_py.statistics_['edof']:.1f})")
     ax1.fill_between(x_grid, ci_py[:, 0], ci_py[:, 1], color="#1f77b4", alpha=0.15)
-    ax1.set_title("1A. pyGAM: B-splines + GCV", fontweight="bold")
+    ax1.plot(x_grid, pred_mg, color="#d62728", lw=2, ls="-.", label=f"R mgcv (EDF={m_mg.statistics_['edof']:.1f})")
+    ax1.fill_between(x_grid, ci_mg[:, 0], ci_mg[:, 1], color="#d62728", alpha=0.15)
+    ax1.set_title("1. Univariate overlay: pyGAM (B-splines + GCV) vs R mgcv (Cubic + REML)", fontweight="bold")
     ax1.set_xlabel("x")
     ax1.set_ylabel("y")
     ax1.legend(loc="upper right", fontsize=8)
     ax1.grid(True, alpha=0.3)
-
-    ax2 = fig.add_subplot(2, 2, 2)
-    ax2.scatter(x, y, color="#7f7f7f", alpha=0.5, s=18, label="Data")
-    ax2.plot(x_grid, y_grid_true, "k--", lw=1.5, label="True function")
-    ax2.plot(x_grid, pred_mg, color="#d62728", lw=2, label=f"R mgcv (EDF={m_mg.statistics_['edof']:.1f})")
-    ax2.fill_between(x_grid, ci_mg[:, 0], ci_mg[:, 1], color="#d62728", alpha=0.15)
-    ax2.set_title("1B. R mgcv: Cubic Splines + REML", fontweight="bold")
-    ax2.set_xlabel("x")
-    ax2.set_ylabel("y")
-    ax2.legend(loc="upper right", fontsize=8)
-    ax2.grid(True, alpha=0.3)
 
     # --- Row 2: Multivariate Partial Dependence Comparison ---
     # Partial dependence for s(0)
@@ -187,7 +180,7 @@ def run_comparison():
     fig.suptitle("linGAM Engine Comparison: pyGAM vs R mgcv", fontsize=14, fontweight="bold")
     plt.tight_layout()
 
-    out_path = "examples/pygam_vs_mgcv_comparison.png"
+    out_path = Path(__file__).with_name("pygam_vs_mgcv_comparison.png")
     plt.savefig(out_path, dpi=150)
     print(f"\n[Saved figure to {out_path}]")
     plt.close(fig)

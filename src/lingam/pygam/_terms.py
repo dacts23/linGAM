@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
+from .._base import _khatri_rao, _kron_sum
 from ._bspline import b_spline_basis
 from ._penalty import (
     circular_second_diff_penalty,
@@ -20,48 +21,22 @@ _CONSTRAINTS = frozenset({
 class _Term:
     """Base class for all GAM terms."""
 
-    __slots__ = ('n_coefs',)
-
-    def __init__(self) -> None:
-        self.n_coefs: int = 0
+    n_coefs: int = 0
+    sp: Optional[List[float]] = None
 
     def compile(self, x: np.ndarray) -> None:
         """One-time setup using training data."""
 
-    def build_columns(self, x: np.ndarray) -> np.ndarray:
-        """Build the design matrix columns for this term."""
-        raise NotImplementedError
+    def build_penalties(self) -> List[np.ndarray]:
+        return []
 
 
 class _SplineTerm(_Term):
-    """Univariate penalised B-spline smooth term.
-
-    Parameters
-    ----------
-    feature : int
-        Column index in the predictor matrix.
-    n_splines : int
-        Number of basis functions.
-    lam : float
-        Smoothing parameter.
-    spline_order : int
-        B-spline order (polynomial degree + 1).
-    constraint : str or None
-        Shape constraint regularisation. One of ``None``, ``'mono_inc'``,
-        ``'mono_dec'``, ``'convex'``, ``'concave'``, ``'periodic'``.
-
-        * ``None`` — standard second-difference penalty (curvature smoothness).
-        * ``'mono_inc'``, ``'mono_dec'`` — first-difference penalty (shrinks
-          variation in adjacent coefficients toward a flat constant slope).
-        * ``'convex'``, ``'concave'`` — second-difference penalty (shrinks
-          curvature variation toward a linear trend).
-        * ``'periodic'`` — circular second-difference penalty with wrapped
-          basis (enforces f(0)=f(1)).
-    """
+    """Univariate penalised B-spline smooth term."""
 
     __slots__ = (
         'feature', 'n_splines', 'lam', 'spline_order',
-        '_edge_knots', 'constraint',
+        '_edge_knots', 'constraint', 'n_coefs',
     )
 
     def __init__(
@@ -99,14 +74,13 @@ class _SplineTerm(_Term):
         self._edge_knots = np.array([col.min(), col.max()])
 
     def build_columns(self, x: np.ndarray) -> np.ndarray:
-        B = b_spline_basis(
+        return b_spline_basis(
             x[:, self.feature],
             self.n_splines,
             self.spline_order,
             self._edge_knots,  # type: ignore[arg-type]
             periodic=self.constraint == 'periodic',
         )
-        return B
 
     def build_penalty(self, lam: Optional[float] = None) -> np.ndarray:
         l = lam if lam is not None else self.lam
@@ -118,12 +92,7 @@ class _SplineTerm(_Term):
         return second_diff_penalty(K_eff, l)
 
     def penalty_bases(self) -> List[Tuple[np.ndarray, int]]:
-        K_eff = self.n_coefs
-        if self.constraint in ('mono_inc', 'mono_dec'):
-            return [(first_diff_penalty(K_eff, 1.0), 1)]
-        if self.constraint == 'periodic':
-            return [(circular_second_diff_penalty(K_eff, 1.0), 1)]
-        return [(second_diff_penalty(K_eff, 1.0), 1)]
+        return [(self.build_penalty(1.0), 1)]
 
 
 class _TensorTerm(_Term):
@@ -131,7 +100,7 @@ class _TensorTerm(_Term):
 
     __slots__ = (
         'features', 'd', 'n_splines_per', 'lam_per', 'lam',
-        'spline_order', '_edge_knots',
+        'spline_order', '_edge_knots', 'n_coefs',
     )
 
     def __init__(
@@ -148,22 +117,22 @@ class _TensorTerm(_Term):
 
         if isinstance(n_splines, int):
             self.n_splines_per = [n_splines] * self.d
+        elif len(n_splines) != self.d:
+            raise ValueError(
+                f"n_splines length ({len(n_splines)}) must match "
+                f"number of features ({self.d})."
+            )
         else:
-            if len(n_splines) != self.d:
-                raise ValueError(
-                    f"n_splines length ({len(n_splines)}) must match "
-                    f"number of features ({self.d})."
-                )
             self.n_splines_per = list(n_splines)
 
         if isinstance(lam, (int, float)):
             self.lam_per = [float(lam)] * self.d
+        elif len(lam) != self.d:
+            raise ValueError(
+                f"lam length ({len(lam)}) must match "
+                f"number of features ({self.d})."
+            )
         else:
-            if len(lam) != self.d:
-                raise ValueError(
-                    f"lam length ({len(lam)}) must match "
-                    f"number of features ({self.d})."
-                )
             self.lam_per = [float(v) for v in lam]
 
         self.lam = self.lam_per[0]
@@ -172,47 +141,35 @@ class _TensorTerm(_Term):
         self._edge_knots: List[np.ndarray] = []
 
     def compile(self, x: np.ndarray) -> None:
-        self._edge_knots = []
-        for feat in self.features:
-            col = np.asarray(x[:, feat]).ravel()
-            self._edge_knots.append(np.array([col.min(), col.max()]))
+        self._edge_knots = [
+            np.array([np.min(x[:, f]), np.max(x[:, f])]) for f in self.features
+        ]
 
     def build_columns(self, x: np.ndarray) -> np.ndarray:
-        marginals = []
-        for i, feat in enumerate(self.features):
-            B_i = b_spline_basis(
+        return _khatri_rao([
+            b_spline_basis(
                 x[:, feat],
                 self.n_splines_per[i],
                 self.spline_order,
                 self._edge_knots[i],
             )
-            marginals.append(B_i)
-        return _khatri_rao(marginals)
+            for i, feat in enumerate(self.features)
+        ])
 
-    def build_penalty(
-        self,
-        lam: Optional[List[float]] = None,
-    ) -> np.ndarray:
+    def build_penalty(self, lam: Optional[List[float]] = None) -> np.ndarray:
         lams = lam if lam is not None else self.lam_per
         if isinstance(lams, (int, float)):
             lams = [float(lams)] * self.d
-
-        marginal_penalties = []
-        for i in range(self.d):
-            P_i = second_diff_penalty(self.n_splines_per[i], lams[i])
-            marginal_penalties.append(P_i)
-        return _kron_sum(marginal_penalties)
+        return _kron_sum([
+            second_diff_penalty(self.n_splines_per[i], lams[i])
+            for i in range(self.d)
+        ])
 
     def penalty_bases(self) -> List[Tuple[np.ndarray, int]]:
-        bases: List[Tuple[np.ndarray, int]] = []
         sizes = list(self.n_splines_per)
-        for i in range(self.d):
-            D2_i = np.zeros((sizes[i] - 2, sizes[i]))
-            idx = np.arange(sizes[i] - 2)
-            D2_i[idx, idx] = 1.0
-            D2_i[idx, idx + 1] = -2.0
-            D2_i[idx, idx + 2] = 1.0
-            S_i = D2_i.T @ D2_i
+        bases: List[Tuple[np.ndarray, int]] = []
+        for i, sz in enumerate(sizes):
+            S_i = second_diff_penalty(sz, 1.0)
             I_pre = np.eye(int(np.prod(sizes[:i])))
             I_post = np.eye(int(np.prod(sizes[i + 1:])))
             bases.append((np.kron(np.kron(I_pre, S_i), I_post), 1))
@@ -220,9 +177,9 @@ class _TensorTerm(_Term):
 
 
 class _FactorTerm(_Term):
-    """Categorical / factor term with one-hot encoding."""
+    """Categorical / factor term with one-hot or dummy encoding."""
 
-    __slots__ = ('feature', 'lam', 'coding', '_levels')
+    __slots__ = ('feature', 'lam', 'coding', '_levels', 'n_coefs')
 
     def __init__(
         self,
@@ -230,37 +187,31 @@ class _FactorTerm(_Term):
         lam: float = 1.0,
         coding: str = 'one-hot',
     ) -> None:
-        self.feature = feature
+        self.feature = int(feature)
         self.lam = lam
         self.coding = coding
         self._levels: Optional[np.ndarray] = None
         self.n_coefs = 0
 
     def compile(self, x: np.ndarray) -> None:
-        col = np.asarray(x[:, self.feature]).ravel()
-        self._levels = np.unique(col)
+        self._levels = np.unique(np.asarray(x[:, self.feature]).ravel())
         self.n_coefs = (
             len(self._levels)
             if self.coding == 'one-hot'
             else len(self._levels) - 1
         )
         if self.n_coefs <= 0:
-            raise ValueError(
-                f"Factor term feature {self.feature} has no levels."
-            )
+            raise ValueError(f"Factor term feature {self.feature} has no levels.")
 
     def build_columns(self, x: np.ndarray) -> np.ndarray:
+        if self._levels is None:
+            self.compile(x)
         col = np.asarray(x[:, self.feature]).ravel()
         B = (col[:, None] == self._levels[None, :]).astype(float)
-        if self.coding == 'dummy':
-            B = B[:, 1:]
-        return B
+        return B[:, 1:] if self.coding == 'dummy' else B
 
     def build_penalty(self, lam: Optional[float] = None) -> np.ndarray:
-        return ridge_penalty(
-            self.n_coefs,
-            lam if lam is not None else self.lam,
-        )
+        return ridge_penalty(self.n_coefs, lam if lam is not None else self.lam)
 
     def penalty_bases(self) -> List[Tuple[np.ndarray, int]]:
         return [(np.eye(self.n_coefs), 1)]
@@ -269,47 +220,21 @@ class _FactorTerm(_Term):
 class _LinearTerm(_Term):
     """Linear (unpenalised by default) term."""
 
-    __slots__ = ('feature', 'lam')
+    __slots__ = ('feature', 'lam', 'n_coefs')
 
     def __init__(self, feature: int, lam: float = 0.0) -> None:
-        self.feature = feature
+        self.feature = int(feature)
         self.lam = lam
         self.n_coefs = 1
 
     def build_columns(self, x: np.ndarray) -> np.ndarray:
-        return np.asarray(x[:, self.feature]).ravel().reshape(-1, 1)
+        return np.asarray(x[:, self.feature], dtype=float).ravel().reshape(-1, 1)
 
     def build_penalty(self, lam: Optional[float] = None) -> np.ndarray:
-        l = lam if lam is not None else self.lam
-        return np.array([[l]], dtype=float)
+        return np.array([[lam if lam is not None else self.lam]], dtype=float)
 
     def penalty_bases(self) -> List[Tuple[np.ndarray, int]]:
         return [(np.array([[1.0]]), 1)]
-
-
-def _khatri_rao(marginals: List[np.ndarray]) -> np.ndarray:
-    """Column-wise Kronecker (Khatri-Rao) product of marginals."""
-    n = marginals[0].shape[0]
-    result = marginals[0]
-    for i in range(1, len(marginals)):
-        result = result[..., :, None]
-        B_next = marginals[i][:, None, :]
-        result = result * B_next
-        result = result.reshape(n, -1)
-    return result
-
-
-def _kron_sum(penalties: List[np.ndarray]) -> np.ndarray:
-    """Kronecker sum: sum_i I_0 kron ... kron P_i kron ... kron I_{d-1}."""
-    d = len(penalties)
-    sizes = [p.shape[0] for p in penalties]
-    total = int(np.prod(sizes))
-    result = np.zeros((total, total))
-    for i, P_i in enumerate(penalties):
-        I_pre = np.eye(int(np.prod(sizes[:i])))
-        I_post = np.eye(int(np.prod(sizes[i + 1:])))
-        result += np.kron(np.kron(I_pre, P_i), I_post)
-    return result
 
 
 def instantiate_terms(
@@ -323,17 +248,8 @@ def instantiate_terms(
         feats = cfg['features']
         kw = dict(cfg['kwargs'])
         term_order = kw.pop('spline_order', spline_order)
-
-        # Support both pyGAM (n_splines, lam) and mgcv (k, sp) aliases
-        k_val = kw.pop('n_splines', None)
-        k_alias = kw.pop('k', None)
-        if k_val is None:
-            k_val = k_alias
-
-        lam_val = kw.pop('lam', None)
-        sp_alias = kw.pop('sp', None)
-        if lam_val is None:
-            lam_val = sp_alias
+        k_val = kw.pop('n_splines', kw.pop('k', None))
+        lam_val = kw.pop('lam', kw.pop('sp', None))
 
         if t == 's':
             terms.append(_SplineTerm(

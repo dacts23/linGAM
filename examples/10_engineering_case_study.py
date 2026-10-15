@@ -411,3 +411,41 @@ ax_comp.text(
 fig_comp.tight_layout()
 print("[Plot 3] Standard vs Robust comparison -- close to exit.")
 plt.show()
+
+# ------------------------------------------------------------------
+# 11. Backend comparison -- pyGAM vs R mgcv (side-by-side)
+# ------------------------------------------------------------------
+# Shape constraints (mono_inc/concave) and Huber robust fitting are
+# pyGAM-backend features with no mgcv equivalent, so the comparison uses the
+# unconstrained formula on both backends: pyGAM with its GCV-tuned fit from
+# Section 5, mgcv with automatic REML smoothing in a single fit. Conversely,
+# the R-style summary() table with F-tests/p-values and bs basis choices are
+# mgcv-only (see 11_mgcv_backend.py).
+mgcv_unc = GAMCore(formula_unconstrained, backend="mgcv")
+mgcv_unc.fit(x, y)
+print("=" * 72)
+print("SECTION 11 -- BACKEND COMPARISON (unconstrained formula, both backends)")
+print("=" * 72)
+print(f"  {'Metric':<10}{'pyGAM (GCV)':>14}{'mgcv (REML)':>14}")
+print(f"  {'EDF':<10}{model_unc.statistics_['edof']:>14.2f}{mgcv_unc.statistics_['edof']:>14.2f}")
+print(f"  {'GCV':<10}{model_unc.statistics_['GCV']:>14.4f}{mgcv_unc.statistics_['GCV']:>14.4f}")
+print(f"  {'R^2':<10}{model_unc.deviance_explained():>14.4f}{mgcv_unc.deviance_explained():>14.4f}")
+print("  -> Same additive structure recovered with similar complexity and fit.")
+print("  -> pyGAM-only here: mono_inc/concave constraints, robust=True.")
+print("  -> mgcv-only: summary() F-tests/p-values, bs='tp'/'cr'/'ps'/'cc'.")
+
+# --- Same-plot overlay: observed vs predicted for both backends ---
+y_hat_py = model_unc.predict(x)
+y_hat_mg = mgcv_unc.predict(x)
+lims = [float(min(y.min(), y_hat_py.min(), y_hat_mg.min())),
+        float(max(y.max(), y_hat_py.max(), y_hat_mg.max()))]
+fig_cmp, ax_cmp = plt.subplots(figsize=(6, 6))
+ax_cmp.scatter(y, y_hat_py, c='blue', alpha=0.4, s=12, label='pyGAM backend')
+ax_cmp.scatter(y, y_hat_mg, c='red', alpha=0.4, s=12, label='mgcv backend')
+ax_cmp.plot(lims, lims, 'k--', lw=1.5, label='1:1')
+ax_cmp.set_xlabel('Observed')
+ax_cmp.set_ylabel('Predicted')
+ax_cmp.set_title('Backend Overlay: observed vs predicted')
+ax_cmp.legend()
+fig_cmp.tight_layout()
+plt.show()

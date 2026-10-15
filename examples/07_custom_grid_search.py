@@ -57,23 +57,36 @@ model.gridsearch(
 print(f"GCV : {model.statistics_['GCV']:.4f}")
 print(f"EDF : {model.statistics_['edof']:.2f}")
 
-# --- Diagnostics: observed vs fitted & residuals vs fitted ---
-y_fit = model.predict(x)
-residuals = y - y_fit
+# --- Built-in diagnostics plot ---
+model.plot_diagnostics(x, y)
+plt.show()
 
-fig_diag, axes_diag = plt.subplots(1, 2, figsize=(10, 4))
-axes_diag[0].scatter(y, y_fit, c='steelblue', edgecolors='k', s=20, alpha=0.6)
-ymin, ymax = y.min(), y.max()
-axes_diag[0].plot([ymin, ymax], [ymin, ymax], 'r--', lw=1.5, label='1:1 line')
-axes_diag[0].set_xlabel('Observed y')
-axes_diag[0].set_ylabel('Fitted y')
-axes_diag[0].set_title('Observed vs Fitted')
-axes_diag[0].legend()
+# --- Backend comparison: pyGAM vs R mgcv (side-by-side) ---
+# Tuning philosophies differ: pyGAM searches discrete lam/n_splines grids with
+# GCV (as above, including selective search_terms); mgcv estimates smoothing
+# continuously via REML in a single fit, and its gridsearch() only varies the
+# basis dimension k. Same final complexity metrics on the same data:
+mgcv_model = GAMCore("s(0) + s(1) + l(2)", backend="mgcv")
+mgcv_model.fit(x, y)
+mgcv_edf_before_ksearch = mgcv_model.statistics_['edof']
+print("\n--- Backend comparison: pyGAM (discrete GCV grids) vs R mgcv (REML) ---")
+print(f"{'Metric':<18}{'pyGAM':>12}{'mgcv':>12}")
+print(f"{'EDF':<18}{model.statistics_['edof']:>12.2f}{mgcv_edf_before_ksearch:>12.2f}")
+print(f"{'GCV':<18}{model.statistics_['GCV']:>12.4f}{mgcv_model.statistics_['GCV']:>12.4f}")
+print(f"{'R^2':<18}{model.deviance_explained():>12.4f}{mgcv_model.deviance_explained():>12.4f}")
+mgcv_model.gridsearch(x, y, n_splines_grids=[np.arange(6, 16, 2), np.arange(6, 16, 2)])
+print(f"{'mgcv EDF after k-search':<18}{'':>12}{mgcv_model.statistics_['edof']:>12.2f}")
 
-axes_diag[1].scatter(y_fit, residuals, c='steelblue', edgecolors='k', s=20, alpha=0.6)
-axes_diag[1].axhline(0, color='r', linestyle='--', lw=1.5)
-axes_diag[1].set_xlabel('Fitted y')
-axes_diag[1].set_ylabel('Residuals')
-axes_diag[1].set_title('Residuals vs Fitted')
-fig_diag.tight_layout()
+# --- Same-plot overlay: overall prediction sweeping feature 0 (others at median) ---
+x_sweep = np.tile(np.median(x, axis=0), (200, 1))
+x_sweep[:, 0] = np.linspace(x[:, 0].min(), x[:, 0].max(), 200)
+fig_cmp, ax_cmp = plt.subplots(figsize=(8, 4))
+ax_cmp.scatter(x[:, 0], y, c='lightgray', s=10, label='Data')
+ax_cmp.plot(x_sweep[:, 0], model.predict(x_sweep), 'b-', lw=2, label='pyGAM backend')
+ax_cmp.plot(x_sweep[:, 0], mgcv_model.predict(x_sweep), 'r-.', lw=2, label='mgcv backend')
+ax_cmp.set_xlabel('Feature 0 (others at median)')
+ax_cmp.set_ylabel('y')
+ax_cmp.set_title('Backend Overlay: pyGAM vs mgcv')
+ax_cmp.legend()
+fig_cmp.tight_layout()
 plt.show()

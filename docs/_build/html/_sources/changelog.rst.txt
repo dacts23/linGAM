@@ -26,8 +26,19 @@ New features
 Improvements
 ^^^^^^^^^^^^
 
-* **Simplified and unbloated**: Removed thread management overhead and unused
-  Huber IRLS iterations.
+* **Shared ``_GAMBase`` lifecycle**: ``lingam._base`` now holds the
+  code both engines inherit — ``predict``, ``partial_dependence``,
+  confidence/prediction intervals, ``loglikelihood``/``aic``/``bic``/
+  ``deviance_explained``, and all decomposition/diagnostic plotting.
+  Note the scale convention it abstracts: pygam stores ``scale`` as
+  σ (uses ``s**2`` as variance), mgcv stores it as σ² directly.
+* **Huber IRLS robust fitting**: ``fit(x, y, robust=True)`` (pygam
+  backend) runs ``irls_solve`` — up to 15 MAD-scaled (``c=1.345``)
+  re-weighting iterations with weighted RSS in the reported statistics.
+* **Cyclic P-splines (``'cp'``)**: no longer fall back to ``'ps'`` —
+  dedicated basis with wrapped knots and a wrapped difference penalty.
+* **Thin-plate shrinkage (``'ts'``)**: now charges the null-space
+  (smallest) eigenvalues as in R mgcv, instead of the largest ones.
 * **Fixed R² computation**: Corrected deviance explained calculation against the
   sample mean null deviance.
 * **Input validation**: Enforced NaN and Inf validation across all fit methods.

@@ -35,7 +35,11 @@
 
    .. autosummary::
    
+      ~GAMCore.coef_
+      ~GAMCore.fit_intercept
+      ~GAMCore.formula
       ~GAMCore.is_fitted
       ~GAMCore.n_terms
+      ~GAMCore.statistics_
    
    

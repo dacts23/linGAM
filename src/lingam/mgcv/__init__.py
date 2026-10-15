@@ -2,7 +2,7 @@
 
 from ._gam import GAMCore
 from ._lingam import LinGAM
-from ._optimizer import fit_mgcv_engine, solve_pls_fixed
+from ._optimizer import fit_mgcv_engine
 from ._smooths import (
     absorb_sum_to_zero_constraint,
     build_smooth_basis,
@@ -21,7 +21,6 @@ __all__ = [
     "LinGAM",
     "GAMCore",
     "fit_mgcv_engine",
-    "solve_pls_fixed",
     "build_smooth_basis",
     "predict_smooth_basis",
     "rescale_penalty",

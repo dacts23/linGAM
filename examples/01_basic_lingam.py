@@ -67,23 +67,34 @@ plt.show()
 fig2, axes = model.plot_decomposition(x, y)
 plt.show()
 
-# --- Diagnostics: observed vs fitted & residuals vs fitted ---
-y_fit = model.predict(x)
-residuals = y - y_fit
+# --- Built-in diagnostics plot ---
+model.plot_diagnostics(x, y)
+plt.show()
 
-fig_diag, axes_diag = plt.subplots(1, 2, figsize=(10, 4))
-axes_diag[0].scatter(y, y_fit, c='steelblue', edgecolors='k', s=20, alpha=0.6)
-ymin, ymax = y.min(), y.max()
-axes_diag[0].plot([ymin, ymax], [ymin, ymax], 'r--', lw=1.5, label='1:1 line')
-axes_diag[0].set_xlabel('Observed y')
-axes_diag[0].set_ylabel('Fitted y')
-axes_diag[0].set_title('Observed vs Fitted')
-axes_diag[0].legend()
+# --- Backend comparison: pyGAM vs R mgcv (side-by-side) ---
+# Same data, each backend's idiomatic tuning: pyGAM uses a discrete GCV
+# grid search (above), mgcv estimates the smoothing parameter automatically
+# via REML. Both should recover the same sine curve with similar EDF/RSS.
+mgcv_model = LinGAM(k=model.n_splines, bs="cr", backend="mgcv")
+mgcv_model.fit(x, y)
+print("\n--- Backend comparison: pyGAM (B-splines + GCV) vs R mgcv (cubic + REML) ---")
+print(f"{'Metric':<22}{'pyGAM':>12}{'mgcv':>12}")
+print(f"{'sp (lam)':<22}{model.lam:>12.4f}{mgcv_model.lam:>12.4f}")
+print(f"{'EDF':<22}{model.statistics_['edof']:>12.2f}{mgcv_model.statistics_['edof']:>12.2f}")
+print(f"{'RSS':<22}{model.statistics_['rss']:>12.4f}{mgcv_model.statistics_['rss']:>12.4f}")
+print(f"{'R^2':<22}{model.deviance_explained():>12.4f}{mgcv_model.deviance_explained():>12.4f}")
+print("(pyGAM penalises B-spline second differences; mgcv uses cubic regression")
+print(" splines with a sum-to-zero constraint. See 13_pygam_vs_mgcv_comparison.py")
+print(" for the full head-to-head with plots.)")
 
-axes_diag[1].scatter(y_fit, residuals, c='steelblue', edgecolors='k', s=20, alpha=0.6)
-axes_diag[1].axhline(0, color='r', linestyle='--', lw=1.5)
-axes_diag[1].set_xlabel('Fitted y')
-axes_diag[1].set_ylabel('Residuals')
-axes_diag[1].set_title('Residuals vs Fitted')
-fig_diag.tight_layout()
+# --- Same-plot overlay: both backends on one axes ---
+fig_cmp, ax_cmp = plt.subplots(figsize=(8, 4))
+ax_cmp.scatter(x, y, c='lightgray', s=10, label='Data')
+ax_cmp.plot(x_grid, y_pred, 'b-', lw=2, label='pyGAM backend')
+ax_cmp.plot(x_grid, mgcv_model.predict(x_grid), 'r-.', lw=2, label='mgcv backend')
+ax_cmp.set_xlabel('x')
+ax_cmp.set_ylabel('y')
+ax_cmp.set_title('Backend Overlay: pyGAM vs mgcv')
+ax_cmp.legend(loc='upper right')
+fig_cmp.tight_layout()
 plt.show()

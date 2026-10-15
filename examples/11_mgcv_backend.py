@@ -71,3 +71,43 @@ gam.fit(X, y_multi)
 print(gam.summary())
 
 print("\nFinished Example 11 successfully!")
+
+# ── Backend comparison: R mgcv vs pyGAM (side-by-side) ────────────────────
+# The fits above are mgcv (REML auto-tuning, R-style summary). The same data
+# with the pyGAM backend (B-splines + GCV grid search) for comparison. Note the
+# formula translation: mgcv's bs='/k options have no pyGAM equivalent, so the
+# multivariate model uses n_splines=4; conversely summary() with F-tests and
+# the bs basis menu are mgcv-only.
+print("\n" + "=" * 60)
+print("Backend comparison: mgcv (above) vs pyGAM (below, same data)")
+print("=" * 60)
+
+py_model = LinGAM(backend="pygam")
+py_model.gridsearch(x, y)
+print("\n--- Single-term: pyGAM (B-splines + GCV grid search) ---")
+print(f"{'Metric':<22}{'pyGAM':>12}{'mgcv':>12}")
+print(f"{'sp (lam)':<22}{py_model.lam:>12.4f}{model.lam:>12.4f}")
+print(f"{'EDF':<22}{py_model.statistics_['edof']:>12.2f}{model.statistics_['edof']:>12.2f}")
+print(f"{'RSS':<22}{py_model.statistics_['rss']:>12.4f}{model.statistics_['rss']:>12.4f}")
+print(f"{'R^2':<22}{py_model.deviance_explained():>12.4f}{model.deviance_explained():>12.4f}")
+
+py_gam = GAMCore("te(0, 1, n_splines=4) + l(2)", backend="pygam")
+py_gam.gridsearch(X, y_multi)
+print("\n--- Multi-term te(0, 1) + l(2): pyGAM vs mgcv ---")
+print(f"{'Metric':<22}{'pyGAM':>12}{'mgcv':>12}")
+print(f"{'EDF':<22}{py_gam.statistics_['edof']:>12.2f}{gam.statistics_['edof']:>12.2f}")
+print(f"{'RSS':<22}{py_gam.statistics_['rss']:>12.4f}{gam.statistics_['rss']:>12.4f}")
+print(f"{'R^2':<22}{py_gam.deviance_explained():>12.4f}{gam.deviance_explained():>12.4f}")
+print("(See 13_pygam_vs_mgcv_comparison.py for the full head-to-head with plots.)")
+
+# --- Same-plot overlay: single-term fits from both backends ---
+fig_cmp, ax_cmp = plt.subplots(figsize=(8, 4))
+ax_cmp.scatter(x, y, c='lightgray', s=10, label='Data')
+ax_cmp.plot(x_grid, py_model.predict(x_grid), 'b-', lw=2, label='pyGAM backend')
+ax_cmp.plot(x_grid, model.predict(x_grid), 'r-.', lw=2, label='mgcv backend')
+ax_cmp.set_xlabel('x')
+ax_cmp.set_ylabel('y')
+ax_cmp.set_title('Backend Overlay: pyGAM vs mgcv')
+ax_cmp.legend()
+fig_cmp.tight_layout()
+plt.show()

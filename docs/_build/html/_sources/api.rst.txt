@@ -22,6 +22,18 @@ to either the pyGAM or R mgcv engine based on the ``backend`` argument.
 Shared Architecture
 -------------------
 
+.. currentmodule:: lingam._base
+
+lingam._base
+^^^^^^^^^^^^
+
+Shared ``_GAMBase`` lifecycle inherited by both engines: prediction, partial
+dependence, confidence/prediction intervals, information criteria, and all
+decomposition/diagnostic plotting.  (``scale`` is σ for pygam, σ² for mgcv.)
+
+.. automodule:: lingam._base
+    :members:
+
 .. currentmodule:: lingam._formula
 
 lingam._formula
@@ -96,7 +108,6 @@ lingam.pygam._terms
 """""""""""""""""""
 .. automodule:: lingam.pygam._terms
    :members:
-   :exclude-members: _khatri_rao, _kron_sum
 
 .. literalinclude:: ../src/lingam/pygam/_terms.py
    :language: python

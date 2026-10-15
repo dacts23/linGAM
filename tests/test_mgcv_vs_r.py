@@ -243,3 +243,29 @@ def test_tensor_product_vs_r():
     corr = np.corrcoef(py_fitted, r_fitted)[0, 1]
     assert corr > 0.99
     assert np.max(np.abs(py_fitted - r_fitted)) < 0.05
+
+
+@pytest.mark.skipif(not RSCRIPT_PATH, reason="Rscript not installed.")
+def test_cp_and_ts_basis_vs_r():
+    """Verify cyclic P-spline 'cp' and shrinkage thin-plate 'ts' against R mgcv."""
+    np.random.seed(42)
+    x = np.linspace(0, 1, 80).tolist()
+    y = (np.sin(2 * np.pi * np.array(x)) + np.random.normal(0, 0.15, 80)).tolist()
+
+    for bs in ("cp", "ts"):
+        r_script = f"""
+        library(mgcv); library(jsonlite)
+        df <- data.frame(x = c({','.join(map(str, x))}), y = c({','.join(map(str, y))}))
+        m <- gam(y ~ s(x, bs='{bs}', k=10), data=df, method='REML')
+        cat(toJSON(list(
+            fitted = as.numeric(fitted(m)),
+            edf = as.numeric(sum(m$edf))
+        ), digits=8))
+        """
+        r_res = run_r_gam(r_script)
+        py_model = LinGAM(k=10, bs=bs, method="REML").fit(x, y)
+        py_fitted = py_model.predict(x)
+        r_fitted = np.array(r_res["fitted"])
+        assert np.corrcoef(py_fitted, r_fitted)[0, 1] > 0.999
+        assert np.max(np.abs(py_fitted - r_fitted)) < 0.05
+        assert np.isclose(py_model.statistics_["edof"], r_res["edf"], atol=0.5)

@@ -67,21 +67,32 @@ def test_tensor_product_basis():
 
 
 def test_periodic_constraint():
-    """Test periodic smooth term constraint='periodic'."""
+    """Test periodic smooth term constraint='periodic' and cyclic P-spline 'cp'."""
     np.random.seed(42)
     n = 60
     x = np.linspace(0, 2 * np.pi, n)
     y = np.sin(x) + np.random.normal(0, 0.1, n)
 
-    m = LinGAM(k=8, constraint="periodic")
-    assert m.bs == "cc"
-    m.fit(x, y)
-    assert m.is_fitted
+    for m in (LinGAM(k=8, constraint="periodic"), LinGAM(k=8, bs="cp")):
+        m.fit(x, y)
+        assert m.is_fitted
+        pred_0 = m.predict([0.0])[0]
+        pred_2pi = m.predict([2 * np.pi])[0]
+        assert np.isclose(pred_0, pred_2pi, atol=1e-6)
 
-    # At boundaries 0 and 2*pi, periodic prediction must be approximately equal
-    pred_0 = m.predict([0.0])[0]
-    pred_2pi = m.predict([2 * np.pi])[0]
-    assert np.isclose(pred_0, pred_2pi, atol=0.05)
+
+def test_ts_shrinks_null_space():
+    """Verify 'ts' penalizes the 2 smallest (null-space) eigenvalues, not the largest."""
+    from lingam.mgcv._smooths import build_tp_basis
+
+    x = np.linspace(0, 1, 50)
+    _, [S_tp], _ = build_tp_basis(x, k=8, shrink=False)
+    _, [S_ts], _ = build_tp_basis(x, k=8, shrink=True)
+    ev_tp = np.linalg.eigvalsh(S_tp)
+    ev_ts = np.linalg.eigvalsh(S_ts)
+    assert np.allclose(ev_tp[:2], 0.0, atol=1e-12)
+    assert np.allclose(ev_ts[:2], ev_tp[2] * 0.1, rtol=1e-6)
+    assert np.allclose(ev_ts[2:], ev_tp[2:], rtol=1e-6)
 
 
 def test_gcv_method():

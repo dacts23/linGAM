@@ -21,6 +21,7 @@
       ~LinGAM.fit
       ~LinGAM.gridsearch
       ~LinGAM.loglikelihood
+      ~LinGAM.partial_dependence
       ~LinGAM.plot_decomposition
       ~LinGAM.plot_diagnostics
       ~LinGAM.predict
@@ -34,7 +35,18 @@
 
    .. autosummary::
    
+      ~LinGAM.coef_
+      ~LinGAM.constraint
+      ~LinGAM.design_matrix_
+      ~LinGAM.edge_knots_
+      ~LinGAM.fit_intercept
+      ~LinGAM.formula
       ~LinGAM.is_fitted
+      ~LinGAM.knots_
+      ~LinGAM.lam
       ~LinGAM.n_coefs
+      ~LinGAM.n_splines
+      ~LinGAM.n_terms
+      ~LinGAM.statistics_
    
    

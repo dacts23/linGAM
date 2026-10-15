@@ -107,7 +107,7 @@ n_splines combos) and selects the best pair.
 
 ### Section 4 -- Robust Fitting
 
-The same formula is fit with `robust=True`, which uses 10 iterations
+The same formula is fit with `robust=True`, which uses 15 iterations
 of Huber IRLS.  Huber loss down-weights points with large residuals,
 making the fit resistant to the 5% sensor outliers.
 

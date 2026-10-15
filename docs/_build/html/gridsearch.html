@@ -272,10 +272,15 @@
 <span class="nb">print</span><span class="p">(</span><span class="n">g</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
 </pre></div>
 </div>
-<p>How it works:
-* Uses Newton-Raphson / BFGS optimization of the Restricted Maximum Likelihood (REML) or Generalized Cross Validation (<code class="docutils literal notranslate"><span class="pre">method='GCV.Cp'</span></code>) criterion in continuous log-lambda space.
-* Outer iteration updates <span class="math notranslate nohighlight">\(\log \boldsymbol{\lambda}\)</span>; inner step computes penalized least-squares coefficients <span class="math notranslate nohighlight">\(\boldsymbol{\beta}\)</span> and hat matrix traces.
-* Avoids the discretization error, manual grid configuration, and combinatorial scaling of discrete grids.</p>
+<p>How it works:</p>
+<ul class="simple">
+<li><p>Uses Brent’s bounded scalar search (single free <span class="math notranslate nohighlight">\(\lambda\)</span>) or L-BFGS-B
+(multiple free <span class="math notranslate nohighlight">\(\lambda\)</span>, e.g. one per tensor dimension) on the Restricted
+Maximum Likelihood (REML) or Generalized Cross Validation (<code class="docutils literal notranslate"><span class="pre">method='GCV.Cp'</span></code>)
+criterion in continuous log-lambda space (<span class="math notranslate nohighlight">\(\rho = \log\lambda \in [-15, 15]\)</span>).</p></li>
+<li><p>Outer iteration updates <span class="math notranslate nohighlight">\(\log \boldsymbol{\lambda}\)</span>; inner step computes penalized least-squares coefficients <span class="math notranslate nohighlight">\(\boldsymbol{\beta}\)</span> and hat matrix traces.</p></li>
+<li><p>Avoids the discretization error, manual grid configuration, and combinatorial scaling of discrete grids.</p></li>
+</ul>
 </section>
 <section id="discrete-gcv-grid-search-pygam">
 <h2>2. Discrete GCV Grid Search (pyGAM)<a class="headerlink" href="#discrete-gcv-grid-search-pygam" title="Link to this heading">¶</a></h2>
@@ -295,14 +300,17 @@ compute its QR decomposition <span class="math notranslate nohighlight">\(X = QR
 These depend only on <span class="math notranslate nohighlight">\(K\)</span> and are computed once.</p></li>
 <li><p><strong>Phase 2 (Lambda evaluation)</strong> — For each candidate <span class="math notranslate nohighlight">\(\lambda\)</span>, assemble penalty matrix <span class="math notranslate nohighlight">\(P = \lambda S\)</span>,
 solve <span class="math notranslate nohighlight">\((R^\top R + P) \boldsymbol{\beta} = R^\top Q^\top y\)</span> via Cholesky factorization, compute EDF from the
-eigen-structure, and record GCV.</p></li>
+Cholesky-based trace <span class="math notranslate nohighlight">\(\operatorname{tr}(H^{-1} R^\top R)\)</span>, and record GCV.
+Both phases run under <code class="docutils literal notranslate"><span class="pre">ThreadPoolExecutor</span></code> when <code class="docutils literal notranslate"><span class="pre">n_jobs</span> <span class="pre">!=</span> <span class="pre">1</span></code> (serial by default).</p></li>
 </ol>
 </section>
 <section id="default-search-grids">
 <h3>Default search grids<a class="headerlink" href="#default-search-grids" title="Link to this heading">¶</a></h3>
 <ul class="simple">
-<li><p><strong>Lambda</strong> — <code class="docutils literal notranslate"><span class="pre">np.logspace(-3,</span> <span class="pre">3,</span> <span class="pre">11)</span></code> per slot (11 values from 0.001 to 1000).</p></li>
-<li><p><strong>n_splines</strong> — <code class="docutils literal notranslate"><span class="pre">np.arange(5,</span> <span class="pre">25,</span> <span class="pre">2)</span></code> for <code class="docutils literal notranslate"><span class="pre">s()</span></code> (10 values), and <code class="docutils literal notranslate"><span class="pre">np.arange(4,</span> <span class="pre">8)</span></code> per dimension for <code class="docutils literal notranslate"><span class="pre">te()</span></code>.</p></li>
+<li><p><strong>Lambda</strong> — <code class="docutils literal notranslate"><span class="pre">np.logspace(-3,</span> <span class="pre">3,</span> <span class="pre">11)</span></code> (11 values from 0.001 to 1000), applied
+diagonally: every searched slot shares the same candidate value per evaluation.</p></li>
+<li><p><strong>n_splines</strong> — not searched by default; each term keeps its configured value unless
+explicit <code class="docutils literal notranslate"><span class="pre">n_splines</span></code> grids are passed.</p></li>
 </ul>
 </section>
 <section id="selective-search-search-terms">
