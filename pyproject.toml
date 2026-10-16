@@ -3,11 +3,11 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "linGAM"
+name = "gamkit"
 version = "0.3.0"
-description = "Simple Fast Linear GAM — a minimal implementation of Generalized Additive Models using penalized B-splines"
+description = "Modern Pythonic Generalized Additive Models (GAMs) with Eilers-Marx (1996) and Wood (2011) backends"
 readme = "README.md"
-license = "MIT"
+license = "GPL-3.0-or-later"
 authors = [
     {name = "David Ávila Cortés"}
 ]
@@ -38,9 +38,10 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/dacts23/linGAM"
-Repository = "https://github.com/dacts23/linGAM"
-Documentation = "https://dacts23.github.io/linGAM/"
+Homepage = "https://github.com/dacts23/gamkit"
+Repository = "https://github.com/dacts23/gamkit"
+Documentation = "https://dacts23.github.io/gamkit/"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+

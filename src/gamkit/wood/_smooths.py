@@ -1,7 +1,7 @@
-"""Basis constructors and constraint absorption faithful to R's mgcv package.
+"""Basis constructors and constraint absorption following Wood (2011, 2017).
 
 Supported basis types:
-- 'tp': Thin plate regression splines (default in mgcv)
+- 'tp': Thin plate regression splines (default in Wood backend)
 - 'ts': Thin plate regression splines with shrinkage
 - 'cr': Cubic regression splines (knots at quantiles, natural boundaries)
 - 'cs': Cubic regression splines with shrinkage
@@ -159,7 +159,7 @@ def build_cr_basis(
 
 
 def _cwrap(x0: float, x1: float, x: np.ndarray) -> np.ndarray:
-    """Map x onto [x0, x1] cyclically as in mgcv's cwrap."""
+    """Map x onto [x0, x1] cyclically."""
     h = x1 - x0
     x_out = x.copy()
     high = x_out > x1
@@ -204,7 +204,7 @@ def build_cc_basis(
     D[idx, prev_i] = 1.0 / h[prev_i]
     D[idx, idx] = -(1.0 / h[prev_i] + 1.0 / h[idx])
     D[idx, next_i] = 1.0 / h[idx]
-    D[n - 1, 0] = 0.0  # match mgcv smooth.construct.cc.smooth.spec
+    D[n - 1, 0] = 0.0  # cyclic boundary convention
 
     BD = np.linalg.solve(B, D)
     S = D.T @ BD
@@ -241,23 +241,25 @@ def _eval_cc_basis(x: np.ndarray, xk: np.ndarray, BD: np.ndarray) -> np.ndarray:
 def _spline_design(
     knots: np.ndarray, x: np.ndarray, ord: int, outer_ok: bool = False
 ) -> np.ndarray:
-    """Evaluate standard B-spline design matrix matching R's splineDesign."""
+    """Evaluate standard B-spline design matrix."""
     n_bases = len(knots) - ord
-    return np.column_stack(
+    k_deg = ord - 1
+    k_pad = np.concatenate(
         [
-            np.nan_to_num(
-                BSpline.basis_element(
-                    knots[j : j + ord + 1], extrapolate=False
-                )(x),
-                nan=0.0,
-            )
-            for j in range(n_bases)
+            np.repeat(knots[0] - 1.0, k_deg),
+            knots,
+            np.repeat(knots[-1] + 1.0, k_deg),
         ]
     )
+    c = np.zeros((len(k_pad) - ord, n_bases), dtype=float)
+    c[k_deg : k_deg + n_bases, :] = np.eye(n_bases)
+    out = BSpline(k_pad, c, k_deg, extrapolate=False)(x)
+    np.nan_to_num(out, copy=False, nan=0.0)
+    return out
 
 
 def _c_spline_des(x: np.ndarray, knots: np.ndarray, ord: int = 4) -> np.ndarray:
-    """Cyclic B-spline basis matching R mgcv's cSplineDes."""
+    """Cyclic B-spline basis."""
     knots = np.sort(np.asarray(knots, dtype=float).ravel())
     nk = len(knots)
     k1, kmax = knots[0], knots[-1]
@@ -279,7 +281,7 @@ def build_ps_basis(
     knots: Optional[np.ndarray] = None,
     m: Tuple[int, int] = (2, 2),
 ) -> Tuple[np.ndarray, List[np.ndarray], Dict]:
-    """P-spline basis ('ps') following Eilers & Marx and mgcv smooth.construct.ps."""
+    """P-spline basis ('ps') following Eilers & Marx and Wood (2017)."""
     x = np.asarray(x, dtype=float).ravel()
     m_basis, m_pen = m
     k = max(k, m_basis + 1)
@@ -329,7 +331,7 @@ def build_cp_basis(
     knots: Optional[np.ndarray] = None,
     m: Tuple[int, int] = (2, 2),
 ) -> Tuple[np.ndarray, List[np.ndarray], Dict]:
-    """Cyclic P-spline basis ('cp') matching R mgcv's smooth.construct.cp.smooth.spec."""
+    """Cyclic P-spline basis ('cp')."""
     x = np.asarray(x, dtype=float).ravel()
     m_basis, m_pen = m
     k = max(k, m_basis, 4)
@@ -375,11 +377,13 @@ def build_cp_basis(
 
 def _eta_1d(r: np.ndarray) -> np.ndarray:
     """Thin plate spline Green's function for d=1, m=2: eta(r) = (1/12) * |r|^3."""
-    return (1.0 / 12.0) * (np.abs(r) ** 3)
+    out = np.abs(r)
+    out *= r * r * (1.0 / 12.0)
+    return out
 
 
-def _mgcv_qt(A: np.ndarray) -> np.ndarray:
-    """Householder factorization matching mgcv's QT in matrix.c: A Q = [0, R]."""
+def _wood_qt(A: np.ndarray) -> np.ndarray:
+    """Right-hand Householder factorization: A Q = [0, R]."""
     M, k = A.shape
     Q = np.eye(k)
     A_work = A.copy()
@@ -409,7 +413,7 @@ def build_tp_basis(
     m: int = 2,
     shrink: bool = False,
 ) -> Tuple[np.ndarray, List[np.ndarray], Dict]:
-    """Thin plate regression spline basis ('tp' / 'ts') matching mgcv tprs.c."""
+    """Thin plate regression spline basis ('tp' / 'ts') following Wood (2003)."""
     x = np.asarray(x, dtype=float).ravel()
     M = 2
     k = max(k, M + 1)
@@ -431,7 +435,7 @@ def build_tp_basis(
         try:
             from scipy.sparse.linalg import eigsh
 
-            v_k, U_k = eigsh(E, k=k, which="LM")
+            v_k, U_k = eigsh(E, k=k, which="LM", v0=np.ones(nu, dtype=float))
             sort_idx = np.argsort(np.abs(v_k))[::-1]
             v_k, U_k = v_k[sort_idx], U_k[:, sort_idx]
         except Exception:
@@ -443,7 +447,7 @@ def build_tp_basis(
         sort_idx = np.argsort(np.abs(eigvals))[::-1][:k]
         v_k, U_k = eigvals[sort_idx], eigvecs[:, sort_idx]
 
-    Q = _mgcv_qt(T.T @ U_k)
+    Q = _wood_qt(T.T @ U_k)
     X_u = (U_k * v_k[None, :]) @ Q
     X_u[:, k - M :] = T
     UkZ = U_k @ Q[:, : k - M]
@@ -550,7 +554,7 @@ def build_smooth_basis(
 def rescale_penalty(
     X: np.ndarray, S_list: List[np.ndarray]
 ) -> Tuple[List[np.ndarray], List[float]]:
-    """Rescale penalty matrix by norm(X, 'I')^2 matching mgcv's S.scale."""
+    """Rescale penalty matrix by norm(X, 'I')^2."""
     if not S_list:
         return [], []
     maXX = float(np.max(np.sum(np.abs(X), axis=1)) ** 2) or 1.0
@@ -571,5 +575,8 @@ def absorb_sum_to_zero_constraint(
     Q, _ = np.linalg.qr(C.T, mode="complete")
     Z = Q[:, 1:]
     X_tilde = X @ Z
-    S_tilde = [0.5 * (Z.T @ S @ Z + (Z.T @ S @ Z).T) for S in S_list]
+    S_tilde = []
+    for S in S_list:
+        ZS = Z.T @ S @ Z
+        S_tilde.append(0.5 * (ZS + ZS.T))
     return X_tilde, S_tilde, Z

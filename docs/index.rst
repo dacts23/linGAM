@@ -1,8 +1,8 @@
-linGAM
+gamkit
 ======
 
 **Simple Fast Linear GAM** — a high-performance Python implementation of
-Generalized Additive Models supporting both **PyGAM** and native **R mgcv** backends.
+Generalized Additive Models supporting both **Eilers & Marx (1996)** and **Wood (2011)** backends.
 
 .. toctree::
    :maxdepth: 2
@@ -17,10 +17,10 @@ Generalized Additive Models supporting both **PyGAM** and native **R mgcv** back
    changelog
 
 
-What is linGAM?
+What is gamkit?
 ---------------
 
-linGAM fits smooth, additive regression models of the form
+gamkit fits smooth, additive regression models of the form
 
 .. math::
 
@@ -31,14 +31,14 @@ penalised to avoid overfitting.
 
 The package provides two complementary engines accessible through a single, unified interface:
 
-1. **R mgcv Backend** (``backend='mgcv'``):
-   Faithful Python implementation of Simon Wood's R ``mgcv`` package.
+1. **Wood (2011) Backend** (``backend='wood'``):
+   Python implementation of Simon Wood's GAM methods (Wood 2011, 2017).
    Supports multiple basis types (``'tp'``, ``'ts'``, ``'cr'``, ``'cs'``, ``'cc'``,
    ``'ps'``, ``'cp'``, ``'bs'``, ``'re'``, ``'te'``), null-space constraint absorption,
    and **automatic REML / GCV smoothing parameter optimization** (no grid search required).
-   Outputs formatted R-style summary tables with approximate F-tests and p-values (Wood 2013).
+   Outputs formatted summary tables with approximate F-tests and p-values (Wood 2013).
 
-2. **PyGAM Backend** (``backend='pygam'``):
+2. **Eilers & Marx (1996) Backend** (``backend='eilers'``):
    Clean, fast B-splines with discrete GCV grid search and soft shape constraints
    (monotonic increasing/decreasing, convex, concave, periodic).
 
@@ -52,11 +52,11 @@ The package supports:
 * **Fast evaluation** — QR decomposition with SVD data-augmentation to avoid squaring condition numbers
 * **Confidence & prediction intervals** — Bayesian posterior covariance and frequentist intervals
 
-When to use linGAM
+When to use gamkit
 ^^^^^^^^^^^^^^^^^^
 
 * You need more flexibility than linear regression but full interpretability without black-box complexity.
-* You want the exact statistical rigor and bases of R's ``mgcv`` in pure Python.
+* You want the exact statistical rigor and bases of Simon Wood's GAM formulation in pure Python.
 * You have domain constraints (monotonic, concave, periodic) to enforce on model components.
 * You need to *explain* predictions to domain experts — each term produces a component plot.
 
@@ -64,22 +64,22 @@ When to use linGAM
 Quick example
 -------------
 
-Using the **R mgcv backend** with automatic REML smoothing parameter estimation:
+Using the **Wood backend** with automatic REML smoothing parameter estimation:
 
 .. code-block:: python
 
    import numpy as np
-   from lingam import LinGAM, GAMCore
+   from gamkit import LinGAM, GAMCore
 
    np.random.seed(42)
    x = np.linspace(0, 1, 200)
    y = np.sin(2 * np.pi * x) + np.random.normal(0, 0.2, 200)
 
    # Single-term model with cubic regression splines and REML estimation
-   model = LinGAM(k=10, bs="cr", backend="mgcv")
+   model = LinGAM(k=10, bs="cr", backend="wood")
    model.fit(x, y)
 
-   # Formatted R-style summary table
+   # Formatted summary table
    print(model.summary())
 
    # Predictions & Bayesian confidence intervals
@@ -90,7 +90,7 @@ Multi-term formula with tensor products:
 
 .. code-block:: python
 
-   gam = GAMCore("te(0, 1, k=5) + l(2)", backend="mgcv")
+   gam = GAMCore("te(0, 1, k=5) + l(2)", backend="wood")
    gam.fit(X, y)
    print(gam.summary())
 

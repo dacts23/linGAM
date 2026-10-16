@@ -1,4 +1,4 @@
-"""Single-term penalised B-spline GAM (pyGAM backend)."""
+"""Single-term penalised B-spline GAM (Eilers & Marx backend)."""
 
 from typing import Optional, Tuple
 

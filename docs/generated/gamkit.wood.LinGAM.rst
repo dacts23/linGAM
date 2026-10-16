@@ -1,7 +1,7 @@
-﻿lingam.mgcv.LinGAM
+﻿gamkit.wood.LinGAM
 ==================
 
-.. currentmodule:: lingam.mgcv
+.. currentmodule:: gamkit.wood
 
 .. autoclass:: LinGAM
 

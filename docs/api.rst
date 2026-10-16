@@ -1,15 +1,15 @@
 API Reference
 =============
 
-This page documents the public API and internal engines in linGAM.
+This page documents the public API and internal engines in gamkit.
 
-.. currentmodule:: lingam
+.. currentmodule:: gamkit
 
 Public Unified API
 ------------------
 
 The top-level :class:`LinGAM` and :class:`GAMCore` classes dynamically dispatch
-to either the pyGAM or R mgcv engine based on the ``backend`` argument.
+to either the Eilers-Marx or Wood engine based on the ``backend`` argument.
 
 .. autosummary::
    :toctree: generated/
@@ -22,39 +22,40 @@ to either the pyGAM or R mgcv engine based on the ``backend`` argument.
 Shared Architecture
 -------------------
 
-.. currentmodule:: lingam._base
+.. currentmodule:: gamkit._base
 
-lingam._base
+gamkit._base
 ^^^^^^^^^^^^
 
 Shared ``_GAMBase`` lifecycle inherited by both engines: prediction, partial
 dependence, confidence/prediction intervals, information criteria, and all
-decomposition/diagnostic plotting.  (``scale`` is σ for pygam, σ² for mgcv.)
+decomposition/diagnostic plotting.  (``scale`` is σ for Eilers-Marx, σ² for Wood.)
 
-.. automodule:: lingam._base
+.. automodule:: gamkit._base
     :members:
 
-.. currentmodule:: lingam._formula
+.. currentmodule:: gamkit._formula
 
-lingam._formula
+gamkit._formula
 ^^^^^^^^^^^^^^^
 
 Shared additive model formula parser for ``s()``, ``te()``, ``f()``, and ``l()`` terms.
 
-.. automodule:: lingam._formula
+.. automodule:: gamkit._formula
    :members:
 
-.. literalinclude:: ../src/lingam/_formula.py
+.. literalinclude:: ../src/gamkit/_formula.py
    :language: python
    :linenos:
 
 
-pyGAM Engine (``lingam.pygam``)
--------------------------------
+Eilers & Marx Engine (``gamkit.eilers``)
+---------------------------------------------
 
-B-spline additive models with discrete GCV grid search and soft shape constraints.
+B-spline additive models with discrete GCV grid search and soft shape constraints
+following Eilers & Marx (1996).
 
-.. currentmodule:: lingam.pygam
+.. currentmodule:: gamkit.eilers
 
 Classes
 ^^^^^^^
@@ -69,82 +70,83 @@ Classes
 Modules
 ^^^^^^^
 
-.. currentmodule:: lingam.pygam._bspline
+.. currentmodule:: gamkit.eilers._bspline
 
-lingam.pygam._bspline
-"""""""""""""""""""""
-.. automodule:: lingam.pygam._bspline
+gamkit.eilers._bspline
+"""""""""""""""""""""""""""
+.. automodule:: gamkit.eilers._bspline
    :members:
 
-.. literalinclude:: ../src/lingam/pygam/_bspline.py
+.. literalinclude:: ../src/gamkit/eilers/_bspline.py
    :language: python
    :linenos:
 
-.. currentmodule:: lingam.pygam._penalty
+.. currentmodule:: gamkit.eilers._penalty
 
-lingam.pygam._penalty
-"""""""""""""""""""""
-.. automodule:: lingam.pygam._penalty
+gamkit.eilers._penalty
+"""""""""""""""""""""""""""
+.. automodule:: gamkit.eilers._penalty
    :members:
 
-.. literalinclude:: ../src/lingam/pygam/_penalty.py
+.. literalinclude:: ../src/gamkit/eilers/_penalty.py
    :language: python
    :linenos:
 
-.. currentmodule:: lingam.pygam._solver
+.. currentmodule:: gamkit.eilers._solver
 
-lingam.pygam._solver
-""""""""""""""""""""
-.. automodule:: lingam.pygam._solver
+gamkit.eilers._solver
+""""""""""""""""""""""""""
+.. automodule:: gamkit.eilers._solver
    :members:
 
-.. literalinclude:: ../src/lingam/pygam/_solver.py
+.. literalinclude:: ../src/gamkit/eilers/_solver.py
    :language: python
    :linenos:
 
-.. currentmodule:: lingam.pygam._terms
+.. currentmodule:: gamkit.eilers._terms
 
-lingam.pygam._terms
-"""""""""""""""""""
-.. automodule:: lingam.pygam._terms
+gamkit.eilers._terms
+"""""""""""""""""""""""""
+.. automodule:: gamkit.eilers._terms
    :members:
 
-.. literalinclude:: ../src/lingam/pygam/_terms.py
+.. literalinclude:: ../src/gamkit/eilers/_terms.py
    :language: python
    :linenos:
 
-.. currentmodule:: lingam.pygam._lingam
+.. currentmodule:: gamkit.eilers._lingam
 
-lingam.pygam._lingam
-""""""""""""""""""""
-.. automodule:: lingam.pygam._lingam
+gamkit.eilers._lingam
+""""""""""""""""""""""""""
+.. automodule:: gamkit.eilers._lingam
    :members:
 
-.. literalinclude:: ../src/lingam/pygam/_lingam.py
+.. literalinclude:: ../src/gamkit/eilers/_lingam.py
    :language: python
    :linenos:
 
-.. currentmodule:: lingam.pygam._gam
 
-lingam.pygam._gam
-"""""""""""""""""
-.. automodule:: lingam.pygam._gam
+.. currentmodule:: gamkit.eilers._gam
+
+gamkit.eilers._gam
+"""""""""""""""""""""""
+.. automodule:: gamkit.eilers._gam
    :members:
    :exclude-members: _set_lams_from_combo, _assemble_penalty_from_bases,
                      _precompute_penalty_bases, _build_matrix_from_terms
 
-.. literalinclude:: ../src/lingam/pygam/_gam.py
+.. literalinclude:: ../src/gamkit/eilers/_gam.py
    :language: python
    :linenos:
 
 
-R mgcv Engine (``lingam.mgcv``)
--------------------------------
+Wood Engine (``gamkit.wood``)
+-----------------------------
 
-Exact Python implementation of Wood's R ``mgcv`` package: multiple basis types,
-null-space constraint absorption, and outer REML / GCV smoothing optimization.
+Python implementation of Simon Wood's GAM methods (Wood 2011, 2017): multiple basis types,
+null-space constraint absorption, and continuous REML / GCV smoothing optimization.
 
-.. currentmodule:: lingam.mgcv
+.. currentmodule:: gamkit.wood
 
 Classes
 ^^^^^^^
@@ -159,57 +161,58 @@ Classes
 Modules
 ^^^^^^^
 
-.. currentmodule:: lingam.mgcv._smooths
+.. currentmodule:: gamkit.wood._smooths
 
-lingam.mgcv._smooths
+gamkit.wood._smooths
 """"""""""""""""""""
-.. automodule:: lingam.mgcv._smooths
+.. automodule:: gamkit.wood._smooths
    :members:
 
-.. literalinclude:: ../src/lingam/mgcv/_smooths.py
+.. literalinclude:: ../src/gamkit/wood/_smooths.py
    :language: python
    :linenos:
 
-.. currentmodule:: lingam.mgcv._optimizer
+.. currentmodule:: gamkit.wood._optimizer
 
-lingam.mgcv._optimizer
+gamkit.wood._optimizer
 """"""""""""""""""""""
-.. automodule:: lingam.mgcv._optimizer
+.. automodule:: gamkit.wood._optimizer
    :members:
 
-.. literalinclude:: ../src/lingam/mgcv/_optimizer.py
+.. literalinclude:: ../src/gamkit/wood/_optimizer.py
    :language: python
    :linenos:
 
-.. currentmodule:: lingam.mgcv._terms
+.. currentmodule:: gamkit.wood._terms
 
-lingam.mgcv._terms
+gamkit.wood._terms
 """"""""""""""""""
-.. automodule:: lingam.mgcv._terms
+.. automodule:: gamkit.wood._terms
    :members:
 
-.. literalinclude:: ../src/lingam/mgcv/_terms.py
+.. literalinclude:: ../src/gamkit/wood/_terms.py
    :language: python
    :linenos:
 
-.. currentmodule:: lingam.mgcv._lingam
+.. currentmodule:: gamkit.wood._lingam
 
-lingam.mgcv._lingam
+gamkit.wood._lingam
 """""""""""""""""""
-.. automodule:: lingam.mgcv._lingam
+.. automodule:: gamkit.wood._lingam
    :members:
 
-.. literalinclude:: ../src/lingam/mgcv/_lingam.py
+.. literalinclude:: ../src/gamkit/wood/_lingam.py
    :language: python
    :linenos:
 
-.. currentmodule:: lingam.mgcv._gam
 
-lingam.mgcv._gam
+.. currentmodule:: gamkit.wood._gam
+
+gamkit.wood._gam
 """"""""""""""""
-.. automodule:: lingam.mgcv._gam
+.. automodule:: gamkit.wood._gam
    :members:
 
-.. literalinclude:: ../src/lingam/mgcv/_gam.py
+.. literalinclude:: ../src/gamkit/wood/_gam.py
    :language: python
    :linenos:

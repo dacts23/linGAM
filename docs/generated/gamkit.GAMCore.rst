@@ -1,9 +1,9 @@
-﻿lingam.LinGAM
-=============
+﻿gamkit.GAMCore
+==============
 
-.. currentmodule:: lingam
+.. currentmodule:: gamkit
 
-.. autoclass:: LinGAM
+.. autoclass:: GAMCore
 
    
    .. automethod:: __init__
@@ -13,7 +13,7 @@
 
    .. autosummary::
    
-      ~LinGAM.__init__
+      ~GAMCore.__init__
    
    
 

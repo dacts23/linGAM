@@ -1,4 +1,4 @@
-"""Direct comparison tests between Python lingam.mgcv and R's mgcv package via Rscript."""
+"""Direct comparison tests between Python gamkit.wood and R's mgcv package via Rscript."""
 
 import json
 import os
@@ -7,7 +7,8 @@ import subprocess
 import numpy as np
 import pytest
 
-from lingam.mgcv import GAMCore, LinGAM
+from gamkit.wood import GAMCore, LinGAM
+
 
 # Path to Rscript executable
 R_CANDIDATES = [

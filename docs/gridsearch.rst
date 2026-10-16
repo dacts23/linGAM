@@ -4,28 +4,28 @@ Smoothing Parameter Optimization & Tuning
 A central question in Generalized Additive Models is choosing the smoothing parameter :math:`\lambda`
 (or :math:`sp`) to achieve the optimal balance between fidelity to data and smoothness.
 
-linGAM supports two distinct mathematical approaches:
+gamkit supports two distinct mathematical approaches:
 
-1. **Continuous REML Optimization (R mgcv engine)** — Solves for optimal :math:`\lambda` continuously during ``fit()`` (Wood 2011).
-2. **Discrete GCV Grid Search (pyGAM engine)** — Evaluates a Cartesian grid of candidate :math:`(K, \lambda)` values via cached QR+Cholesky.
+1. **Continuous REML Optimization (Wood engine)** — Solves for optimal :math:`\lambda` continuously during ``fit()`` (Wood 2011).
+2. **Discrete GCV Grid Search (Eilers-Marx engine)** — Evaluates a Cartesian grid of candidate :math:`(K, \lambda)` values via cached QR+Cholesky (Eilers & Marx 1996).
 
 
-1. Continuous REML Optimization (R mgcv)
-----------------------------------------
+1. Continuous REML Optimization (Wood 2011)
+-------------------------------------------
 
-In the R ``mgcv`` backend, smoothing parameters are estimated automatically during model fitting:
+In the Wood backend, smoothing parameters are estimated automatically during model fitting:
 
 .. code-block:: python
 
-   from lingam import LinGAM, GAMCore
+   from gamkit import LinGAM, GAMCore
 
    # Single-term: REML estimates lambda automatically
-   m = LinGAM(k=10, bs="cr", backend="mgcv")
+   m = LinGAM(k=10, bs="cr", backend="wood")
    m.fit(x, y)
    print(f"Optimal estimated lambda: {m.lam:.4f}")
 
    # Multi-term: Simultaneous multi-dimensional REML optimization
-   g = GAMCore("s(0, k=10) + s(1, k=10) + l(2)", backend="mgcv")
+   g = GAMCore("s(0, k=10) + s(1, k=10) + l(2)", backend="wood")
    g.fit(X, y)
    print(g.summary())
 
@@ -39,17 +39,17 @@ How it works:
 * Avoids the discretization error, manual grid configuration, and combinatorial scaling of discrete grids.
 
 
-2. Discrete GCV Grid Search (pyGAM)
------------------------------------
+2. Discrete GCV Grid Search (Eilers-Marx 1996)
+----------------------------------------------
 
-The pyGAM backend evaluates a user-defined or default grid of :math:`(K, \lambda)` candidates by minimising
+The Eilers-Marx backend evaluates a user-defined or default grid of :math:`(K, \lambda)` candidates by minimising
 the Generalised Cross Validation (GCV) criterion.
 
 .. code-block:: python
 
-   from lingam import LinGAM, GAMCore
+   from gamkit import LinGAM, GAMCore
 
-   m = LinGAM(n_splines=10, backend="pygam")
+   m = LinGAM(n_splines=10, backend="eilers")
    m.gridsearch(x, y)
 
 Two-phase fast QR+Cholesky evaluation
@@ -79,7 +79,7 @@ When confident in the parameters for some terms, restrict the grid search to a s
 
 .. code-block:: python
 
-   model = GAMCore("s(0) + s(1) + te(0, 1)", backend="pygam")
+   model = GAMCore("s(0) + s(1) + te(0, 1)", backend="eilers")
 
    # Search only univariate splines (s)
    model.gridsearch(x, y, search_terms=['s'])

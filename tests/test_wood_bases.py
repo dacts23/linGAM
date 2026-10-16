@@ -1,9 +1,9 @@
-"""Tests for all mgcv basis families: tp, ts, cr, cs, cc, ps, cp, bs, re, and te."""
+"""Tests for all Wood basis families: tp, ts, cr, cs, cc, ps, cp, bs, re, and te."""
 
 import numpy as np
 import pytest
+from gamkit.wood import GAMCore, LinGAM
 
-from lingam.mgcv import GAMCore, LinGAM
 
 
 @pytest.mark.parametrize("basis", ["tp", "ts", "cr", "cs", "cc", "ps", "cp", "bs", "re"])
@@ -82,8 +82,7 @@ def test_periodic_constraint():
 
 
 def test_ts_shrinks_null_space():
-    """Verify 'ts' penalizes the 2 smallest (null-space) eigenvalues, not the largest."""
-    from lingam.mgcv._smooths import build_tp_basis
+    from gamkit.wood._smooths import build_tp_basis
 
     x = np.linspace(0, 1, 50)
     _, [S_tp], _ = build_tp_basis(x, k=8, shrink=False)
@@ -106,3 +105,20 @@ def test_gcv_method():
     assert m.is_fitted
     assert m.statistics_["method"] == "GCV.CP"
     assert m.statistics_["score"] > 0
+
+
+def test_multi_penalty_reml_and_gcv():
+    """Verify multi-penalty REML and GCV optimization across disjoint and overlapping penalties."""
+    np.random.seed(42)
+    n = 80
+    X = np.random.uniform(0, 1, (n, 3))
+    y = np.sin(2 * np.pi * X[:, 0]) + np.cos(2 * np.pi * X[:, 1]) + np.random.normal(0, 0.08, n)
+
+    for method in ("REML", "GCV.Cp"):
+        gam = GAMCore("s(0, bs='cr', k=8) + te(1, 2, bs='cr', k=5)", method=method).fit(X, y)
+        assert gam.is_fitted
+        assert len(gam.statistics_["sp"]) == 3
+        assert gam.deviance_explained() > 0.9
+        # x2 is pure noise so its smoothing parameter should be much larger than x1's
+        assert gam.statistics_["sp"][2] > gam.statistics_["sp"][1] * 10
+        assert np.allclose(gam.predict(X), gam.predict(X + 0.0))

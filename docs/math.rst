@@ -5,25 +5,25 @@ Mathematical Foundations
 
 This chapter explains the ideas that make GAMs work — not just the
 equations, but *why* we chose each ingredient and what problem it solves.
-linGAM ships two engines that solve the same problem with different
+gamkit ships two engines that solve the same problem with different
 machinery, so the chapter is organised in four parts:
 
 * :ref:`Part I<section-why-gam>` — the shared ideas both backends agree on:
   what a GAM is, and how its additive decomposition works.
-* :ref:`Part II<section-pygam-design>` — the **pygam backend**: uniform
+* :ref:`Part II<section-eilers-design>` — the **Eilers-Marx backend**: uniform
   B-splines, difference penalties, a discrete grid search over
   :math:`\lambda`, and the SVD solver.  Everything you need to read the
-  code in ``lingam/pygam/``.
-* :ref:`Part III<section-mgcv-design>` — the **mgcv backend**: the basis
-  families of R's ``mgcv`` (thin plate, cubic, cyclic, P-splines...), the
+  code in ``gamkit/eilers/``.
+* :ref:`Part III<section-wood-design>` — the **Wood backend**: the basis
+  families of Simon Wood's formulation (thin plate, cubic, cyclic, P-splines...), the
   sum-to-zero identifiability constraint, and automatic smoothing-parameter
-  selection by REML or GCV.  Everything you need to read ``lingam/mgcv/``.
+  selection by REML or GCV.  Everything you need to read ``gamkit/wood/``.
 * :ref:`Part IV<section-backends-compared>` — an explicit side-by-side
   comparison of the two, so you can pick the right engine for your problem.
 
 If you're new to GAMs, start from the top.  If you already know penalised
-B-splines, skip to :ref:`the SVD solver<section-svd-solver>` (pygam) or
-:ref:`the mgcv bases<section-mgcv-bases>`, and finish with
+B-splines, skip to :ref:`the SVD solver<section-svd-solver>` (Eilers-Marx) or
+:ref:`the Wood bases<section-wood-bases>`, and finish with
 :ref:`the comparison<section-backends-compared>`.
 
 
@@ -84,7 +84,7 @@ the model is additive, the pieces are independent: changing :math:`x_1`
 only affects :math:`f_1(x_1)`, not :math:`f_2(x_2)`.  This is the property
 that makes GAMs **interpretable** where black-box models are not.
 
-Both linGAM backends fit exactly this model.  Where they differ is *how*:
+Both gamkit backends fit exactly this model.  Where they differ is *how*:
 how each :math:`f_j` is represented, how the smoothness penalty is built,
 how the smoothing parameter is chosen, and how uncertainty is reported.
 Part II and Part III cover those differences; the shared philosophy is the
@@ -168,23 +168,23 @@ partial dependence.  The partial dependence is the "clean" signal — the
 model's best estimate of what that predictor alone contributes.
 
 One subtlety to remember later: the two backends *centre* these term plots
-differently.  The mgcv backend enforces an explicit sum-to-zero constraint
+differently.  The Wood backend enforces an explicit sum-to-zero constraint
 on every smooth (so each panel is genuinely centred at zero), while the
-pygam backend lets the intercept absorb each term's overall level.  We'll
-make this precise in :ref:`Part III<section-mgcv-identifiability>`.
+Eilers-Marx backend lets the intercept absorb each term's overall level.  We'll
+make this precise in :ref:`Part III<section-wood-identifiability>`.
 
 
-.. _part-pygam:
+.. _part-eilers:
 
-Part II — The PyGAM backend
----------------------------
+Part II — The Eilers & Marx backend
+------------------------------------
 
-.. _section-pygam-design:
+.. _section-eilers-design:
 
-How the pygam backend thinks
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+How the Eilers-Marx backend thinks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The pygam backend (``backend='pygam'``) is the minimalist design: **one
+The Eilers-Marx backend (``backend='eilers'``) is the minimalist design: **one
 basis family, one solver, one criterion, chosen well.**  Every smooth term
 is a uniform cubic B-spline; smoothness is charged by a difference penalty;
 the one free knob, the smoothing parameter :math:`\lambda`, is chosen by
@@ -225,7 +225,7 @@ unpenalised and absorbs the overall level, and each penalty leaves its own
 null space (constant and linear trends for the default penalty) uncharged,
 so the decomposition into intercept + smooths is well defined in practice.
 There is no explicit centering constraint — a deliberate simplification we
-compare against mgcv's approach later.
+compare against Wood's approach later.
 
 .. _section-bsplines:
 
@@ -300,7 +300,7 @@ is an :math:`n \times K` design matrix :math:`B`.  Each row sums to 1 (the
 bricks tile the space) and each column has compact support (localised
 bumps).
 
-**Why cubic?**  linGAM defaults to ``spline_order=3``, which the recursion
+**Why cubic?**  gamkit defaults to ``spline_order=3``, which the recursion
 above turns into basis functions of order :math:`k+1 = 4` — cubic
 polynomials, degree 3.  Cubic is the lowest degree that gives *continuous
 second derivatives* — the curve looks smooth to the human eye.  Lower
@@ -309,7 +309,7 @@ benefit.
 
 **Linear extrapolation.**  Outside :math:`[0,1]`, B-splines can oscillate
 or collapse to zero — not useful for prediction beyond the training range.
-linGAM replaces the B-spline values with a linear extension using the
+gamkit replaces the B-spline values with a linear extension using the
 boundary derivative:
 
 .. math::
@@ -358,7 +358,7 @@ punishes certain patterns in the coefficients.  The smoothing parameter
   basis allows.  Equivalent to unpenalised regression.
 * :math:`\lambda \to \infty`: infinite penalty — the curve is forced to
   be as smooth as possible (a straight line for second-difference penalties).
-* :math:`0 < \lambda < \infty`: a balance.  linGAM uses grid search to
+* :math:`0 < \lambda < \infty`: a balance.  gamkit uses grid search to
   find the :math:`\lambda` that minimises GCV.
 
 **What each penalty does to the curve:**
@@ -459,7 +459,7 @@ the actual data."  The bottom block says "keep the coefficients small in
 the penalised directions."
 
 Solving this augmented system is equivalent to the penalised normal
-equations, but **never forms** :math:`X^\top X`.  Instead, linGAM uses:
+equations, but **never forms** :math:`X^\top X`.  Instead, gamkit uses:
 
 1. **QR decomposition** of :math:`X = QR`.  :math:`R` is small
    (:math:`m \times m`, where :math:`m = \sum K_j + 1`), so subsequent
@@ -542,9 +542,9 @@ Per-direction EDF is stored in ``statistics_['edof_per_coef']``:
 
    \text{EDF}_j = \sum_i U_{1,ji}^2 = (U_1 U_1^\top)_{jj}.
 
-Note that in the pygam SVD solver, the rows of :math:`U_1` correspond to
+Note that in the Eilers-Marx SVD solver, the rows of :math:`U_1` correspond to
 the :math:`m` QR-orthogonalised directions of :math:`R` (:math:`Q^\top H Q
-= U_1 U_1^\top`), whereas the mgcv backend reports the diagonal of the
+= U_1 U_1^\top`), whereas the Wood backend reports the diagonal of the
 coefficient influence matrix :math:`F = (X^\top X + S_\lambda)^{-1}
 X^\top X` directly in the spline basis coordinates; both sum to the exact
 same total :math:`\text{EDF} = \operatorname{tr}(H)`.
@@ -580,7 +580,7 @@ Let's unpack each piece:
   are from the actual values.  Lower is better (better fit).
 * :math:`\text{EDF}`: effective degrees of freedom — the model's complexity.
   More EDF means the model can "chase" data points more aggressively.
-* :math:`\gamma`: the GCV penalty multiplier (default 1.4 in the pygam
+* :math:`\gamma`: the GCV penalty multiplier (default 1.4 in the Eilers-Marx
   backend).  Setting :math:`\gamma > 1` makes the criterion slightly
   conservative — it prefers simpler models, analogous to AIC's penalty term.
 
@@ -591,7 +591,7 @@ good.  When EDF grows, the denominator shrinks → GCV explodes → bad,
 
 **Why GCV and not plain CV?**  GCV is asymptotically equivalent to LOOCV
 but computes in :math:`O(1)` extra time after a single fit.  It's the
-reason linGAM's grid search can evaluate thousands of hyperparameter
+reason gamkit's grid search can evaluate thousands of hyperparameter
 combinations in seconds rather than minutes.
 
 **Interpreting GCV values:**
@@ -611,7 +611,7 @@ combinations in seconds rather than minutes.
 Putting it together: the penalised fit
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Let's trace what happens when you call ``model.fit(x, y)`` with the pygam
+Let's trace what happens when you call ``model.fit(x, y)`` with the Eilers-Marx
 backend:
 
 1. **Parse the formula.**  ``"s(0) + te(1,2) + f(3)"`` becomes a list of
@@ -644,7 +644,7 @@ and why the intercept block in :math:`P` is zero.
 not charge constant or linear trends (they lie in :math:`D_2`'s null
 space).  Together with the unpenalised intercept, this pins down the
 decomposition: the intercept owns the level, and each smooth owns only its
-*bending*.  The pygam backend relies on this implicit mechanism.  The mgcv
+*bending*.  The Eilers-Marx backend relies on this implicit mechanism.  The Wood
 backend, as we'll see, makes the centering explicit with a sum-to-zero
 constraint — same goal, different route.
 
@@ -750,9 +750,9 @@ because the penalty has already "used up" EDF worth of information.
 
 This covariance is the **frequentist** one — it treats :math:`\lambda` as
 fixed and propagates only the sampling variability of
-:math:`\hat{\boldsymbol{\beta}}`.  The mgcv backend additionally computes
+:math:`\hat{\boldsymbol{\beta}}`.  The Wood backend additionally computes
 a *Bayesian* covariance (treating the penalty as a prior); the difference
-is explained in :ref:`Part III<section-mgcv-inference>`.
+is explained in :ref:`Part III<section-wood-inference>`.
 
 
 .. _section-grid-search-mechanics:
@@ -764,7 +764,7 @@ Grid search evaluates every combination of :math:`K` (``n_splines``) and
 :math:`\lambda` (``lam``) candidates.  A naïve implementation would rebuild
 :math:`X` and solve from scratch for each combination — prohibitively slow.
 
-linGAM's fast path splits the work into two phases:
+gamkit's fast path splits the work into two phases:
 
 **Phase 1 — Precompute per** :math:`\boldsymbol{K}` **(threaded).**
 For each candidate basis count :math:`K`:
@@ -842,7 +842,7 @@ When there are outliers, it's vastly better.
    large residuals get small weights — they're effectively ignored.
 4. Re-fit with the new weights.  Repeat until convergence.
 
-This is equivalent to M-estimation with the Huber ψ-function.  linGAM
+This is equivalent to M-estimation with the Huber ψ-function.  gamkit
 implements it in ``irls_solve`` (used via ``fit(x, y, robust=True)``) by
 scaling each row of :math:`X` and element of :math:`\mathbf{y}` by
 :math:`\sqrt{w_i}` before calling the standard PIRLS solver, running up
@@ -862,23 +862,22 @@ uncertainty either.
 - Your data is clean and you need maximum speed (robust is ~5x slower due to iterations).
 - Your "outliers" are actually the most important data points (e.g., rare failure events you want to model accurately).
 
-This option is pygam-only; the mgcv backend currently fits by plain
-penalised least squares.
+Both backends support ``robust=True`` using Huber P-IRLS.
 
 
-.. _part-mgcv:
+.. _part-wood:
 
-Part III — The mgcv backend
+Part III — The Wood backend
 ---------------------------
 
-.. _section-mgcv-design:
+.. _section-wood-design:
 
-How the mgcv backend thinks
+How the Wood backend thinks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The mgcv backend (``backend='mgcv'``) is a faithful Python port of Simon
-Wood's R package ``mgcv`` (Wood 2006, 2017).  Where the pygam backend bets
-on one basis and a grid search, mgcv bets on **richness and automatic
+The Wood backend (``backend='wood'``) is a pure Python implementation of Simon
+Wood's GAM framework (Wood 2006, 2011, 2017).  Where the Eilers-Marx backend bets
+on one basis and a grid search, Wood bets on **richness and automatic
 inference**:
 
 1. **A zoo of bases.**  Seven basis families (``'tp'``, ``'ts'``,
@@ -893,7 +892,7 @@ inference**:
    log-:math:`\lambda` space with standard optimisers.
 3. **Explicit identifiability.**  Every smooth is centred by absorbing a
    sum-to-zero constraint into the basis itself, and every penalty is
-   rescaled to a common scale (mgcv's ``S.scale``), so the :math:`\lambda`
+   rescaled to a common scale (``S.scale``), so the :math:`\lambda`
    values are comparable across terms.
 4. **Full inferential machinery.**  Bayesian and frequentist covariances,
    per-term approximate F-tests with p-values (Wood 2013), AIC/BIC,
@@ -915,12 +914,12 @@ The pipeline is:
 
 Sections 1–4 below follow that order.
 
-.. _section-mgcv-bases:
+.. _section-wood-bases:
 
 The basis zoo
 ~~~~~~~~~~~~~
 
-All of the mgcv bases share one objective: represent a smooth
+All of the Wood bases share one objective: represent a smooth
 :math:`f(x)` as a linear combination of basis functions with an attached
 **wiggliness penalty** :math:`\boldsymbol{\beta}^\top S
 \boldsymbol{\beta}`.  Three of the families (``tp``, ``cr``, ``cc``)
@@ -982,12 +981,12 @@ function shapes that cost *nothing* to include.  A penalty with a null
 space leaves the corresponding pattern unpenalised and lets the intercept
 (or the model's other terms) absorb it.
 
-.. _section-mgcv-tp:
+.. _section-wood-tp:
 
 Thin plate regression splines (``tp``, ``ts``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The default in mgcv, and the most mathematically interesting family.  It
+The default in the Wood backend, and the most mathematically interesting family.  It
 starts from a *continuous* problem, not a knot placement.
 
 **The continuous problem.**  Among all functions with two derivatives,
@@ -1045,7 +1044,7 @@ Solving the continuous problem exactly gives :math:`f` with one parameter
 per data point (an :math:`O(n)` model) — beautiful, but too expensive and
 over-flexible for practical use.
 
-**The low-rank approximation.**  mgcv's trick (and linGAM's) is to keep
+**The low-rank approximation.**  Wood's trick (and gamkit's) is to keep
 only the :math:`k` most important radial directions.  Eigen-decompose
 
 .. math::
@@ -1116,7 +1115,7 @@ which charges the linear trend just enough that a strong :math:`\lambda`
 can shrink the whole smooth to zero.  (This is also how model selection
 can effectively drop a term.)
 
-.. _section-mgcv-cr:
+.. _section-wood-cr:
 
 Cubic regression splines (``cr``, ``cs``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1196,7 +1195,7 @@ smallest positive one:
 The linear trend is now weakly penalised, so a strong :math:`\lambda` can
 shrink the whole term toward zero.
 
-.. _section-mgcv-cc:
+.. _section-wood-cc:
 
 Cyclic cubic regression splines (``cc``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1220,7 +1219,7 @@ The penalty is the same form, :math:`S = D^\top B^{-1} D`, now of rank
 periodic function that is "straight" is exactly constant.  Evaluating the
 basis wraps the covariate cyclically onto :math:`[x_0, x_1]` first.
 
-.. _section-mgcv-ps:
+.. _section-wood-ps:
 
 P-splines (``ps``, ``cp``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1245,12 +1244,12 @@ free.  P-splines trade a little elegance for speed and simplicity (the
 penalty needs no matrix inverse, unlike :math:`B^{-1}` in ``cr``), and
 the equal knot spacing makes the basis numerically well behaved.
 
-For cyclic P-splines (``'cp'``), both the B-spline basis (via mgcv's
-``cSplineDes`` knot wrapping) and the :math:`m`-th order difference
+For cyclic P-splines (``'cp'``), both the B-spline basis (via cyclic
+knot wrapping) and the :math:`m`-th order difference
 penalty wrap around the boundaries, leaving only constants in the
 one-dimensional null space.
 
-.. _section-mgcv-re:
+.. _section-wood-re:
 
 Random-effect smooths (``re``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1270,7 +1269,7 @@ random-effects model: level effects drawn from :math:`N(0, \sigma^2 /
 inverse-variance of the random effect.  Larger :math:`\lambda` shrinks
 all level effects toward zero, pooling the levels together.
 
-.. _section-mgcv-identifiability:
+.. _section-wood-identifiability:
 
 Identifiability: rescaling and the sum-to-zero constraint
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1279,7 +1278,7 @@ A GAM with an intercept is over-parametrised: adding a constant to a
 smooth :math:`f_j` and subtracting it from the intercept leaves every
 prediction unchanged.  Fitting "works" regardless, but the decomposition
 becomes arbitrary — you cannot say whether the average blade life came
-from the intercept or from the temperature term.  mgcv resolves this with
+from the intercept or from the temperature term.  The Wood backend resolves this with
 two standard moves, both applied to *every* smooth term before fitting.
 
 **Move 1 — ``S.scale``: rescale each penalty.**  A penalty's raw size
@@ -1321,8 +1320,8 @@ into the basis*: compute the full QR of :math:`C^\top`
 Now :math:`\mathbf{1}^\top \tilde X = 0` identically: the smooth is
 centred *by construction*, in every fit, at every :math:`\lambda`, and in
 every prediction.  The intercept owns the level; each smooth owns only
-its shape.  This is why mgcv decomposition panels are genuinely centred at
-zero, while the pygam panels rely on the intercept to absorb levels.
+its shape.  This is why Wood decomposition panels are genuinely centred at
+zero, while the Eilers-Marx panels rely on the intercept to absorb levels.
 
 For tensor-product terms the same pipeline applies after assembling the
 Kronecker-sum penalties; each marginal penalty is first normalised by its
@@ -1330,7 +1329,7 @@ largest eigenvalue (so the dimensions contribute to the penalty on equal
 footing), then the usual ``S.scale`` + ``absorb.cons`` pass runs on the
 full tensor basis.
 
-.. _section-mgcv-reml:
+.. _section-wood-reml:
 
 Smoothing parameter selection: REML and GCV.Cp
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1344,8 +1343,8 @@ Both backends minimise the same penalised objective,
    = \| \mathbf{y} - X\boldsymbol{\beta} \|^2
    + \boldsymbol{\beta}^\top S_{\boldsymbol{\lambda}} \boldsymbol{\beta},
 
-but they choose :math:`\boldsymbol{\lambda}` differently.  The pygam
-backend sweeps a grid and scores each point with GCV.  The mgcv backend
+but they choose :math:`\boldsymbol{\lambda}` differently.  The Eilers-Marx
+backend sweeps a grid and scores each point with GCV.  The Wood backend
 treats :math:`\boldsymbol{\lambda}` as continuous parameters of a
 model-selection criterion and *optimises*.  For a fixed
 :math:`\boldsymbol{\lambda}`, the fit is obtained by QR of :math:`X` and
@@ -1360,7 +1359,7 @@ a Cholesky solve of
 (With the tiny ridge on :math:`H`'s diagonal guarding the
 :math:`\lambda = 0` edge case.)
 
-**GCV.Cp.**  The same criterion as the pygam backend, computed from the
+**GCV.Cp.**  The same criterion as the Eilers-Marx backend, computed from the
 Cholesky factor instead of an SVD.  The EDF is
 
 .. math::
@@ -1377,8 +1376,8 @@ with :math:`A = R`, :math:`B = H^{-1} = L^{-\top}L^{-1}`), and the score is
    \qquad
    \hat\sigma^2 = \frac{\text{RSS}}{n - \text{EDF}}.
 
-Here the default :math:`\gamma = 1` (mgcv's ``GCV.Cp``), versus 1.4 in
-the pygam backend — a small but real difference between the two engines'
+Here the default :math:`\gamma = 1` (``GCV.Cp``), versus 1.4 in
+the Eilers-Marx backend — a small but real difference between the two engines'
 model-selection tastes.
 
 **REML (the default).**  Give the coefficients a Gaussian prior whose
@@ -1411,7 +1410,7 @@ where :math:`M_p` is the dimension of the parametric part of the model
    \frac{D_p}{2\hat\sigma^2}
    + \frac{n - M_p}{2} \log(2\pi\hat\sigma^2)
    + \frac12 \log |H|
-   - \frac12 \log |S_{\boldsymbol{\lambda}}|_+.
+   - \frac12 \log |S_{\boldsymbol{\lambda}}|_+ .
 
 Reading it term by term:
 
@@ -1471,9 +1470,9 @@ pinned with ``sp=`` if you want some terms fixed and others estimated.
 
 The REML score itself is reported in ``statistics_`` along with the
 estimated :math:`\lambda` values, so you can compare models on the
-restricted likelihood exactly as R users do.
+restricted likelihood.
 
-.. _section-mgcv-inference:
+.. _section-wood-inference:
 
 Inference: two covariances, one F-test
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1489,14 +1488,14 @@ inferential kit.  Two covariance matrices appear:
 
 * :math:`V_p` is the **Bayesian posterior covariance** — the posterior
   of :math:`\boldsymbol{\beta}` under the prior that generated REML, with
-  :math:`\lambda` treated as known.  It is what mgcv reports in
+  :math:`\lambda` treated as known.  It is what the Wood backend reports in
   ``summary()`` tables and uses for confidence bands; standard errors are
   :math:`\operatorname{SE}_j = \sqrt{(V_p)_{jj}}`.
 * :math:`V_e` is the **frequentist (sandwich) covariance** — the
   sampling covariance of :math:`\hat{\boldsymbol{\beta}}` treating the
   penalty as part of the estimator, again with :math:`\lambda` fixed.
   It ignores the uncertainty in :math:`\lambda` itself (a standard
-  simplification in the mgcv world, though the literature notes it makes
+  simplification in Wood's formulation, though the literature notes it makes
   intervals slightly optimistic).
 
 Interval widths for a new point :math:`\mathbf{x}^*` come from
@@ -1519,7 +1518,7 @@ barely exceeds 1 despite a large :math:`k` is doing very little.
 
 **Wood's approximate F-tests.**  For each term, testing
 :math:`H_0:\; f_j = 0` (in basis terms, :math:`\boldsymbol{\beta}_j =
-0`), mgcv uses the test statistic (Wood 2013)
+0`), the Wood backend uses the test statistic (Wood 2013)
 
 .. math::
 
@@ -1536,7 +1535,7 @@ quadratic form has mean :math:`\text{EDF}_j` and variance
 second order.  It is an *approximation* — exact for
 :math:`\lambda = 0` (where it reduces to the classical F-test) and
 well-calibrated for EDF comfortably above 1, but p-values for terms with
-EDF barely above 1 should be read with suspicion (a known mgcv caveat).
+EDF barely above 1 should be read with suspicion (a known caveat in Wood 2013).
 
 **Model-level summaries.**  The backend also reports:
 
@@ -1551,7 +1550,7 @@ the Gaussian log-likelihood :math:`\ell = -\tfrac{n}{2}\log(2\pi\hat\sigma^2)
 - \tfrac{\text{RSS}}{2\hat\sigma^2}`, and the information criteria
 :math:`\text{AIC} = -2\ell + 2(\text{EDF}+1)`, :math:`\text{BIC} = -2\ell
 + \log(n)(\text{EDF}+1)` — the :math:`+1` counting the estimated
-:math:`\sigma^2`.  These make the mgcv backend the choice when you need
+:math:`\sigma^2`.  These make the Wood backend the choice when you need
 p-values, AIC-based model comparison, or output that matches an R
 ``summary.gam`` table.
 
@@ -1563,8 +1562,8 @@ Part IV — Backends compared
 
 .. _section-backends-compared:
 
-PyGAM vs mgcv: the explicit comparison
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Eilers-Marx vs Wood: the explicit comparison
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Both engines fit the same model to the same data with the same penalised
 objective.  Everything else is a strategy choice.  The table summarises
@@ -1575,8 +1574,8 @@ the differences; the subsections after it explain the ones that matter.
    :widths: 22 38 40
 
    * - Aspect
-     - PyGAM backend
-     - mgcv backend
+     - Eilers-Marx backend
+     - Wood backend
    * - Basis families
      - One: uniform B-spline, cubic default, linear extrapolation, periodic folding
      - Eight: ``tp``, ``ts``, ``cr``, ``cs``, ``cc``, ``ps``, ``cp``, ``re``, mixable per tensor margin
@@ -1621,7 +1620,7 @@ the differences; the subsections after it explain the ones that matter.
      - Few, heavier evaluations (optimiser iterations); one QR, repeated Cholesky
    * - Best fit for
      - Fast sweeps, shape constraints, outlier-heavy data, teaching the machinery
-     - p-values & R parity, automatic :math:`\lambda`, basis choice, tensor margin mixing
+     - p-values & rigorous summary, automatic :math:`\lambda`, basis choice, tensor margin mixing
 
 **The same objective, two strategies.**  Both engines minimise
 :math:`\|\mathbf{y} - X\boldsymbol{\beta}\|^2 +
@@ -1645,33 +1644,33 @@ well-scaled data they agree to machine precision, and on ill-conditioned
 data the SVD path is the safer bet.
 
 **Inference.**  This is where the backends diverge most for the user.
-The pygam backend reports GCV and (t-based, frequentist) intervals and
-stops there — model selection is by comparing GCV between fits.  The mgcv
+The Eilers-Marx backend reports GCV and (t-based, frequentist) intervals and
+stops there — model selection is by comparing GCV between fits.  The Wood
 backend adds a Bayesian covariance, per-term p-values, AIC/BIC and an
-R-style summary.  If you need "is this term significant?" or "which of
-these models should I report?", the mgcv backend answers directly.
+interpretable summary.  If you need "is this term significant?" or "which of
+these models should I report?", the Wood backend answers directly.
 
-**Robustness and constraints.**  Conversely, the pygam backend owns two
-practical features mgcv does not: Huber-robust fitting (outlier-tolerant
+**Robustness and constraints.**  Conversely, the Eilers-Marx backend owns two
+practical features Wood does not: Huber-robust fitting (outlier-tolerant
 by design) and soft shape constraints (monotonic/convex/concave pushes).
 If your data has sensor glitches or physics demands a monotone
-dose–response, the pygam backend is the one with the knob.  Both handle
-periodicity, differently: the pygam backend wraps its basis *and* uses a
-circular difference penalty; the mgcv backend uses a purpose-built cyclic
+dose–response, the Eilers-Marx backend is the one with the knob.  Both handle
+periodicity, differently: the Eilers-Marx backend wraps its basis *and* uses a
+circular difference penalty; the Wood backend uses a purpose-built cyclic
 cubic basis.
 
-**Speed and scaling.**  With few terms and a small grid the pygam backend
+**Speed and scaling.**  With few terms and a small grid the Eilers-Marx backend
 is effectively instant; its cost grows with the product of grid sizes and
 the number of :math:`\lambda` slots, which is why the two-phase
-QR-caching matters.  The mgcv backend's cost is dominated by the
+QR-caching matters.  The Wood backend's cost is dominated by the
 optimiser: typically 10–100 objective evaluations, each one Cholesky —
-flat in the number of grid points, but sequential.  In practice: pygam
-wins for sweeping many configurations; mgcv wins for a single
+flat in the number of grid points, but sequential.  In practice: Eilers-Marx
+wins for sweeping many configurations; Wood wins for a single
 many-termed fit with automatically tuned :math:`\lambda` per term.
 
-**The deep difference in one sentence.**  The pygam backend asks
+**The deep difference in one sentence.**  The Eilers-Marx backend asks
 *"which of these :math:`\lambda` candidates predicts best out of
-sample?"* (GCV over a grid); the mgcv backend asks *"which
+sample?"* (GCV over a grid); the Wood backend asks *"which
 :math:`\lambda` makes the data most likely under a smoothness prior?"*
 (REML over a continuous parameter).  Everything else — bases, solvers,
 covariances — follows from that choice of question.
@@ -1681,24 +1680,24 @@ covariances — follows from that choice of question.
 Which backend should I use?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* **You want p-values, an R-style summary, or parity with R mgcv** →
-  ``backend='mgcv'`` with default REML.
-* **You need automatic per-term smoothing with many terms** → mgcv's
+* **You want p-values, a detailed summary table, or parity with Wood's methods** →
+  ``backend='wood'`` with default REML.
+* **You need automatic per-term smoothing with many terms** → Wood's
   optimisation scales better than a per-term grid.
 * **You want monotonic/convex/concave pushes or Huber robustness** →
-  ``backend='pygam'``; these features don't exist in the mgcv backend.
+  ``backend='eilers'``; these features don't exist in the Wood backend.
 * **You want to sweep basis counts and smoothing parameters and inspect
-  the GCV surface** → pygam's grid search, threaded.
+  the GCV surface** → Eilers-Marx's grid search, threaded.
 * **You want the simplest possible mental model** (one basis, one
-  penalty, one criterion) → pygam.
-* **You're teaching GAMs** → pygam for the machinery, then mgcv for the
+  penalty, one criterion) → Eilers-Marx.
+* **You're teaching GAMs** → Eilers-Marx for the machinery, then Wood for the
   statistics; this chapter is laid out in that order.
 
 When in doubt, fit both and compare: the decomposition plots and the
 fitted curves should agree on the data's shape even where the p-values and
 :math:`\lambda` philosophies differ.  Disagreement between the two engines
 on the same data is a signal worth investigating — usually it means
-under-smoothing by GCV, an outlier distorting the unrobust mgcv fit, or a
+under-smoothing by GCV, an outlier distorting the unrobust Wood fit, or a
 basis count too small for the grid being searched.
 
 
@@ -1714,7 +1713,7 @@ Key takeaways
      - One-sentence summary
    * - Additive structure
      - Every prediction is a sum of independent, plottable pieces (both backends)
-   * - B-spline basis (pygam)
+   * - B-spline basis (Eilers-Marx)
      - Build any smooth curve from localised LEGO-brick basis functions
    * - Penalty (both)
      - Charge a tax for wiggles; let data pay it only when worthwhile
@@ -1722,25 +1721,26 @@ Key takeaways
      - The tax rate: 0 = unpenalised, infinity = straight line
    * - EDF (both)
      - How many "effective parameters" the penalty allows the model to use
-   * - GCV (pygam; mgcv option)
-     - Approximate leave-one-out CV in a single fit; the pygam model-selection compass
-   * - REML (mgcv default)
-     - The restricted likelihood with the penalty as a prior; the mgcv model-selection compass
-   * - SVD solver (pygam)
+   * - GCV (Eilers-Marx; Wood option)
+     - Approximate leave-one-out CV in a single fit; the Eilers-Marx model-selection compass
+   * - REML (Wood default)
+     - The restricted likelihood with the penalty as a prior; the Wood model-selection compass
+   * - SVD solver (Eilers-Marx)
      - Numerically stable solution without squaring condition numbers
-   * - QR + Cholesky (mgcv)
+   * - QR + Cholesky (Wood)
      - Compact, fast solves; :math:`\log|H|` and EDF fall out of the Cholesky factor
-   * - Basis zoo (mgcv)
+   * - Basis zoo (Wood)
      - tp/ts, cr/cs, cc, ps, re — different penalties and null spaces for different jobs
-   * - Sum-to-zero (mgcv)
+   * - Sum-to-zero (Wood)
      - Absorbed into the basis, so every smooth is centred by construction
-   * - Wood F-tests (mgcv)
+   * - Wood F-tests (Wood)
      - Approximate per-term significance tests with p-values
-   * - Shape constraints (pygam)
+   * - Shape constraints (Eilers-Marx)
      - Soft monotonic/convex/periodic pushes via the choice of penalty
-   * - Huber IRLS (pygam)
+   * - Huber IRLS (Eilers-Marx)
      - Down-weight outliers so they don't hijack the curve
-   * - Grid search (pygam)
+   * - Grid search (Eilers-Marx)
      - Two-phase QR+Cholesky: precompute K-dim work, then evaluate all lambdas in parallel
    * - Comparison rule of thumb
-     - mgcv for inference and automatic :math:`\lambda`; pygam for constraints, robustness, and fast sweeps
+     - Wood for inference and automatic :math:`\lambda`; Eilers-Marx for constraints, robustness, and fast sweeps
+

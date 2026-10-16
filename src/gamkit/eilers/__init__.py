@@ -1,4 +1,4 @@
-"""pyGAM-compatible GAM backend for linGAM."""
+"""Eilers & Marx (1996) P-spline GAM backend for gamkit."""
 
 from ._gam import GAMCore
 from ._lingam import LinGAM
@@ -12,7 +12,10 @@ from ._terms import (
     instantiate_terms,
 )
 
+GAM = LinGAM
+
 __all__ = [
+    "GAM",
     "LinGAM",
     "GAMCore",
     "solve_pirls",
@@ -24,3 +27,4 @@ __all__ = [
     "_FactorTerm",
     "_LinearTerm",
 ]
+

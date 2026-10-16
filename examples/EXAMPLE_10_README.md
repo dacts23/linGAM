@@ -3,7 +3,7 @@
 ## What This Example Does
 
 This script simulates a turbine blade life prediction problem and
-demonstrates how to use **all major linGAM features** together in a
+demonstrates how to use **all major gamkit features** together in a
 realistic workflow.  It generates synthetic data where you *know the
 ground truth* so you can see exactly what the model recovers.
 

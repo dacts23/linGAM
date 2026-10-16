@@ -1,4 +1,4 @@
-"""API parity and usability tests across pyGAM and mgcv backends."""
+"""API parity and usability tests across Eilers-Marx and Wood backends."""
 
 import matplotlib
 matplotlib.use("Agg")
@@ -6,39 +6,53 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from lingam import (
+from gamkit import (
+    GAM,
     GAMCore,
     LinGAM,
-    MgcvGAMCore,
-    MgcvLinGAM,
-    PygamGAMCore,
-    PygamLinGAM,
+    EilersGAMCore,
+    EilersLinGAM,
+    WoodGAMCore,
+    WoodLinGAM,
 )
-from lingam.mgcv import GAMCore as DirectMgcvGAMCore
-from lingam.mgcv import LinGAM as DirectMgcvLinGAM
+from gamkit.wood import GAMCore as DirectWoodGAMCore
+from gamkit.wood import LinGAM as DirectWoodLinGAM, GAM as DirectWoodGAM
+from gamkit.eilers import GAMCore as DirectEilersGAMCore
+from gamkit.eilers import LinGAM as DirectEilersLinGAM, GAM as DirectEilersGAM
 
 
 def test_import_and_factory():
     """Verify that imports and backend factories work identically."""
-    # Factory tests
-    m_py = LinGAM(n_splines=10, backend="pygam")
-    assert isinstance(m_py, PygamLinGAM)
+    # Default backend is wood
+    assert isinstance(GAM(k=10), WoodLinGAM)
+    assert isinstance(LinGAM(k=10), WoodLinGAM)
+    assert isinstance(GAMCore("s(0)"), WoodGAMCore)
 
-    m_mg = LinGAM(k=10, backend="mgcv")
-    assert isinstance(m_mg, MgcvLinGAM)
+    # Explicit backend selection ('wood' and 'eilers' / 'eilers')
+    m_em = GAM(n_splines=10, backend="eilers")
+    assert isinstance(m_em, EilersLinGAM)
+
+    m_wd = GAM(k=10, backend="wood")
+    assert isinstance(m_wd, WoodLinGAM)
+
+    m_lingam = LinGAM(n_splines=10, backend="eilers")
+    assert isinstance(m_lingam, EilersLinGAM)
 
     # Direct import tests
-    m_direct = DirectMgcvLinGAM(k=10)
-    assert isinstance(m_direct, MgcvLinGAM)
+    m_direct_wd = DirectWoodGAM(k=10)
+    assert isinstance(m_direct_wd, WoodLinGAM)
 
-    g_py = GAMCore("s(0)", backend="pygam")
-    assert isinstance(g_py, PygamGAMCore)
+    m_direct_em = DirectEilersGAM(n_splines=10)
+    assert isinstance(m_direct_em, EilersLinGAM)
 
-    g_mg = GAMCore("s(0)", backend="mgcv")
-    assert isinstance(g_mg, MgcvGAMCore)
+    g_em = GAMCore("s(0)", backend="eilers")
+    assert isinstance(g_em, EilersGAMCore)
 
-    g_direct = DirectMgcvGAMCore("s(0)")
-    assert isinstance(g_direct, MgcvGAMCore)
+    g_wd = GAMCore("s(0)", backend="wood")
+    assert isinstance(g_wd, WoodGAMCore)
+
+    g_direct_wd = DirectWoodGAMCore("s(0)")
+    assert isinstance(g_direct_wd, WoodGAMCore)
 
     with pytest.raises(ValueError, match="Unknown backend"):
         LinGAM(backend="invalid_backend")
@@ -54,7 +68,7 @@ def test_lingam_lifecycle_and_methods():
     y = np.sin(2 * np.pi * x) + np.random.normal(0, 0.1, 60)
     x_test = np.linspace(0.1, 0.9, 20)
 
-    for backend in ("pygam", "mgcv"):
+    for backend in ("eilers", "wood"):
         m = LinGAM(n_splines=8, backend=backend)
         assert not m.is_fitted
         assert repr(m).startswith("LinGAM")
@@ -129,7 +143,7 @@ def test_gamcore_lifecycle_and_methods():
 
     formula = "s(0, n_splines=8) + l(1)"
 
-    for backend in ("pygam", "mgcv"):
+    for backend in ("eilers", "wood"):
         gam = GAMCore(formula, backend=backend)
         assert not gam.is_fitted
         assert gam.n_terms == 2
@@ -172,14 +186,45 @@ def test_gridsearch_both_backends():
     x = np.linspace(0, 1, 50)
     y = np.cos(2 * np.pi * x) + np.random.normal(0, 0.1, 50)
 
-    # PyGAM grid search
-    m_py = LinGAM(backend="pygam")
-    m_py.gridsearch(x, y, n_splines=[6, 8, 10], lam=[0.01, 0.1, 1.0])
-    assert m_py.is_fitted
-    assert m_py.n_splines in [6, 8, 10]
+    # Eilers-Marx grid search
+    m_em = LinGAM(backend="eilers")
+    m_em.gridsearch(x, y, n_splines=[6, 8, 10], lam=[0.01, 0.1, 1.0])
+    assert m_em.is_fitted
+    assert m_em.n_splines in [6, 8, 10]
 
-    # mgcv grid search
-    m_mg = LinGAM(backend="mgcv")
-    m_mg.gridsearch(x, y, n_splines=[6, 8, 10])
-    assert m_mg.is_fitted
-    assert m_mg.n_splines in [6, 8, 10]
+    # Wood grid search
+    m_wd = LinGAM(backend="wood")
+    m_wd.gridsearch(x, y, n_splines=[6, 8, 10])
+    assert m_wd.is_fitted
+    assert m_wd.n_splines in [6, 8, 10]
+
+    X2 = np.column_stack([x, np.random.uniform(0, 1, 50)])
+    g_wd = GAMCore("s(0, bs='cr', k=10) + s(1, bs='cr', k=10)", backend="wood")
+    g_wd.gridsearch(X2, y, n_splines=[6, 8], search_terms=[0])
+    assert g_wd.is_fitted
+    assert g_wd._terms[0].k in [6, 8]
+    assert g_wd._terms[1].k == 10
+
+
+def test_robust_fitting_both_backends():
+    """Verify that robust=True reduces outlier distortion on both backends."""
+    np.random.seed(42)
+    x = np.linspace(0, 10, 150)
+    y_clean = np.sin(x)
+    y = y_clean + np.random.normal(0, 0.15, len(x))
+    y[20] += 8.0
+    y[75] -= 8.0
+    y[120] += 7.0
+
+    for backend in ("eilers", "wood"):
+        m_std = LinGAM(n_splines=14, backend=backend).fit(x, y, robust=False)
+        m_rob = LinGAM(n_splines=14, backend=backend).fit(x, y, robust=True)
+        rmse_std = np.sqrt(np.mean((m_std.predict(x) - y_clean) ** 2))
+        rmse_rob = np.sqrt(np.mean((m_rob.predict(x) - y_clean) ** 2))
+        assert rmse_rob < rmse_std * 0.6
+
+        g_std = GAMCore("s(0, k=14)", backend=backend).fit(x, y, robust=False)
+        g_rob = GAMCore("s(0, k=14)", backend=backend).fit(x, y, robust=True)
+        assert np.sqrt(np.mean((g_rob.predict(x) - y_clean) ** 2)) < np.sqrt(
+            np.mean((g_std.predict(x) - y_clean) ** 2)
+        ) * 0.6

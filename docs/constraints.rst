@@ -1,7 +1,7 @@
 Shape Constraints
 =================
 
-linGAM supports soft shape constraints on univariate spline terms (``s()``)
+gamkit supports soft shape constraints on univariate spline terms (``s()``)
 and on ``LinGAM``.  These are not hard constraints (the solver does not use
 quadratic programming or active-set methods).  Instead, they change the
 penalty matrix so that the *natural* smooth solution tends toward the desired

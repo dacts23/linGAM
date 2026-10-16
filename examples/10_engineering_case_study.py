@@ -2,7 +2,7 @@
 Example 10 -- Engineering Case Study: Turbine Blade Life Prediction
 ===================================================================
 
-A realistic engineering workflow demonstrating most linGAM features on
+A realistic engineering workflow demonstrating most gamkit features on
 simulated turbine blade lifetime data:
 
   * Multi-term formula -- ``s()``, ``te()``, ``f()``, ``l()``
@@ -25,7 +25,7 @@ Close each plot window to advance to the next section.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from lingam import GAMCore
+from gamkit import GAMCore
 
 # ------------------------------------------------------------------
 # 1. Generate synthetic engineering data (ground truth known)
@@ -122,7 +122,7 @@ formula = (
     " + l(3)"
 )
 
-model = GAMCore(formula, spline_order=3, fit_intercept=True)
+model = GAMCore(formula, spline_order=3, fit_intercept=True, backend="eilers")
 model.fit(x, y)
 
 print("=" * 72)
@@ -202,7 +202,7 @@ print()
 # ------------------------------------------------------------------
 # 4. Robust fitting -- handle sensor outliers
 # ------------------------------------------------------------------
-model_robust = GAMCore(formula)
+model_robust = GAMCore(formula, backend="eilers")
 model_robust.fit(x, y, robust=True)
 
 print("=" * 72)
@@ -228,7 +228,7 @@ formula_unconstrained = (
     " + f(4, coding='dummy')"
     " + l(3)"
 )
-model_unc = GAMCore(formula_unconstrained)
+model_unc = GAMCore(formula_unconstrained, backend="eilers")
 model_unc.fit(x, y)
 
 print("=" * 72)
@@ -413,35 +413,36 @@ print("[Plot 3] Standard vs Robust comparison -- close to exit.")
 plt.show()
 
 # ------------------------------------------------------------------
-# 11. Backend comparison -- pyGAM vs R mgcv (side-by-side)
+# ------------------------------------------------------------------
+# 11. Backend comparison -- Eilers-Marx vs Wood (side-by-side)
 # ------------------------------------------------------------------
 # Shape constraints (mono_inc/concave) and Huber robust fitting are
-# pyGAM-backend features with no mgcv equivalent, so the comparison uses the
-# unconstrained formula on both backends: pyGAM with its GCV-tuned fit from
-# Section 5, mgcv with automatic REML smoothing in a single fit. Conversely,
+# Eilers-Marx-backend features with no Wood equivalent, so the comparison uses the
+# unconstrained formula on both backends: Eilers-Marx with its GCV-tuned fit from
+# Section 5, Wood with automatic REML smoothing in a single fit. Conversely,
 # the R-style summary() table with F-tests/p-values and bs basis choices are
-# mgcv-only (see 11_mgcv_backend.py).
-mgcv_unc = GAMCore(formula_unconstrained, backend="mgcv")
-mgcv_unc.fit(x, y)
+# Wood-only (see 11_wood_backend.py).
+wood_unc = GAMCore(formula_unconstrained, backend="wood")
+wood_unc.fit(x, y)
 print("=" * 72)
 print("SECTION 11 -- BACKEND COMPARISON (unconstrained formula, both backends)")
 print("=" * 72)
-print(f"  {'Metric':<10}{'pyGAM (GCV)':>14}{'mgcv (REML)':>14}")
-print(f"  {'EDF':<10}{model_unc.statistics_['edof']:>14.2f}{mgcv_unc.statistics_['edof']:>14.2f}")
-print(f"  {'GCV':<10}{model_unc.statistics_['GCV']:>14.4f}{mgcv_unc.statistics_['GCV']:>14.4f}")
-print(f"  {'R^2':<10}{model_unc.deviance_explained():>14.4f}{mgcv_unc.deviance_explained():>14.4f}")
+print(f"  {'Metric':<10}{'Eilers-Marx':>14}{'Wood':>14}")
+print(f"  {'EDF':<10}{model_unc.statistics_['edof']:>14.2f}{wood_unc.statistics_['edof']:>14.2f}")
+print(f"  {'GCV':<10}{model_unc.statistics_['GCV']:>14.4f}{wood_unc.statistics_['GCV']:>14.4f}")
+print(f"  {'R^2':<10}{model_unc.deviance_explained():>14.4f}{wood_unc.deviance_explained():>14.4f}")
 print("  -> Same additive structure recovered with similar complexity and fit.")
-print("  -> pyGAM-only here: mono_inc/concave constraints, robust=True.")
-print("  -> mgcv-only: summary() F-tests/p-values, bs='tp'/'cr'/'ps'/'cc'.")
+print("  -> Eilers-Marx-only here: mono_inc/concave constraints, robust=True.")
+print("  -> Wood-only: summary() F-tests/p-values, bs='tp'/'cr'/'ps'/'cc'.")
 
 # --- Same-plot overlay: observed vs predicted for both backends ---
-y_hat_py = model_unc.predict(x)
-y_hat_mg = mgcv_unc.predict(x)
-lims = [float(min(y.min(), y_hat_py.min(), y_hat_mg.min())),
-        float(max(y.max(), y_hat_py.max(), y_hat_mg.max()))]
+y_hat_em = model_unc.predict(x)
+y_hat_wd = wood_unc.predict(x)
+lims = [float(min(y.min(), y_hat_em.min(), y_hat_wd.min())),
+        float(max(y.max(), y_hat_em.max(), y_hat_wd.max()))]
 fig_cmp, ax_cmp = plt.subplots(figsize=(6, 6))
-ax_cmp.scatter(y, y_hat_py, c='blue', alpha=0.4, s=12, label='pyGAM backend')
-ax_cmp.scatter(y, y_hat_mg, c='red', alpha=0.4, s=12, label='mgcv backend')
+ax_cmp.scatter(y, y_hat_em, c='blue', alpha=0.4, s=12, label='Eilers-Marx backend')
+ax_cmp.scatter(y, y_hat_wd, c='red', alpha=0.4, s=12, label='Wood backend')
 ax_cmp.plot(lims, lims, 'k--', lw=1.5, label='1:1')
 ax_cmp.set_xlabel('Observed')
 ax_cmp.set_ylabel('Predicted')

@@ -1,10 +1,10 @@
-"""Demo for linGAM — concrete compressive strength GAM."""
+"""Demo for gamkit — concrete compressive strength GAM."""
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-from lingam import GAMCore
-from lingam.pygam._terms import _FactorTerm, _LinearTerm, _SplineTerm, _TensorTerm
+from gamkit import GAMCore
+from gamkit.eilers._terms import _FactorTerm, _LinearTerm, _SplineTerm, _TensorTerm
 
 
 def _concrete_demo():
@@ -180,7 +180,7 @@ def _concrete_demo():
 
     # Fit
     print("\n  -- Model fit --")
-    model_std = GAMCore(formula)
+    model_std = GAMCore(formula, backend="eilers")
     model_std.fit(X, strength)
     s_std = model_std.statistics_
     print(f"    GCV = {s_std['GCV']:.3f}")
@@ -221,7 +221,7 @@ def _concrete_demo():
 
     # -- Selective grid search demo --
     print("\n  -- Selective grid search: only search s(0) and f(2) --")
-    model_sel = GAMCore(formula)
+    model_sel = GAMCore(formula, backend="eilers")
     model_sel.gridsearch(X, strength,
                          lam_grids=[np.logspace(-2, 2, 3)],
                          n_splines_grids=[np.arange(6, 13, 3)],
@@ -272,31 +272,31 @@ def _concrete_demo():
     model_std.plot_decomposition(X, strength, extrap_frac=0.15)
     plt.show()
 
-    # -- Backend comparison: pyGAM vs R mgcv (side-by-side) --
-    # Same s() + te() + f() + l() formula on both backends: the pyGAM fit
-    # above uses B-splines with default penalties, mgcv uses penalised
+    # -- Backend comparison: Eilers-Marx vs Wood (side-by-side) --
+    # Same s() + te() + f() + l() formula on both backends: the Eilers-Marx fit
+    # above uses B-splines with default penalties, Wood uses penalised
     # regression splines with REML-estimated smoothing in a single fit.
-    # Note: f() defaults differ (pyGAM one-hot + ridge vs mgcv dummy).
-    print("\n  -- Backend comparison: pyGAM (above) vs R mgcv (REML) --")
-    model_mgcv = GAMCore(formula, backend="mgcv")
-    model_mgcv.fit(X, strength)
-    s_mg = model_mgcv.statistics_
-    print(f"    {'Metric':<8}{'pyGAM':>10}{'mgcv':>10}")
-    print(f"    {'GCV':<8}{s_std['GCV']:>10.3f}{s_mg['GCV']:>10.3f}")
-    print(f"    {'EDF':<8}{s_std['edof']:>10.2f}{s_mg['edof']:>10.2f}")
-    print(f"    {'RSS':<8}{s_std['rss']:>10.1f}{s_mg['rss']:>10.1f}")
-    r2_py = 1 - np.var(strength - model_std.predict(X)) / np.var(strength)
-    r2_mg = 1 - np.var(strength - model_mgcv.predict(X)) / np.var(strength)
-    print(f"    {'R2':<8}{r2_py:>10.3f}{r2_mg:>10.3f}")
-    print("    (See 13_pygam_vs_mgcv_comparison.py for the head-to-head with plots.)")
+    # Note: f() defaults differ (Eilers-Marx one-hot + ridge vs Wood dummy).
+    print("\n  -- Backend comparison: Eilers-Marx (above) vs Wood (REML) --")
+    model_wood = GAMCore(formula, backend="wood")
+    model_wood.fit(X, strength)
+    s_mg = model_wood.statistics_
+    print(f"    {'Metric':<8}{'Eilers-Marx':>12}{'Wood':>10}")
+    print(f"    {'GCV':<8}{s_std['GCV']:>12.3f}{s_mg['GCV']:>10.3f}")
+    print(f"    {'EDF':<8}{s_std['edof']:>12.2f}{s_mg['edof']:>10.2f}")
+    print(f"    {'RSS':<8}{s_std['rss']:>12.1f}{s_mg['rss']:>10.1f}")
+    r2_em = 1 - np.var(strength - model_std.predict(X)) / np.var(strength)
+    r2_wd = 1 - np.var(strength - model_wood.predict(X)) / np.var(strength)
+    print(f"    {'R2':<8}{r2_em:>12.3f}{r2_wd:>10.3f}")
+    print("    (See 13_eilers_vs_wood_comparison.py for the head-to-head with plots.)")
 
     # --- Same-plot overlay: observed vs predicted for both backends ---
-    y_hat_mg = model_mgcv.predict(X)
-    lims = [float(min(strength.min(), y_hat_std.min(), y_hat_mg.min())),
-            float(max(strength.max(), y_hat_std.max(), y_hat_mg.max()))]
+    y_hat_wd = model_wood.predict(X)
+    lims = [float(min(strength.min(), y_hat_std.min(), y_hat_wd.min())),
+            float(max(strength.max(), y_hat_std.max(), y_hat_wd.max()))]
     fig_cmp, ax_cmp = plt.subplots(figsize=(6, 6))
-    ax_cmp.scatter(strength, y_hat_std, c='blue', alpha=0.4, s=12, label='pyGAM backend')
-    ax_cmp.scatter(strength, y_hat_mg, c='red', alpha=0.4, s=12, label='mgcv backend')
+    ax_cmp.scatter(strength, y_hat_std, c='blue', alpha=0.4, s=12, label='Eilers-Marx backend')
+    ax_cmp.scatter(strength, y_hat_wd, c='red', alpha=0.4, s=12, label='Wood backend')
     ax_cmp.plot(lims, lims, 'k--', lw=1.5, label='1:1')
     ax_cmp.set_xlabel('Observed Strength (MPa)')
     ax_cmp.set_ylabel('Predicted Strength (MPa)')

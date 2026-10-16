@@ -1,7 +1,7 @@
-﻿lingam.pygam.LinGAM
-===================
+﻿gamkit.eilers\_marx.LinGAM
+==========================
 
-.. currentmodule:: lingam.pygam
+.. currentmodule:: gamkit.eilers_marx
 
 .. autoclass:: LinGAM
 

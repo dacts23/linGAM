@@ -1,4 +1,4 @@
-"""Term classes for mgcv GAM backend: spline, tensor product, factor, and linear terms."""
+"""Term classes for Wood GAM backend: spline, tensor product, factor, and linear terms."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 
 from .._base import _khatri_rao
-from ..pygam._terms import _FactorTerm, _LinearTerm, _Term as _MgcvTerm
+from ..eilers._terms import _FactorTerm, _LinearTerm, _Term as _WoodTerm
 from ._smooths import (
     absorb_sum_to_zero_constraint,
     build_smooth_basis,
@@ -16,7 +16,7 @@ from ._smooths import (
 )
 
 
-class _MgcvSplineTerm(_MgcvTerm):
+class _WoodSplineTerm(_WoodTerm):
     """Univariate smooth term s(x, bs='tp', k=10)."""
 
     def __init__(
@@ -40,6 +40,8 @@ class _MgcvSplineTerm(_MgcvTerm):
         self._Z: Optional[np.ndarray] = None
         self._penalties: List[np.ndarray] = []
         self._meta: Dict[str, Any] = {}
+        self._cached_col: Optional[np.ndarray] = None
+        self._cached_X: Optional[np.ndarray] = None
         self.n_coefs = 0
 
     def compile(self, x: np.ndarray) -> None:
@@ -52,18 +54,26 @@ class _MgcvSplineTerm(_MgcvTerm):
             X_raw, S_scaled
         )
         self.n_coefs = X_abs.shape[1]
+        self._cached_col = col
+        self._cached_X = X_abs
 
     def build_columns(self, x: np.ndarray) -> np.ndarray:
         col = np.asarray(x[:, self.feature], dtype=float).ravel()
         if self._Z is None:
             self.compile(x)
+        if (
+            self._cached_col is not None
+            and col.shape == self._cached_col.shape
+            and np.array_equal(col, self._cached_col)
+        ):
+            return self._cached_X  # type: ignore[return-value]
         return predict_smooth_basis(col, self._meta) @ self._Z
 
     def build_penalties(self) -> List[np.ndarray]:
         return [p.copy() for p in self._penalties]
 
 
-class _MgcvTensorTerm(_MgcvTerm):
+class _WoodTensorTerm(_WoodTerm):
     """Tensor product smooth te(x1, x2, bs='cr', k=5)."""
 
     def __init__(
@@ -96,12 +106,15 @@ class _MgcvTensorTerm(_MgcvTerm):
         self._Z: Optional[np.ndarray] = None
         self._penalties: List[np.ndarray] = []
         self._marginal_meta: List[Dict] = []
+        self._cached_cols: Optional[np.ndarray] = None
+        self._cached_X: Optional[np.ndarray] = None
         self.n_coefs = 0
 
     def compile(self, x: np.ndarray) -> None:
         marg_X, marg_S, self._marginal_meta = [], [], []
-        for i, feat in enumerate(self.features):
-            col = np.asarray(x[:, feat], dtype=float).ravel()
+        cols = np.asarray(x[:, self.features], dtype=float)
+        for i in range(self.d):
+            col = cols[:, i].ravel()
             Xi, Si, meta_i = build_smooth_basis(
                 col, bs=self.bs_per[i], k=self.k_per[i]
             )
@@ -126,16 +139,25 @@ class _MgcvTensorTerm(_MgcvTerm):
             X_te, S_scaled
         )
         self.n_coefs = X_abs.shape[1]
+        self._cached_cols = cols
+        self._cached_X = X_abs
 
     def build_columns(self, x: np.ndarray) -> np.ndarray:
         if self._Z is None:
             self.compile(x)
+        cols = np.asarray(x[:, self.features], dtype=float)
+        if (
+            self._cached_cols is not None
+            and cols.shape == self._cached_cols.shape
+            and np.array_equal(cols, self._cached_cols)
+        ):
+            return self._cached_X  # type: ignore[return-value]
         marg_X = [
             predict_smooth_basis(
-                np.asarray(x[:, feat], dtype=float).ravel(),
+                cols[:, i].ravel(),
                 self._marginal_meta[i],
             )
-            for i, feat in enumerate(self.features)
+            for i in range(self.d)
         ]
         return _khatri_rao(marg_X) @ self._Z
 
@@ -143,19 +165,19 @@ class _MgcvTensorTerm(_MgcvTerm):
         return [p.copy() for p in self._penalties]
 
 
-class _MgcvFactorTerm(_FactorTerm):
+class _WoodFactorTerm(_FactorTerm):
     """Categorical factor term f(feature)."""
 
     def __init__(self, feature: int, coding: str = "dummy") -> None:
         super().__init__(feature, lam=0.0, coding=coding)
 
 
-_MgcvLinearTerm = _LinearTerm
+_WoodLinearTerm = _LinearTerm
 
 
-def instantiate_mgcv_terms(configs: List[Dict[str, Any]]) -> List[_MgcvTerm]:
-    """Instantiate mgcv term objects from parsed formula config dicts."""
-    terms: List[_MgcvTerm] = []
+def instantiate_wood_terms(configs: List[Dict[str, Any]]) -> List[_WoodTerm]:
+    """Instantiate Wood term objects from parsed formula config dicts."""
+    terms: List[_WoodTerm] = []
     for cfg in configs:
         kind = cfg["type"]
         feats = cfg["features"]
@@ -167,7 +189,7 @@ def instantiate_mgcv_terms(configs: List[Dict[str, Any]]) -> List[_MgcvTerm]:
 
         if kind == "s":
             terms.append(
-                _MgcvSplineTerm(
+                _WoodSplineTerm(
                     feature=feats[0],
                     k=k_val,
                     bs=bs_val,
@@ -180,18 +202,18 @@ def instantiate_mgcv_terms(configs: List[Dict[str, Any]]) -> List[_MgcvTerm]:
         elif kind == "te":
             te_k = k_val if isinstance(k_val, (int, list)) else 5
             terms.append(
-                _MgcvTensorTerm(
+                _WoodTensorTerm(
                     features=feats, k=te_k, bs=bs_val, sp=sp_val
                 )
             )
         elif kind == "f":
             terms.append(
-                _MgcvFactorTerm(
+                _WoodFactorTerm(
                     feature=feats[0], coding=kw.pop("coding", "dummy")
                 )
             )
         elif kind == "l":
-            terms.append(_MgcvLinearTerm(feature=feats[0]))
+            terms.append(_WoodLinearTerm(feature=feats[0]))
         else:
             raise ValueError(f"Unknown term type '{kind}' in formula.")
     return terms

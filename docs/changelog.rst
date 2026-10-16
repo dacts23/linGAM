@@ -8,7 +8,7 @@ Version 0.3.0
 New features
 ^^^^^^^^^^^^^
 
-* **R mgcv backend**: Native implementation of Simon Wood's R ``mgcv`` package
+* **Wood (2011) backend**: Native implementation of Simon Wood's GAM methods
   supporting thin plate splines (``'tp'``, ``'ts'``), cubic regression splines
   (``'cr'``, ``'cs'``), cyclic cubic splines (``'cc'``), P-splines (``'ps'``,
   ``'cp'``), B-splines (``'bs'``), random effects / ridge (``'re'``), and tensor
@@ -16,29 +16,28 @@ New features
 * **Automatic REML smoothing optimization**: Smoothing parameters are solved
   continuously via Newton-Raphson / BFGS minimization of REML or GCV criteria
   without needing discrete grid searches.
-* **R-style summary tables**: ``model.summary()`` provides parametric coefficients,
+* **Summary tables**: ``model.summary()`` provides parametric coefficients,
   effective degrees of freedom (EDF), approximate F-tests, and p-values matching
-  R's ``summary.gam`` (Wood 2013).
+  Wood (2013).
 * **Symmetric dual-engine architecture**: Symmetrically organized into
-  ``lingam.pygam`` and ``lingam.mgcv`` with unified ``LinGAM`` and ``GAMCore``
+  ``gamkit.eilers`` and ``gamkit.wood`` with unified ``LinGAM`` and ``GAMCore``
   factory dispatchers.
 
 Improvements
 ^^^^^^^^^^^^
 
-* **Shared ``_GAMBase`` lifecycle**: ``lingam._base`` now holds the
+* **Shared ``_GAMBase`` lifecycle**: ``gamkit._base`` now holds the
   code both engines inherit — ``predict``, ``partial_dependence``,
   confidence/prediction intervals, ``loglikelihood``/``aic``/``bic``/
   ``deviance_explained``, and all decomposition/diagnostic plotting.
-  Note the scale convention it abstracts: pygam stores ``scale`` as
-  σ (uses ``s**2`` as variance), mgcv stores it as σ² directly.
-* **Huber IRLS robust fitting**: ``fit(x, y, robust=True)`` (pygam
+  Note the scale convention it abstracts: Eilers-Marx stores ``scale`` as
+  σ (uses ``s**2`` as variance), Wood stores it as σ² directly.
+* **Huber IRLS robust fitting**: ``fit(x, y, robust=True)`` (Eilers-Marx
   backend) runs ``irls_solve`` — up to 15 MAD-scaled (``c=1.345``)
   re-weighting iterations with weighted RSS in the reported statistics.
-* **Cyclic P-splines (``'cp'``)**: no longer fall back to ``'ps'`` —
-  dedicated basis with wrapped knots and a wrapped difference penalty.
+* **Cyclic P-splines (``'cp'``)**: dedicated basis with wrapped knots and a wrapped difference penalty.
 * **Thin-plate shrinkage (``'ts'``)**: now charges the null-space
-  (smallest) eigenvalues as in R mgcv, instead of the largest ones.
+  (smallest) eigenvalues as in Wood (2017), instead of the largest ones.
 * **Fixed R² computation**: Corrected deviance explained calculation against the
   sample mean null deviance.
 * **Input validation**: Enforced NaN and Inf validation across all fit methods.
@@ -64,7 +63,7 @@ New features
 Improvements
 ^^^^^^^^^^^^^
 
-* Modular ``src/lingam/`` package layout with ``__slots__`` for memory
+* Modular ``src/gamkit/`` package layout with ``__slots__`` for memory
   efficiency.
 * PEP8 naming: ``b_spline_basis``, ``solve_pirls``, ``irls_solve``, etc.
 * ``b_spline_basis`` supports periodic wrapping.

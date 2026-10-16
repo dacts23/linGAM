@@ -1,7 +1,7 @@
-﻿lingam.pygam.GAMCore
-====================
+﻿gamkit.wood.GAMCore
+===================
 
-.. currentmodule:: lingam.pygam
+.. currentmodule:: gamkit.wood
 
 .. autoclass:: GAMCore
 
@@ -26,6 +26,7 @@
       ~GAMCore.plot_diagnostics
       ~GAMCore.predict
       ~GAMCore.prediction_intervals
+      ~GAMCore.summary
    
    
 

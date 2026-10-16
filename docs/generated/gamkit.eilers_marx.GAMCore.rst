@@ -1,7 +1,7 @@
-﻿lingam.mgcv.GAMCore
-===================
+﻿gamkit.eilers\_marx.GAMCore
+===========================
 
-.. currentmodule:: lingam.mgcv
+.. currentmodule:: gamkit.eilers_marx
 
 .. autoclass:: GAMCore
 
@@ -26,7 +26,6 @@
       ~GAMCore.plot_diagnostics
       ~GAMCore.predict
       ~GAMCore.prediction_intervals
-      ~GAMCore.summary
    
    
 

@@ -9,7 +9,7 @@ Basic regression
 .. code-block:: python
 
    import numpy as np
-   from lingam import GAMCore
+   from gamkit import GAMCore
 
    np.random.seed(42)
    n = 300
@@ -80,24 +80,24 @@ Categorical + interaction
    pdep_f = model.partial_dependence(2, x)
 
 
-R mgcv backend & summary table
--------------------------------
+Wood backend & summary table
+-----------------------------
 
 .. code-block:: python
 
    import numpy as np
-   from lingam import LinGAM
+   from gamkit import LinGAM
 
    np.random.seed(42)
    n = 200
    x = np.linspace(0, 1, n)
    y = np.sin(2 * np.pi * x) + np.random.normal(0, 0.15, n)
 
-   # In mgcv, lambda (sp) is estimated automatically during fit via REML
-   model = LinGAM(k=10, bs="cr", backend="mgcv")
+   # In Wood backend, lambda (sp) is estimated automatically during fit via REML
+   model = LinGAM(k=10, bs="cr", backend="wood")
    model.fit(x, y)
 
-   # Formatted R-style summary table (Wood 2013)
+   # Formatted summary table (Wood 2013)
    print(model.summary())
    print("Deviance explained:", model.deviance_explained())
 

@@ -7,7 +7,7 @@ Restrict grid search to specific terms and supply custom candidate grids.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from lingam import GAMCore
+from gamkit import GAMCore
 
 np.random.seed(42)
 n = 400
@@ -23,7 +23,7 @@ y = (
     + np.random.normal(0, 0.2, n)
 )
 
-model = GAMCore("s(0) + s(1) + l(2)")
+model = GAMCore("s(0) + s(1) + l(2)", backend="eilers")
 model.fit(x, y)
 
 print("=== Before grid search ===")
@@ -61,32 +61,32 @@ print(f"EDF : {model.statistics_['edof']:.2f}")
 model.plot_diagnostics(x, y)
 plt.show()
 
-# --- Backend comparison: pyGAM vs R mgcv (side-by-side) ---
-# Tuning philosophies differ: pyGAM searches discrete lam/n_splines grids with
-# GCV (as above, including selective search_terms); mgcv estimates smoothing
+# --- Backend comparison: Eilers-Marx vs Wood (side-by-side) ---
+# Tuning philosophies differ: Eilers-Marx searches discrete lam/n_splines grids with
+# GCV (as above, including selective search_terms); Wood estimates smoothing
 # continuously via REML in a single fit, and its gridsearch() only varies the
 # basis dimension k. Same final complexity metrics on the same data:
-mgcv_model = GAMCore("s(0) + s(1) + l(2)", backend="mgcv")
-mgcv_model.fit(x, y)
-mgcv_edf_before_ksearch = mgcv_model.statistics_['edof']
-print("\n--- Backend comparison: pyGAM (discrete GCV grids) vs R mgcv (REML) ---")
-print(f"{'Metric':<18}{'pyGAM':>12}{'mgcv':>12}")
-print(f"{'EDF':<18}{model.statistics_['edof']:>12.2f}{mgcv_edf_before_ksearch:>12.2f}")
-print(f"{'GCV':<18}{model.statistics_['GCV']:>12.4f}{mgcv_model.statistics_['GCV']:>12.4f}")
-print(f"{'R^2':<18}{model.deviance_explained():>12.4f}{mgcv_model.deviance_explained():>12.4f}")
-mgcv_model.gridsearch(x, y, n_splines_grids=[np.arange(6, 16, 2), np.arange(6, 16, 2)])
-print(f"{'mgcv EDF after k-search':<18}{'':>12}{mgcv_model.statistics_['edof']:>12.2f}")
+wood_model = GAMCore("s(0) + s(1) + l(2)", backend="wood")
+wood_model.fit(x, y)
+wood_edf_before_ksearch = wood_model.statistics_['edof']
+print("\n--- Backend comparison: Eilers-Marx (discrete GCV grids) vs Wood (REML) ---")
+print(f"{'Metric':<18}{'Eilers-Marx':>12}{'Wood':>12}")
+print(f"{'EDF':<18}{model.statistics_['edof']:>12.2f}{wood_edf_before_ksearch:>12.2f}")
+print(f"{'GCV':<18}{model.statistics_['GCV']:>12.4f}{wood_model.statistics_['GCV']:>12.4f}")
+print(f"{'R^2':<18}{model.deviance_explained():>12.4f}{wood_model.deviance_explained():>12.4f}")
+wood_model.gridsearch(x, y, n_splines_grids=[np.arange(6, 16, 2), np.arange(6, 16, 2)])
+print(f"{'Wood EDF after k-search':<18}{'':>12}{wood_model.statistics_['edof']:>12.2f}")
 
 # --- Same-plot overlay: overall prediction sweeping feature 0 (others at median) ---
 x_sweep = np.tile(np.median(x, axis=0), (200, 1))
 x_sweep[:, 0] = np.linspace(x[:, 0].min(), x[:, 0].max(), 200)
 fig_cmp, ax_cmp = plt.subplots(figsize=(8, 4))
 ax_cmp.scatter(x[:, 0], y, c='lightgray', s=10, label='Data')
-ax_cmp.plot(x_sweep[:, 0], model.predict(x_sweep), 'b-', lw=2, label='pyGAM backend')
-ax_cmp.plot(x_sweep[:, 0], mgcv_model.predict(x_sweep), 'r-.', lw=2, label='mgcv backend')
+ax_cmp.plot(x_sweep[:, 0], model.predict(x_sweep), 'b-', lw=2, label='Eilers-Marx backend')
+ax_cmp.plot(x_sweep[:, 0], wood_model.predict(x_sweep), 'r-.', lw=2, label='Wood backend')
 ax_cmp.set_xlabel('Feature 0 (others at median)')
 ax_cmp.set_ylabel('y')
-ax_cmp.set_title('Backend Overlay: pyGAM vs mgcv')
+ax_cmp.set_title('Backend Overlay: Eilers-Marx vs Wood')
 ax_cmp.legend()
 fig_cmp.tight_layout()
 plt.show()

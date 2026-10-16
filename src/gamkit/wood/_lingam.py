@@ -1,4 +1,4 @@
-"""Single-term penalised GAM — LinGAM class (mgcv backend)."""
+"""Single-term penalised GAM — LinGAM class (Wood backend)."""
 
 from __future__ import annotations
 
@@ -8,11 +8,11 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 from ._gam import GAMCore
-from ._terms import _MgcvSplineTerm
+from ._terms import _WoodSplineTerm
 
 
 class LinGAM(GAMCore):
-    """Penalised GAM for a single smooth term y = beta_0 + f(x) + eps (mgcv backend)."""
+    """Penalised GAM for a single smooth term y = beta_0 + f(x) + eps (Wood backend)."""
 
     def __init__(
         self,
@@ -35,9 +35,9 @@ class LinGAM(GAMCore):
             bs = "cc"
         elif constraint is not None:
             raise ValueError(
-                f"Unsupported constraint '{constraint}' for mgcv backend. "
-                "mgcv natively supports 'periodic' (bs='cc'). For soft shape "
-                "constraints (monotonicity, convexity), use backend='pygam'."
+                f"Unsupported constraint '{constraint}' for Wood backend. "
+                "Wood backend natively supports 'periodic' (bs='cc'). For soft shape "
+                "constraints (monotonicity, convexity), use backend='eilers'."
             )
 
         if n_splines < 3:
@@ -67,7 +67,7 @@ class LinGAM(GAMCore):
         )
 
     @property
-    def _term(self) -> _MgcvSplineTerm:
+    def _term(self) -> _WoodSplineTerm:
         return self._terms[0]  # type: ignore[return-value]
 
     @property
@@ -121,8 +121,8 @@ class LinGAM(GAMCore):
     def _diagnostics_title(self) -> str:
         return f"LinGAM Diagnostics (k={self.n_splines}, bs='{self.bs}', sp={self.lam:.4f})"
 
-    def fit(self, x: ArrayLike, y: ArrayLike) -> "LinGAM":
-        """Fit the GAM model using mgcv REML or GCV criteria."""
+    def fit(self, x: ArrayLike, y: ArrayLike, robust: bool = False) -> "LinGAM":
+        """Fit the GAM model using Wood REML or GCV criteria."""
         x_arr = np.asarray(x, dtype=float).ravel()
         y_arr = np.asarray(y, dtype=float).ravel()
         if not np.all(np.isfinite(x_arr)) or not np.all(np.isfinite(y_arr)):
@@ -132,7 +132,7 @@ class LinGAM(GAMCore):
         )
         cfg_sp = self._term_configs[0]["kwargs"].get("sp")
         self._term.sp = [float(cfg_sp)] if cfg_sp is not None else None
-        super().fit(x_arr.reshape(-1, 1), y_arr)
+        super().fit(x_arr.reshape(-1, 1), y_arr, robust=robust)
         meta = self._term._meta
         xp = meta.get("xp") if meta.get("xp") is not None else meta.get("knots")
         if xp is None:
@@ -168,7 +168,9 @@ class LinGAM(GAMCore):
             if lam is None
             else [float(v) for v in np.atleast_1d(lam)]
         )
-        best_score, best_k, best_lam = np.inf, self.n_splines, self.lam
+        crit_key = "GCV" if len(k_list) > 1 else "score"
+        best_score = np.inf
+        best_cand: Optional[LinGAM] = None
 
         for k_cand in k_list:
             for l_cand in lam_list:
@@ -181,15 +183,23 @@ class LinGAM(GAMCore):
                         gamma=gamma,
                         spline_order=self.spline_order,
                     ).fit(x_arr, y_arr)
-                    if cand.statistics_["score"] < best_score:
-                        best_score = cand.statistics_["score"]
-                        best_k = k_cand
-                        best_lam = cand.lam if l_cand is None else l_cand
+                    if cand.statistics_[crit_key] < best_score:
+                        best_score = cand.statistics_[crit_key]
+                        best_cand = cand
                 except Exception:
                     continue
 
-        self.n_splines = best_k
-        self.lam = best_lam
+        if best_cand is not None:
+            self._term_configs = best_cand._term_configs
+            self._terms = best_cand._terms
+            self._coef_slices = best_cand._coef_slices
+            self.coef_ = best_cand.coef_
+            self.statistics_ = best_cand.statistics_
+            self._design_matrix_ = best_cand._design_matrix_
+            self.edge_knots_ = best_cand.edge_knots_
+            self.knots_ = best_cand.knots_
+            return self
+
         return self.fit(x_arr, y_arr)
 
     def plot_decomposition(
