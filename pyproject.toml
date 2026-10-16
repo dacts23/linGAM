@@ -38,9 +38,9 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/dacts23/gamkit"
-Repository = "https://github.com/dacts23/gamkit"
-Documentation = "https://dacts23.github.io/gamkit/"
+Homepage = "https://github.com/dacts23/linGAM"
+Repository = "https://github.com/dacts23/linGAM"
+Documentation = "https://dacts23.github.io/linGAM/"
 
 [tool.setuptools.packages.find]
 where = ["src"]

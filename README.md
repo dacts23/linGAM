@@ -2,7 +2,7 @@
 
 **Modern Pythonic Generalized Additive Models (GAMs)** based on classical statistical literature. It supports both single-term smooths (`GAM` / `LinGAM`) and multi-term formula-based models (`GAMCore`) with automatic hyperparameter tuning.
 
-> **Full documentation:** [https://dacts23.github.io/gamkit/](https://dacts23.github.io/gamkit/)
+> **Full documentation:** [https://dacts23.github.io/linGAM/](https://dacts23.github.io/linGAM/)
 
 ## Features
 
@@ -68,7 +68,7 @@ model.plot_decomposition(x, y)
 
 All API details, mathematical foundations, examples, and advanced usage are hosted on **GitHub Pages**:
 
-### [→ https://dacts23.github.io/gamkit/](https://dacts23.github.io/gamkit/)
+### [→ https://dacts23.github.io/linGAM/](https://dacts23.github.io/linGAM/)
 
 ## Demo
 
