@@ -23,6 +23,15 @@
 
 ---
 
+## Why magli?
+
+* **R's `mgcv` parity in pure Python**: `magli` implements Simon Wood's continuous REML smoothing parameter selection, Wood 2013 approximate F-tests and p-values, thin plate splines, and cyclic cubic bases without requiring an R runtime or rpy2.
+* **Shape constraints**: Soft shape constraints (monotonic increasing, monotonic decreasing, convex, concave) via the Eilers-Marx B-spline engine.
+* **Fast and numerically stable**: SVD data augmentation and cached QR with Cholesky factorization avoid squaring condition numbers.
+* **Interpretable machine learning**: Every term produces clean component decomposition plots and Bayesian confidence intervals.
+
+---
+
 ## Features
 
 - **Dual backend engines**: choose between `wood` (Wood 2011) and `eilers` (Eilers & Marx 1996)

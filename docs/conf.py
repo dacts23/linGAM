@@ -27,8 +27,14 @@ templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 html_theme = 'furo'
-html_title = 'magli Documentation'
+html_title = 'magli: Generalized Additive Models in Python'
 html_short_title = 'magli'
+html_baseurl = 'https://dacts23.github.io/magli/'
+
+html_meta = {
+    'description': 'Modern Pythonic Generalized Additive Models (GAMs) in pure Python with Wood (mgcv REML) and Eilers-Marx (P-splines) backends.',
+    'keywords': 'python, gam, generalized additive models, splines, mgcv, pygam, reml, p-splines, interpretable machine learning, regression',
+}
 
 
 pygments_style = 'github-dark'

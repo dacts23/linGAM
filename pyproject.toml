@@ -11,7 +11,22 @@ license = "GPL-3.0-or-later"
 authors = [
     {name = "David Ávila Cortés"}
 ]
-keywords = ["gam", "generalized-additive-models", "splines", "regression", "machine-learning", "magli"]
+keywords = [
+    "gam",
+    "generalized-additive-models",
+    "splines",
+    "regression",
+    "mgcv",
+    "pygam",
+    "reml",
+    "p-splines",
+    "shape-constraints",
+    "interpretable-ml",
+    "explainable-ai",
+    "statistics",
+    "machine-learning",
+    "magli"
+]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
