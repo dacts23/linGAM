@@ -4,17 +4,37 @@
 
 > **Full documentation:** [https://dacts23.github.io/linGAM/](https://dacts23.github.io/linGAM/)
 
+---
+
+## Which Backend Engine Should I Use?
+
+`gamkit` provides two complementary statistical engines under a unified API:
+
+| Feature / Goal | **`backend="wood"`** (Default) | **`backend="eilers"`** |
+| :--- | :--- | :--- |
+| **Smoothing parameter ($\lambda$)** | **Continuous REML or GCV optimization** (automatic during `.fit()`, no grid search needed) | **Discrete GCV grid search** over candidate $(\lambda, K)$ pairs |
+| **Basis function suite** | Thin plate (`tp`, `ts`), Cubic (`cr`, `cs`), Cyclic (`cc`), P-splines (`ps`, `cp`), Random effects (`re`) | Uniform B-splines (`bs`) with linear extrapolation |
+| **Statistical summaries** | Full summary tables with **approximate F-tests and p-values** (Wood 2013) | Basic statistics (EDF, GCV, deviance explained) |
+| **Shape constraints** | Periodic boundaries via cyclic bases (`cc`, `cp`) | **Soft constraints**: `mono_inc`, `mono_dec`, `convex`, `concave`, `periodic` |
+| **Outlier resistance** | Standard penalized least-squares | **Huber IRLS** robust regression (`robust=True`) |
+
+* **Use `wood`** for general regression, automatic parameter tuning, hypothesis testing, and maximum flexibility in basis types (equivalent to R's `mgcv`).
+* **Use `eilers`** when you have physical domain constraints (e.g. monotonicity or convexity), heavy sensor noise/outliers, or want explicit B-spline grid sweeps.
+
+---
+
 ## Features
 
-- **Dual backend engines** — choose between `eilers` (Eilers & Marx 1996: fast B-splines, discrete difference penalties, GCV grid search, shape constraints, Huber IRLS) and `wood` (Wood 2011: continuous REML smoothing parameter estimation, multiple basis families, and Wood 2013 hypothesis tests).
-- **Penalized B-spline regression** — De Boor recursion with linear extrapolation
-- **Automatic hyperparameter tuning** — GCV grid search over splines and smoothing (Eilers-Marx) or continuous REML/GCV optimization during fit (Wood)
-- **Comprehensive basis suite (Wood)** — Thin plate (`tp`, `ts`), Cubic regression (`cr`, `cs`), Cyclic cubic (`cc`), P-splines (`ps`, `cp`), B-splines (`bs`), Random effects (`re`), and Tensor products (`te`)
-- **Shape constraints** — monotonicity, convexity, concavity, periodicity
-- **Robust fitting** — Huber-weighted IRLS for outlier resistance
-- **Confidence & prediction intervals** — Bayesian and frequentist intervals
-- **Summary tables** — approximate F-statistics and p-values (Wood 2013)
-- **Tensor-product interactions** — multidimensional smooths via Khatri-Rao and Kronecker sum penalties
+- **Dual backend engines** — choose between `wood` (Wood 2011) and `eilers` (Eilers & Marx 1996)
+- **Automatic hyperparameter tuning** — continuous REML/GCV optimization or cached QR+Cholesky GCV grid search
+- **Rich basis suite** — thin plate splines, cubic regression splines, cyclic cubic splines, P-splines, B-splines, random effects
+- **Tensor-product interactions** — multidimensional smooths (`te`) with Kronecker sum penalties
+- **Shape constraints** — monotonic increasing/decreasing, convex, concave, and periodic
+- **Robust fitting** — Huber-weighted iteratively reweighted least squares (IRLS)
+- **Uncertainty quantification** — Bayesian posterior covariance and frequentist confidence/prediction intervals
+- **Summary tables** — parametric coefficients, EDF, approximate F-statistics, and p-values (Wood 2013)
+
+---
 
 ## Installation
 
@@ -23,18 +43,23 @@ pip install numpy scipy matplotlib
 pip install -e .
 ```
 
+---
+
 ## Quick Start
 
-### 1. Wood (2011) Engine (Automatic REML smoothing)
+### 1. Wood (2011) Engine (Automatic REML Smoothing)
+
+In the Wood engine, smoothing parameters are estimated continuously during fit via REML (no manual grid search required):
 
 ```python
-from gamkit import GAM, GAMCore
 import numpy as np
+from gamkit import GAM, GAMCore
 
+np.random.seed(42)
 x = np.linspace(0, 1, 200)
 y = np.sin(2 * np.pi * x) + np.random.normal(0, 0.2, len(x))
 
-# In Wood backend, lambda (sp) is estimated automatically during fit via REML
+# Single-term model with cubic regression splines
 model = GAM(k=10, bs="cr", backend="wood")
 model.fit(x, y)
 
@@ -43,19 +68,31 @@ y_pred = model.predict(x)
 ci = model.confidence_intervals(x, width=0.95)
 ```
 
-Multi-term formula with tensor products:
+Multi-term formula with tensor-product interactions and linear terms:
 
 ```python
+# Multi-term dataset: 2 interactive variables + 1 linear variable
+X = np.random.uniform(0, 10, (200, 3))
+y_multi = np.sin(X[:, 0]) + 0.5 * X[:, 1] + 1.2 * X[:, 2] + np.random.normal(0, 0.2, 200)
+
 gam = GAMCore("te(0, 1, bs='cr', k=4) + l(2)", backend="wood")
-gam.fit(X, y)
+gam.fit(X, y_multi)
 print(gam.summary())
 ```
 
-### 2. Eilers & Marx (1996) Engine (B-spline GCV Grid Search)
+### 2. Eilers & Marx (1996) Engine (B-Splines & Constraints)
+
+The Eilers-Marx engine provides discrete GCV grid searches and shape constraints:
 
 ```python
+import numpy as np
 from gamkit import GAM
 
+# Reusing synthetic data x, y or generating new series
+x = np.linspace(0, 1, 200)
+y = np.sin(2 * np.pi * x) + np.random.normal(0, 0.2, len(x))
+
+# Fast B-spline grid search over candidate lambda and spline counts
 model = GAM(backend="eilers")
 model.gridsearch(x, y)
 
@@ -64,17 +101,72 @@ ci = model.confidence_intervals(x, width=0.95)
 model.plot_decomposition(x, y)
 ```
 
+Enforcing soft shape constraints (e.g. monotonic increasing dose-response):
+
+```python
+# Enforce monotonic increasing trend
+mono_model = GAM(n_splines=12, constraint="mono_inc", backend="eilers")
+mono_model.fit(x, y)
+```
+
+Robust fitting against sensor outliers:
+
+```python
+# Huber IRLS fitting (outlier-tolerant)
+robust_model = GAM(n_splines=12, backend="eilers")
+robust_model.fit(x, y, robust=True)
+```
+
+---
+
+## Formula Syntax
+
+`GAMCore` uses an intuitive additive formula specification:
+
+| Term Syntax | Meaning | Example |
+| :--- | :--- | :--- |
+| `s(col, ...)` | Univariate smooth spline | `s(0, k=10, bs='cr')` or `s(0, n_splines=12, constraint='mono_inc')` |
+| `te(c1, c2, ...)` | Multidimensional tensor product | `te(0, 1, k=5, bs='cr')` |
+| `f(col, ...)` | Categorical factor | `f(2, coding='dummy')` or `f(2, coding='one-hot')` |
+| `l(col, ...)` | Parametric linear effect | `l(3)` |
+
+*Note: Predictor variables are identified by 0-indexed column numbers in input arrays.*
+
+---
+
 ## Documentation
 
-All API details, mathematical foundations, examples, and advanced usage are hosted on **GitHub Pages**:
+Full documentation, mathematical foundations, and end-to-end tutorials are available at:
 
 ### [→ https://dacts23.github.io/linGAM/](https://dacts23.github.io/linGAM/)
 
-## Demo
+- **[Quick Start](https://dacts23.github.io/linGAM/quickstart.html)** — installation and basic workflows
+- **[Mathematical Foundations](https://dacts23.github.io/linGAM/math.html)** — theory behind both engines:
+  - *Part I:* Shared Foundations & Additive Decomposition
+  - *Part II:* Eilers & Marx B-Splines, Penalties, & SVD Solver
+  - *Part III:* Wood Basis Suite, Identifiability, & REML Optimization
+  - *Part IV:* Side-by-Side Comparison & Engine Selection
+- **[Shape Constraints](https://dacts23.github.io/linGAM/constraints.html)** — monotonic, convex, concave, and periodic splines
+- **[Smoothing Optimization](https://dacts23.github.io/linGAM/gridsearch.html)** — continuous REML and discrete GCV grid search
+- **[Examples & Case Studies](https://dacts23.github.io/linGAM/examples.html)** — worked examples across diverse problems
+- **[API Reference](https://dacts23.github.io/linGAM/api.html)** — full class and method documentation
+
+---
+
+## Demo Scripts
+
+Run any of the 14 self-contained demo scripts in the `examples/` directory:
 
 ```bash
+python examples/01_basic_lingam.py
+python examples/10_engineering_case_study.py
+python examples/11_wood_backend.py
 python examples/12_concrete_demo.py
+python examples/13_eilers_vs_wood_comparison.py
+python examples/14_wood_basis_decomposition_plots.py
 ```
+
+---
 
 ## License
 

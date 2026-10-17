@@ -208,18 +208,25 @@ class LinGAM(GAMCore):
         y: ArrayLike,
         n_grid: int = 300,
         figsize: Tuple[int, int] = (16, 5),
+        show_weighted: bool = False,
     ) -> Tuple:
         """Plot basis decomposition, coefficients, and overall fit."""
         k_smooth = self._term.n_coefs
+        fit_title = (
+            "Weighted Basis Functions + Fit"
+            if show_weighted
+            else "Overall Model Fit"
+        )
         return self._plot_lingam_decomposition(
             x,
             y,
             k_smooth=k_smooth,
             prefix="b",
             basis_title=f"Basis Functions (dim={k_smooth})",
-            fit_title="Overall Model Fit",
+            fit_title=fit_title,
             suptitle=f"LinGAM Decomposition (k={self.n_splines}, bs='{self.bs}', sp={self.lam:.4f}, method={self.method})",
-            show_weighted=False,
+            knots=self.knots_,
+            show_weighted=show_weighted,
             n_grid=n_grid,
             figsize=figsize,
         )

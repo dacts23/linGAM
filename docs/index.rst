@@ -90,8 +90,11 @@ Multi-term formula with tensor products:
 
 .. code-block:: python
 
+   X = np.random.uniform(0, 10, (200, 3))
+   y_multi = np.sin(X[:, 0]) + 0.5 * X[:, 1] + 1.2 * X[:, 2] + np.random.normal(0, 0.2, 200)
+
    gam = GAMCore("te(0, 1, k=5) + l(2)", backend="wood")
-   gam.fit(X, y)
+   gam.fit(X, y_multi)
    print(gam.summary())
 
 
