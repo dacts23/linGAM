@@ -3,7 +3,7 @@
 ## What This Example Does
 
 This script simulates a turbine blade life prediction problem and
-demonstrates how to use **all major gamkit features** together in a
+demonstrates how to use **all major magli features** together in a
 realistic workflow.  It generates synthetic data where you *know the
 ground truth* so you can see exactly what the model recovers.
 
@@ -213,16 +213,16 @@ term contributions (plus intercept) equals the full prediction.
 - A smooth term that's nearly flat = over-smoothed (lambda too large) or the term is unnecessary.
 - Extrapolation regions (red) show uncertainty: the model has no data there, treat with caution.
 
-### Section 10 -- Robust vs Standard Comparison
+### Section 10 -- Weighted vs Standard Comparison
 
 **[Plot 3]** Shows how the 25 outlier points are handled differently:
 
-- **Orange X marks**: Where the *standard* fit places outlier
+- **Orange X marks**: Where the *unweighted* fit places outlier
   predictions.  They're pulled away from the 1:1 line because the
   outliers distort the fit.
-- **Green circles**: Where the *robust* fit places those same points.
-  They're closer to the 1:1 line because Huber loss down-weighted the
-  outliers during fitting.
+- **Green circles**: Where the *weighted* fit places those same points.
+  They're closer to the 1:1 line because observation `weights` down-weighted
+  the noisy sensor readings during fitting.
 - **Blue dots**: Clean points, both fits agree on them.
 
 ---
@@ -265,6 +265,6 @@ term contributions (plus intercept) equals the full prediction.
 | Decomposition plot | The visual summary of *everything the model learned*.  Read it first. |
 | Shape constraints | Inject physics knowledge.  They reduce EDF without hurting fit. |
 | Grid search | Automatically find best lambda and n_splines.  Use `search_terms` to limit scope. |
-| Robust fitting | Immune to outliers.  Use when data quality is uncertain. |
+| Weighted fitting | Down-weight low-precision or outlier observations via `weights=...`. |
 | Confidence interval | How sure we are about the mean prediction.  Narrow = precise. |
 | Prediction interval | Where new observations should fall.  Wide = high variability. |

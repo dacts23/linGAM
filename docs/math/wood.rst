@@ -13,8 +13,8 @@ Wood's GAM framework (Wood 2006, 2011, 2017).  Where the Eilers-Marx backend bet
 on one basis and a grid search, Wood bets on **richness and automatic
 inference**:
 
-1. **A zoo of bases.**  Seven basis families (``'tp'``, ``'ts'``,
-   ``'cr'``, ``'cs'``, ``'cc'``, ``'ps'``, ``'re'`` — plus ``'cp'``)
+1. **A zoo of bases.**  Nine basis codes (``'tp'``, ``'ts'``,
+   ``'cr'``, ``'cs'``, ``'cc'``, ``'ps'``, ``'cp'``, ``'bs'``, ``'re'``)
    with different knot placements, different penalties, and different
    shrinkage behaviour.  Each solves the smoothness problem a slightly
    different way.
@@ -57,8 +57,9 @@ All of the Wood bases share one objective: represent a smooth
 **wiggliness penalty** :math:`\boldsymbol{\beta}^\top S
 \boldsymbol{\beta}`.  Three of the families (``tp``, ``cr``, ``cc``)
 penalise the exact curvature integral :math:`\int f''(x)^2\,dx`; the
-P-splines penalise a discrete difference approximation of it; the random
-effect family penalises the coefficients directly.  Here's the map:
+P-spline and B-spline families penalise a discrete difference approximation
+of it; the random effect family penalises the coefficients directly.  Here's
+the map:
 
 .. list-table::
    :header-rows: 1
@@ -103,11 +104,29 @@ effect family penalises the coefficients directly.  Here's the map:
      - cubic B-splines on wrapped knots
      - wrapped :math:`m`-th order differences of coefficients
      - constants (dim 1)
+   * - ``bs``
+     - B-spline
+     - degree-:math:`m_{\text{basis}}` B-splines (default cubic), equally spaced knots
+     - :math:`m_{\text{pen}}`-th order differences of coefficients
+     - polynomials of degree :math:`< m_{\text{pen}}`
    * - ``re``
      - Random effect
      - one column per factor level
      - :math:`\sum \beta_j^2` (ridge)
      - none (all levels shrunken)
+
+.. figure:: ../_static/images/wood_basis_zoo.png
+   :alt: Comparison of four Wood basis families (tp, cr, ps, cc) showing centered basis modes and REML fits
+   :align: center
+   :width: 98%
+
+   Four representative families from the Wood basis zoo (:math:`k = 10`).
+   *Top row*: centred basis modes after absorbing the sum-to-zero constraint
+   (notice how ``tp`` orders modes from global low-frequency to local
+   high-frequency, whereas ``cr`` and ``ps`` localise bumps around knots).
+   *Bottom row*: REML-fitted smooths and 95% Bayesian credible bands on the
+   same noisy signal, with ``cc`` enforcing periodic wrap-around at the
+   boundaries.
 
 The table's "null space" column matters more than it looks: those are the
 function shapes that cost *nothing* to include.  A penalty with a null
@@ -177,7 +196,7 @@ Solving the continuous problem exactly gives :math:`f` with one parameter
 per data point (an :math:`O(n)` model) — beautiful, but too expensive and
 over-flexible for practical use.
 
-**The low-rank approximation.**  Wood's trick (and gamkit's) is to keep
+**The low-rank approximation.**  Wood's trick (and magli's) is to keep
 only the :math:`k` most important radial directions.  Eigen-decompose
 
 .. math::
@@ -354,8 +373,8 @@ basis wraps the covariate cyclically onto :math:`[x_0, x_1]` first.
 
 .. _section-wood-ps:
 
-P-splines (``ps``, ``cp``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+P-splines and B-splines (``ps``, ``cp``, ``bs``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Eilers & Marx (1996) cut the problem even further: forget exact curvature
 integrals; place a **uniformly spaced** grid of knots (extended 0.1%
@@ -377,10 +396,9 @@ free.  P-splines trade a little elegance for speed and simplicity (the
 penalty needs no matrix inverse, unlike :math:`B^{-1}` in ``cr``), and
 the equal knot spacing makes the basis numerically well behaved.
 
-For cyclic P-splines (``'cp'``), both the B-spline basis (via cyclic
-knot wrapping) and the :math:`m`-th order difference
-penalty wrap around the boundaries, leaving only constants in the
-one-dimensional null space.
+* ``'ps'`` defaults to ``m=(2, 2)`` (in Wood's convention :math:`m_{\text{basis}} = 2` denotes cubic B-splines and :math:`m_{\text{pen}} = 2` denotes second differences).
+* ``'bs'`` uses standard B-spline degree indexing (default ``m=(3, 2)`` for cubic B-splines with second-difference penalty) and shares the same underlying builder.
+* For cyclic P-splines (``'cp'``), both the B-spline basis (via cyclic knot wrapping) and the :math:`m`-th order difference penalty wrap around the boundaries, leaving only constants in the one-dimensional null space.
 
 .. _section-wood-re:
 
@@ -455,6 +473,18 @@ centred *by construction*, in every fit, at every :math:`\lambda`, and in
 every prediction.  The intercept owns the level; each smooth owns only
 its shape.  This is why Wood decomposition panels are genuinely centred at
 zero, while the Eilers-Marx panels rely on the intercept to absorb levels.
+
+.. figure:: ../_static/images/identifiability_sum_to_zero.png
+   :alt: Comparison of uncentred Eilers-Marx B-spline bumps versus Wood sum-to-zero projected basis functions
+   :align: center
+   :width: 96%
+
+   *Left*: Eilers-Marx B-spline basis columns (:math:`K = 8`) are non-negative
+   and satisfy the partition of unity :math:`\sum_j B_j(x) = 1`, so any
+   constant shift can be traded with the intercept.  *Right*: Wood's
+   ``absorb_constraints`` projects the basis onto the :math:`(K-1)`-dimensional
+   subspace where every column has zero sample mean (:math:`\mathbf{1}^\top \tilde{X} = \mathbf{0}`),
+   guaranteeing a unique, zero-centred partial effect.
 
 For tensor-product terms the same pipeline applies after assembling the
 Kronecker-sum penalties; each marginal penalty is first normalised by its
@@ -563,10 +593,9 @@ Reading it term by term:
 Why the ":math:`_+`" matters can be seen by taking :math:`S_\lambda =
 \lambda S` with :math:`\operatorname{rank}(S) = r`:
 :math:`\log|S_\lambda|_+ = r\log\lambda + \log|S|_+`, which scales
-correctly with the rank.  The implementation computes it by
-eigendecomposition, summing logs of the strictly positive eigenvalues;
-when the penalties of different terms act on *disjoint* blocks of
-coefficients, it uses the factorisation
+correctly with the rank.  When each penalty acts on its own disjoint block of
+coefficients, ``_precompute_penalty_structure`` precomputes the rank and
+positive eigenvalues once:
 
 .. math::
 
@@ -574,8 +603,12 @@ coefficients, it uses the factorisation
    \Bigl[ \operatorname{rank}(S_i) \log \lambda_i
    + \sum_j \log \text{ev}^+_j(S_i) \Bigr],
 
-and falls back to the general eigendecomposition otherwise (e.g. tensor
-terms, whose per-dimension penalties share the same coefficient block).
+When multiple penalties overlap on the same coefficient block (such as the
+marginal penalties of a ``te()`` tensor smooth), the implementation projects
+each component onto the positive eigenspace of :math:`\sum_i S_i` once, and
+evaluates :math:`\log |S_{\boldsymbol{\lambda}}|_+` via a pre-balanced
+Cholesky factorisation of the reduced positive-definite matrix (falling back
+to ``eigvalsh`` only if needed).
 
 :math:`\log|H|` needs no eigendecomposition: from the Cholesky factor,
 :math:`\log|H| = 2\sum_i \log L_{ii}`.
@@ -594,12 +627,19 @@ backend optimises :math:`\rho = \log\lambda` (unconstrained, with
 :math:`\lambda = e^\rho`) over the range :math:`\rho \in [-15, 15]` —
 i.e. :math:`\lambda` between roughly :math:`3\times10^{-7}` and
 :math:`3\times10^{6}`.  One free :math:`\lambda`: Brent's method
-(minimise_scalar, bounded) on the 1-D criterion.  Several free
-:math:`\lambda` (e.g. one per tensor dimension): L-BFGS-B starting from
-:math:`\rho = 0` (:math:`\lambda = 1`).  Either way the fit is
-re-evaluated a handful of times — each evaluation one Cholesky — rather
-than at every point of a grid.  Individual :math:`\lambda` values can be
-pinned with ``sp=`` if you want some terms fixed and others estimated.
+(``minimize_scalar``, bounded) on the 1-D criterion.  Several free
+:math:`\lambda` (e.g. multi-term models or one per tensor dimension):
+L-BFGS-B with exact **analytic gradients** (``jac=True``) starting from
+:math:`\rho = 0` (:math:`\lambda = 1`).  Because the envelope theorem cancels
+the implicit :math:`\partial\hat{\boldsymbol{\beta}}/\partial\rho_j` terms in
+:math:`\partial D_p / \partial\rho_j = \lambda_j \hat{\boldsymbol{\beta}}^\top S_j \hat{\boldsymbol{\beta}}`,
+both the REML and GCV gradients fall out of the existing Cholesky factor
+:math:`L` in a single pass without finite-difference evaluations.  Individual
+:math:`\lambda` values can be pinned with ``sp=`` if you want some terms
+fixed and others estimated, and ``model.gridsearch()`` is also available on
+Wood models if you wish to search over candidate basis dimensions :math:`k`
+while REML/GCV optimises :math:`\boldsymbol{\lambda}` continuously at each
+candidate :math:`k`.
 
 The REML score itself is reported in ``statistics_`` along with the
 estimated :math:`\lambda` values, so you can compare models on the

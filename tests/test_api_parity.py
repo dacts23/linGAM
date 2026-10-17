@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from gamkit import (
+from magli import (
     GAM,
     GAMCore,
     LinGAM,
@@ -15,10 +15,10 @@ from gamkit import (
     WoodGAMCore,
     WoodLinGAM,
 )
-from gamkit.wood import GAMCore as DirectWoodGAMCore
-from gamkit.wood import LinGAM as DirectWoodLinGAM, GAM as DirectWoodGAM
-from gamkit.eilers import GAMCore as DirectEilersGAMCore
-from gamkit.eilers import LinGAM as DirectEilersLinGAM, GAM as DirectEilersGAM
+from magli.wood import GAMCore as DirectWoodGAMCore
+from magli.wood import LinGAM as DirectWoodLinGAM, GAM as DirectWoodGAM
+from magli.eilers import GAMCore as DirectEilersGAMCore
+from magli.eilers import LinGAM as DirectEilersLinGAM, GAM as DirectEilersGAM
 
 
 def test_import_and_factory():

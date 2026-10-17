@@ -7,7 +7,7 @@ Restrict grid search to specific terms and supply custom candidate grids.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from gamkit import GAMCore
+from magli import GAMCore
 
 np.random.seed(42)
 n = 400

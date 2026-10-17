@@ -2,7 +2,7 @@
 Example 11 — Wood (2011) Backend
 ================================
 
-Demonstrates gamkit's native Wood (2011) backend:
+Demonstrates magli's native Wood (2011) backend:
 1. Single-term GAM with automatic REML smoothing parameter estimation (no lambda grid search required).
 2. Formatted summary table with approximate F-tests and p-values (Wood 2013).
 3. Using multiple basis types ('tp', 'cr', 'ps', 'cc').
@@ -12,7 +12,7 @@ Demonstrates gamkit's native Wood (2011) backend:
 
 import numpy as np
 import matplotlib.pyplot as plt
-from gamkit import LinGAM, GAMCore
+from magli import LinGAM, GAMCore
 
 np.random.seed(42)
 

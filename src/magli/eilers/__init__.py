@@ -1,4 +1,4 @@
-"""Eilers & Marx (1996) P-spline GAM backend for gamkit."""
+"""Eilers & Marx (1996) P-spline GAM backend for magli."""
 
 from ._gam import GAMCore
 from ._lingam import LinGAM

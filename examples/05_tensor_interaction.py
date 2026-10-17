@@ -8,7 +8,7 @@ between two predictors that univariate splines cannot represent.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from gamkit import GAMCore
+from magli import GAMCore
 
 np.random.seed(42)
 n = 600

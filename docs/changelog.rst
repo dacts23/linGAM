@@ -20,21 +20,22 @@ New features
   effective degrees of freedom (EDF), approximate F-tests, and p-values matching
   Wood (2013).
 * **Symmetric dual-engine architecture**: Symmetrically organized into
-  ``gamkit.eilers`` and ``gamkit.wood`` with unified ``LinGAM`` and ``GAMCore``
+  ``magli.eilers`` and ``magli.wood`` with unified ``LinGAM`` and ``GAMCore``
   factory dispatchers.
 
 Improvements
 ^^^^^^^^^^^^
 
-* **Shared ``_GAMBase`` lifecycle**: ``gamkit._base`` now holds the
+* **Shared ``_GAMBase`` lifecycle**: ``magli._base`` now holds the
   code both engines inherit — ``predict``, ``partial_dependence``,
   confidence/prediction intervals, ``loglikelihood``/``aic``/``bic``/
   ``deviance_explained``, and all decomposition/diagnostic plotting.
   Note the scale convention it abstracts: Eilers-Marx stores ``scale`` as
   σ (uses ``s**2`` as variance), Wood stores it as σ² directly.
-* **Huber IRLS robust fitting**: ``fit(x, y, robust=True)`` (Eilers-Marx
-  backend) runs ``irls_solve`` — up to 15 MAD-scaled (``c=1.345``)
-  re-weighting iterations with weighted RSS in the reported statistics.
+* **Observation weights across both backends**: ``fit(x, y, weights=w)`` and
+  ``gridsearch(x, y, weights=w)`` scale observations by :math:`\sqrt{w_i}` in
+  both the Eilers-Marx and Wood backends (replacing the earlier ``robust=True``
+  IRLS option).
 * **Cyclic P-splines (``'cp'``)**: dedicated basis with wrapped knots and a wrapped difference penalty.
 * **Thin-plate shrinkage (``'ts'``)**: now charges the null-space
   (smallest) eigenvalues as in Wood (2017), instead of the largest ones.
@@ -63,7 +64,7 @@ New features
 Improvements
 ^^^^^^^^^^^^^
 
-* Modular ``src/gamkit/`` package layout with ``__slots__`` for memory
+* Modular ``src/magli/`` package layout with ``__slots__`` for memory
   efficiency.
 * PEP8 naming: ``b_spline_basis``, ``solve_pirls``, ``irls_solve``, etc.
 * ``b_spline_basis`` supports periodic wrapping.

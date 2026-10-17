@@ -4,7 +4,7 @@ Smoothing Parameter Optimization & Tuning
 A central question in Generalized Additive Models is choosing the smoothing parameter :math:`\lambda`
 (or :math:`sp`) to achieve the optimal balance between fidelity to data and smoothness.
 
-gamkit supports two distinct mathematical approaches:
+magli supports two distinct mathematical approaches:
 
 1. **Continuous REML Optimization (Wood engine)** — Solves for optimal :math:`\lambda` continuously during ``fit()`` (Wood 2011).
 2. **Discrete GCV Grid Search (Eilers-Marx engine)** — Evaluates a Cartesian grid of candidate :math:`(K, \lambda)` values via cached QR+Cholesky (Eilers & Marx 1996).
@@ -17,7 +17,7 @@ In the Wood backend, smoothing parameters are estimated automatically during mod
 
 .. code-block:: python
 
-   from gamkit import LinGAM, GAMCore
+   from magli import LinGAM, GAMCore
 
    # Single-term: REML estimates lambda automatically
    m = LinGAM(k=10, bs="cr", backend="wood")
@@ -32,11 +32,13 @@ In the Wood backend, smoothing parameters are estimated automatically during mod
 How it works:
 
 * Uses Brent's bounded scalar search (single free :math:`\lambda`) or L-BFGS-B
-  (multiple free :math:`\lambda`, e.g. one per tensor dimension) on the Restricted
-  Maximum Likelihood (REML) or Generalized Cross Validation (``method='GCV.Cp'``)
-  criterion in continuous log-lambda space (:math:`\rho = \log\lambda \in [-15, 15]`).
+  with exact **analytic gradients** (multiple free :math:`\lambda`, e.g. multi-term
+  models or one per tensor dimension) on the Restricted Maximum Likelihood (REML)
+  or Generalized Cross Validation (``method='GCV.Cp'``) criterion in continuous
+  log-lambda space (:math:`\rho = \log\lambda \in [-15, 15]`).
 * Outer iteration updates :math:`\log \boldsymbol{\lambda}`; inner step computes penalized least-squares coefficients :math:`\boldsymbol{\beta}` and hat matrix traces.
 * Avoids the discretization error, manual grid configuration, and combinatorial scaling of discrete grids.
+* **Optional basis-dimension search**: Wood models also provide ``m.gridsearch(x, y, n_splines=...)`` (or ``g.gridsearch(X, y, n_splines_grids=...)``) if you want to sweep candidate basis dimensions :math:`k` while REML/GCV optimizes :math:`\boldsymbol{\lambda}` continuously at each candidate :math:`k`.
 
 
 2. Discrete GCV Grid Search (Eilers-Marx 1996)
@@ -47,10 +49,20 @@ the Generalised Cross Validation (GCV) criterion.
 
 .. code-block:: python
 
-   from gamkit import LinGAM, GAMCore
+   from magli import LinGAM, GAMCore
 
    m = LinGAM(n_splines=10, backend="eilers")
    m.gridsearch(x, y)
+
+.. figure:: _static/images/gcv_curve_and_edf.png
+   :alt: GCV score curve and EDF vs RSS trade-off across candidate lambda values
+   :align: center
+   :width: 96%
+
+   *Left*: The U-shaped GCV curve across candidate :math:`\lambda` values,
+   balancing residual sum of squares against model complexity.  *Right*: As
+   :math:`\lambda` increases, the effective degrees of freedom (EDF) contract
+   toward the linear null space while the residual sum of squares (RSS) rises.
 
 Two-phase fast QR+Cholesky evaluation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

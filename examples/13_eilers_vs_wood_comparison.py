@@ -2,7 +2,7 @@
 Example 13 — Head-to-Head Comparison: Eilers-Marx vs Wood Philosophies
 ======================================================================
 
-Demonstrates and contrasts the two GAM philosophies implemented in gamkit:
+Demonstrates and contrasts the two GAM philosophies implemented in magli:
 
 1. Univariate (y vs x):
    - Eilers-Marx (1996): B-splines with second-difference penalty and GCV grid search.
@@ -20,12 +20,12 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 
-from gamkit import LinGAM, GAMCore
+from magli import LinGAM, GAMCore
 
 
 def run_comparison():
     print("=" * 78)
-    print("  gamkit Comparison: Eilers-Marx Backend vs Wood Backend")
+    print("  magli Comparison: Eilers-Marx Backend vs Wood Backend")
     print("=" * 78)
 
     np.random.seed(42)
@@ -177,7 +177,7 @@ def run_comparison():
     ax4.legend(fontsize=8)
     ax4.grid(True, alpha=0.3)
 
-    fig.suptitle("gamkit Engine Comparison: Eilers-Marx vs Wood", fontsize=14, fontweight="bold")
+    fig.suptitle("magli Engine Comparison: Eilers-Marx vs Wood", fontsize=14, fontweight="bold")
     plt.tight_layout()
 
     out_path = Path(__file__).with_name("eilers_vs_wood_comparison.png")

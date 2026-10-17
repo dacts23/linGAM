@@ -1,11 +1,20 @@
 Shape Constraints
 =================
 
-gamkit supports soft shape constraints on univariate spline terms (``s()``)
-and on ``LinGAM``.  These are not hard constraints (the solver does not use
-quadratic programming or active-set methods).  Instead, they change the
+magli supports soft shape constraints on univariate spline terms (``s()``)
+and on ``GAM`` / ``LinGAM``.  These are not hard constraints (the solver does
+not use quadratic programming or active-set methods).  Instead, they change the
 penalty matrix so that the *natural* smooth solution tends toward the desired
 shape.
+
+.. note::
+
+   Soft monotonicity and convexity constraints (``mono_inc``, ``mono_dec``,
+   ``convex``, ``concave``) are provided by the Eilers-Marx engine
+   (``backend='eilers'``).  Periodic smooths (``constraint='periodic'``) are
+   supported in both engines — via wrapped B-splines in ``backend='eilers'``
+   and via cyclic cubic/P-spline bases (``bs='cc'`` / ``bs='cp'``) in
+   ``backend='wood'``.
 
 Available constraints
 ---------------------
@@ -17,21 +26,32 @@ Available constraints
 |                | D_2`              |                                        |
 +----------------+-------------------+----------------------------------------+
 | ``mono_inc``   | :math:`D_1^\top   | Encourages monotonically increasing    |
-|                | D_1`              | curve                                  |
+|                | D_1`              | curve (``backend='eilers'``)           |
 +----------------+-------------------+----------------------------------------+
 | ``mono_dec``   | :math:`D_1^\top   | Encourages monotonically decreasing    |
-|                | D_1`              | curve                                  |
+|                | D_1`              | curve (``backend='eilers'``)           |
 +----------------+-------------------+----------------------------------------+
-| ``convex``     | :math:`D_2^\top   | Encourages convexity (U-shaped)        |
-|                | D_2`              |                                        |
+| ``convex``     | :math:`D_2^\top   | Encourages convexity (U-shaped,        |
+|                | D_2`              | ``backend='eilers'``)                  |
 +----------------+-------------------+----------------------------------------+
-| ``concave``    | :math:`D_2^\top   | Encourages concavity (∩-shaped)        |
-|                | D_2`              |                                        |
+| ``concave``    | :math:`D_2^\top   | Encourages concavity (∩-shaped,        |
+|                | D_2`              | ``backend='eilers'``)                  |
 +----------------+-------------------+----------------------------------------+
-| ``periodic``   | Circular          | Enforces :math:`f(0) = f(1)` with      |
-|                | :math:`D_2^\top   | wrapped basis and penalty              |
-|                | D_2`              |                                        |
+| ``periodic``   | Circular          | Enforces :math:`f(a) = f(b)` with      |
+|                | :math:`D_2^\top   | wrapped basis and penalty (both        |
+|                | D_2` / cyclic     | backends)                              |
 +----------------+-------------------+----------------------------------------+
+
+.. figure:: _static/images/shape_constraints_showcase.png
+   :alt: Three-panel showcase comparing unconstrained vs. constrained splines for mono_inc, mono_dec, and periodic
+   :align: center
+   :width: 98%
+
+   Effect of shape constraints on noisy data: (left) ``constraint='mono_inc'``
+   suppresses non-physical local dips in a dose–response curve; (centre)
+   ``constraint='mono_dec'`` damps rebounds in an exponential decay curve;
+   (right) ``constraint='periodic'`` (or Wood's ``bs='cc'``) joins value and
+   slope seamlessly across the 24-hour cycle boundary.
 
 How they work
 -------------
@@ -112,15 +132,15 @@ Monotonically increasing spline:
 
 .. code-block:: python
 
-   model = GAMCore("s(0, constraint='mono_inc') + l(1)")
+   model = GAMCore("s(0, constraint='mono_inc') + l(1)", backend="eilers")
    model.fit(x, y)
 
 Periodic seasonal effect::
 
-   model = GAMCore("s(0, n_splines=12, constraint='periodic') + l(1)")
+   model = GAMCore("s(0, n_splines=12, constraint='periodic') + l(1)", backend="eilers")
    model.fit(x, y)
 
 Single-term with monotonicity::
 
-   model = LinGAM(n_splines=12, constraint='mono_inc')
+   model = LinGAM(n_splines=12, constraint='mono_inc', backend="eilers")
    model.fit(x, y)

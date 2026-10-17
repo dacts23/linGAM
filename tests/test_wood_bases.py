@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from gamkit.wood import GAMCore, LinGAM
+from magli.wood import GAMCore, LinGAM
 
 
 
@@ -82,7 +82,7 @@ def test_periodic_constraint():
 
 
 def test_ts_shrinks_null_space():
-    from gamkit.wood._smooths import build_tp_basis
+    from magli.wood._smooths import build_tp_basis
 
     x = np.linspace(0, 1, 50)
     _, [S_tp], _ = build_tp_basis(x, k=8, shrink=False)

@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from gamkit import GAMCore, LinGAM
+from magli import GAMCore, LinGAM
 
 
 

@@ -1,19 +1,19 @@
-# gamkit
+# magli
 
-**Modern Pythonic Generalized Additive Models (GAMs)** based on classical statistical literature. It supports both single-term smooths (`GAM` / `LinGAM`) and multi-term formula-based models (`GAMCore`) with automatic hyperparameter tuning.
+**magli (Modelo Aditivo Generalizado Lineal)** — Modern Pythonic Generalized Additive Models (GAMs) based on classical statistical literature. It supports both single-term smooths (`GAM` / `LinGAM`) and multi-term formula-based models (`GAMCore`) with automatic hyperparameter tuning.
 
-> **Full documentation:** [https://dacts23.github.io/linGAM/](https://dacts23.github.io/linGAM/)
+> **Full documentation:** [https://dacts23.github.io/magli/](https://dacts23.github.io/magli/)
 
 ---
 
 ## Which Backend Engine Should I Use?
 
-`gamkit` provides two complementary statistical engines under a unified API:
+`magli` provides two complementary statistical engines under a unified API:
 
 | Feature / Goal | **`backend="wood"`** (Default) | **`backend="eilers"`** |
 | :--- | :--- | :--- |
 | **Smoothing parameter ($\lambda$)** | **Continuous REML or GCV optimization** (automatic during `.fit()`, no grid search needed) | **Discrete GCV grid search** over candidate $(\lambda, K)$ pairs |
-| **Basis function suite** | Thin plate (`tp`, `ts`), Cubic (`cr`, `cs`), Cyclic (`cc`), P-splines (`ps`, `cp`), Random effects (`re`) | Uniform B-splines (`bs`) with linear extrapolation |
+| **Basis function suite** | Thin plate (`tp`, `ts`), Cubic (`cr`, `cs`), Cyclic (`cc`), P-splines (`ps`, `cp`), B-splines (`bs`), Random effects (`re`) | Uniform B-splines (`bs`) with linear extrapolation |
 | **Statistical summaries** | Full summary tables with **approximate F-tests and p-values** (Wood 2013) | Basic statistics (EDF, GCV, deviance explained) |
 | **Shape constraints** | Periodic boundaries via cyclic bases (`cc`, `cp`) | **Soft constraints**: `mono_inc`, `mono_dec`, `convex`, `concave`, `periodic` |
 | **Observation weights** | Weighted penalized least-squares (`weights=...`) | Weighted penalized least-squares (`weights=...`) |
@@ -53,7 +53,7 @@ In the Wood engine, smoothing parameters are estimated continuously during fit v
 
 ```python
 import numpy as np
-from gamkit import GAM, GAMCore
+from magli import GAM, GAMCore
 
 np.random.seed(42)
 x = np.linspace(0, 1, 200)
@@ -86,7 +86,7 @@ The Eilers-Marx engine provides discrete GCV grid searches and shape constraints
 
 ```python
 import numpy as np
-from gamkit import GAM
+from magli import GAM
 
 # Reusing synthetic data x, y or generating new series
 x = np.linspace(0, 1, 200)
@@ -138,24 +138,25 @@ weighted_model.fit(x, y, weights=w)
 
 Full documentation, mathematical foundations, and end-to-end tutorials are available at:
 
-### [→ https://dacts23.github.io/linGAM/](https://dacts23.github.io/linGAM/)
+### [→ https://dacts23.github.io/magli/](https://dacts23.github.io/magli/)
 
-- **[Quick Start](https://dacts23.github.io/linGAM/quickstart.html)** — installation and basic workflows
-- **[Mathematical Foundations](https://dacts23.github.io/linGAM/math.html)** — theory behind both engines:
-  - *Part I:* Shared Foundations & Additive Decomposition
-  - *Part II:* Eilers & Marx B-Splines, Penalties, & SVD Solver
-  - *Part III:* Wood Basis Suite, Identifiability, & REML Optimization
-  - *Part IV:* Side-by-Side Comparison & Engine Selection
-- **[Shape Constraints](https://dacts23.github.io/linGAM/constraints.html)** — monotonic, convex, concave, and periodic splines
-- **[Smoothing Optimization](https://dacts23.github.io/linGAM/gridsearch.html)** — continuous REML and discrete GCV grid search
-- **[Examples & Case Studies](https://dacts23.github.io/linGAM/examples.html)** — worked examples across diverse problems
-- **[API Reference](https://dacts23.github.io/linGAM/api.html)** — full class and method documentation
+- **[Quick Start](https://dacts23.github.io/magli/quickstart.html)** — installation and basic workflows
+- **[Mathematical Foundations](https://dacts23.github.io/magli/math.html)** — theory behind both engines:
+  - *Part I:* [Shared Foundations & Additive Decomposition](https://dacts23.github.io/magli/math/foundations.html)
+  - *Part II:* [Eilers & Marx B-Splines, Penalties, & SVD Solver](https://dacts23.github.io/magli/math/eilers.html)
+  - *Part III:* [Wood Basis Suite, Identifiability, & REML Optimization](https://dacts23.github.io/magli/math/wood.html)
+  - *Part IV:* [Side-by-Side Comparison & Engine Selection](https://dacts23.github.io/magli/math/comparison.html)
+- **[Shape Constraints](https://dacts23.github.io/magli/constraints.html)** — monotonic, convex, concave, and periodic splines
+- **[Smoothing Optimization](https://dacts23.github.io/magli/gridsearch.html)** — continuous REML and discrete GCV grid search
+- **[Examples & Case Studies](https://dacts23.github.io/magli/examples.html)** — worked examples across diverse problems
+- **[API Reference](https://dacts23.github.io/magli/api.html)** — full class and method documentation
+- **[Changelog](https://dacts23.github.io/magli/changelog.html)** — release history and version notes
 
 ---
 
 ## Demo Scripts
 
-Run any of the 14 self-contained demo scripts in the `examples/` directory:
+Run any of the 15 self-contained demo scripts in the `examples/` directory:
 
 ```bash
 python examples/01_basic_lingam.py
@@ -164,6 +165,7 @@ python examples/11_wood_backend.py
 python examples/12_concrete_demo.py
 python examples/13_eilers_vs_wood_comparison.py
 python examples/14_wood_basis_decomposition_plots.py
+python examples/15_eilers_basis_decomposition_plots.py
 ```
 
 ---

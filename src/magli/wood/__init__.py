@@ -1,4 +1,4 @@
-"""Wood (2011) GAM backend for gamkit."""
+"""Wood (2011) GAM backend for magli."""
 
 from ._gam import GAMCore
 from ._lingam import LinGAM

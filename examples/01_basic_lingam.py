@@ -8,7 +8,7 @@ Demonstrates fit, predict, confidence intervals, and plotting.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from gamkit import LinGAM
+from magli import LinGAM
 
 np.random.seed(42)
 

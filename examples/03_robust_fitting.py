@@ -18,7 +18,7 @@ MAD-based scale estimate (sigma = MAD / 0.6745), then pass them to ``fit()``:
 
 import matplotlib.pyplot as plt
 import numpy as np
-from gamkit import LinGAM
+from magli import LinGAM
 
 np.random.seed(42)
 

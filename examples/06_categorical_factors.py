@@ -7,7 +7,7 @@ Include a categorical variable with a factor term ``f()``.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from gamkit import GAMCore
+from magli import GAMCore
 
 np.random.seed(42)
 n = 500

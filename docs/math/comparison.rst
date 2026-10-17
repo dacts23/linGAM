@@ -21,16 +21,16 @@ the differences; the subsections after it explain the ones that matter.
      - Wood backend
    * - Basis families
      - One: uniform B-spline, cubic default, linear extrapolation, periodic folding
-     - Eight: ``tp``, ``ts``, ``cr``, ``cs``, ``cc``, ``ps``, ``cp``, ``re``, mixable per tensor margin
+     - Nine: ``tp``, ``ts``, ``cr``, ``cs``, ``cc``, ``ps``, ``cp``, ``bs``, ``re``, mixable per tensor margin
    * - Knot placement
      - Uniform over :math:`[\min x, \max x]`
-     - Quantiles (``cr``/``cs``), even spread through unique values (``cc``), equally spaced (``ps``/``cp``), knot-free eigen-basis (``tp``/``ts``)
+     - Quantiles (``cr``/``cs``), even spread through unique values (``cc``), equally spaced (``ps``/``cp``/``bs``), knot-free eigen-basis (``tp``/``ts``)
    * - Smoothing parameters
      - One :math:`\lambda` per term (per tensor dimension); grid can be broadcast to all
      - One :math:`\lambda` per penalty matrix; each estimated independently
    * - Selection method
      - Discrete grid search over :math:`(K, \lambda)`, scored by GCV with :math:`\gamma = 1.4`
-     - Continuous optimisation of :math:`\log\lambda`; REML (default) or GCV.Cp with :math:`\gamma = 1`
+     - Continuous optimisation of :math:`\log\lambda` via REML (default) or GCV.Cp (:math:`\gamma = 1`), plus optional ``gridsearch()`` over :math:`k`
    * - Solver
      - SVD data-augmentation of :math:`[R; E]` (never forms :math:`X^\top X`)
      - QR + Cholesky of :math:`R^\top R + S_\lambda`
@@ -54,16 +54,28 @@ the differences; the subsections after it explain the ones that matter.
      - REML/GCV score, AIC, BIC, log-likelihood, deviance explained, adjusted :math:`R^2`
    * - Shape constraints
      - Soft: ``mono_inc``/``mono_dec`` (:math:`D_1` penalty), ``convex``/``concave`` (:math:`D_2` penalty), ``periodic`` (wrapped basis + circular :math:`D_2`)
-     - Periodic via ``cc`` and ``cp``; no monotonic/convex options
+     - Periodic via ``cc`` and ``cp`` (or ``constraint='periodic'``); no monotonic/convex options
    * - Observation weights
      - Supported in ``fit()`` and ``gridsearch()`` via :math:`\sqrt{w_i}` scaling
      - Supported in ``fit()`` and ``gridsearch()`` via :math:`\sqrt{w_i}` scaling
    * - Cost profile
      - Many cheap evaluations (grid); threaded with ``n_jobs != 1``; QR cached per :math:`K`
-     - Few, heavier evaluations (optimiser iterations); one QR, repeated Cholesky
+     - Few, heavier evaluations (optimiser iterations with analytic gradients); one QR, repeated Cholesky
    * - Best fit for
      - Fast sweeps, shape constraints, teaching the machinery
      - p-values & rigorous summary, automatic :math:`\lambda`, basis choice, tensor margin mixing
+
+.. figure:: ../_static/images/eilers_vs_wood_comparison.png
+   :alt: Six-panel side-by-side comparison of Eilers-Marx and Wood backends across basis functions, smoothing criteria, shape constraints, observation weights, and 2-D tensor interactions
+   :align: center
+   :width: 98%
+
+   Head-to-head comparison of the Eilers-Marx and Wood backends across six
+   scenarios (from ``examples/13_eilers_vs_wood_comparison.py``): (1) 1-D
+   basis comparison, (2) discrete GCV grid search vs. continuous REML/GCV.Cp,
+   (3) monotonic shape constraint, (4) cyclic periodic smooths, (5) observation
+   weights on outlier-contaminated data, and (6) 2-D tensor-product
+   decomposition with per-axis smoothing.
 
 **The same objective, two strategies.**  Both engines minimise
 :math:`\|\mathbf{y} - X\boldsymbol{\beta}\|^2 +
@@ -98,7 +110,8 @@ constraints (monotonic/convex/concave pushes) that the Wood backend does
 not.  If physics demands a monotone dose–response, the Eilers-Marx backend
 is the one with the knob.  Both handle periodicity, differently: the
 Eilers-Marx backend wraps its basis *and* uses a circular difference
-penalty; the Wood backend uses a purpose-built cyclic cubic basis.
+penalty; the Wood backend uses a purpose-built cyclic cubic or cyclic
+P-spline basis.
 
 **Speed and scaling.**  With few terms and a small grid the Eilers-Marx backend
 is effectively instant; its cost grows with the product of grid sizes and

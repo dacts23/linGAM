@@ -7,7 +7,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath('../src'))
 
-project = 'gamkit'
+project = 'magli'
 copyright = '2026, David Ávila Cortés'
 author = 'David Ávila Cortés'
 release = '0.3.0'
@@ -27,8 +27,8 @@ templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 html_theme = 'furo'
-html_title = 'gamkit Documentation'
-html_short_title = 'gamkit'
+html_title = 'magli Documentation'
+html_short_title = 'magli'
 
 
 pygments_style = 'github-dark'

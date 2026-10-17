@@ -1,10 +1,10 @@
-"""Demo for gamkit — concrete compressive strength GAM."""
+"""Demo for magli — concrete compressive strength GAM."""
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-from gamkit import GAMCore
-from gamkit.eilers._terms import _FactorTerm, _LinearTerm, _SplineTerm, _TensorTerm
+from magli import GAMCore
+from magli.eilers._terms import _FactorTerm, _LinearTerm, _SplineTerm, _TensorTerm
 
 
 def _concrete_demo():

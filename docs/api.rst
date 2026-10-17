@@ -1,15 +1,17 @@
 API Reference
 =============
 
-This page documents the public API and internal engines in gamkit.
+This page documents the public API and internal engines in magli.
 
-.. currentmodule:: gamkit
+.. currentmodule:: magli
 
 Public Unified API
 ------------------
 
-The top-level :class:`LinGAM` and :class:`GAMCore` classes dynamically dispatch
-to either the Eilers-Marx or Wood engine based on the ``backend`` argument.
+The top-level :class:`GAM` (aliased as :class:`LinGAM`) and :class:`GAMCore` classes dynamically dispatch
+to either the Wood (``backend='wood'``, default) or Eilers-Marx (``backend='eilers'``) engine.
+Backend-specific classes are also directly importable from :mod:`magli` as
+``WoodLinGAM``, ``WoodGAMCore``, ``EilersLinGAM``, and ``EilersGAMCore``.
 
 .. autosummary::
    :toctree: generated/
@@ -22,40 +24,40 @@ to either the Eilers-Marx or Wood engine based on the ``backend`` argument.
 Shared Architecture
 -------------------
 
-.. currentmodule:: gamkit._base
+.. currentmodule:: magli._base
 
-gamkit._base
+magli._base
 ^^^^^^^^^^^^
 
 Shared ``_GAMBase`` lifecycle inherited by both engines: prediction, partial
 dependence, confidence/prediction intervals, information criteria, and all
 decomposition/diagnostic plotting.  (``scale`` is σ for Eilers-Marx, σ² for Wood.)
 
-.. automodule:: gamkit._base
+.. automodule:: magli._base
     :members:
 
-.. currentmodule:: gamkit._formula
+.. currentmodule:: magli._formula
 
-gamkit._formula
+magli._formula
 ^^^^^^^^^^^^^^^
 
 Shared additive model formula parser for ``s()``, ``te()``, ``f()``, and ``l()`` terms.
 
-.. automodule:: gamkit._formula
+.. automodule:: magli._formula
    :members:
 
-.. literalinclude:: ../src/gamkit/_formula.py
+.. literalinclude:: ../src/magli/_formula.py
    :language: python
    :linenos:
 
 
-Eilers & Marx Engine (``gamkit.eilers``)
+Eilers & Marx Engine (``magli.eilers``)
 ---------------------------------------------
 
 B-spline additive models with discrete GCV grid search and soft shape constraints
 following Eilers & Marx (1996).
 
-.. currentmodule:: gamkit.eilers
+.. currentmodule:: magli.eilers
 
 Classes
 ^^^^^^^
@@ -70,83 +72,83 @@ Classes
 Modules
 ^^^^^^^
 
-.. currentmodule:: gamkit.eilers._bspline
+.. currentmodule:: magli.eilers._bspline
 
-gamkit.eilers._bspline
+magli.eilers._bspline
 """""""""""""""""""""""""""
-.. automodule:: gamkit.eilers._bspline
+.. automodule:: magli.eilers._bspline
    :members:
 
-.. literalinclude:: ../src/gamkit/eilers/_bspline.py
+.. literalinclude:: ../src/magli/eilers/_bspline.py
    :language: python
    :linenos:
 
-.. currentmodule:: gamkit.eilers._penalty
+.. currentmodule:: magli.eilers._penalty
 
-gamkit.eilers._penalty
+magli.eilers._penalty
 """""""""""""""""""""""""""
-.. automodule:: gamkit.eilers._penalty
+.. automodule:: magli.eilers._penalty
    :members:
 
-.. literalinclude:: ../src/gamkit/eilers/_penalty.py
+.. literalinclude:: ../src/magli/eilers/_penalty.py
    :language: python
    :linenos:
 
-.. currentmodule:: gamkit.eilers._solver
+.. currentmodule:: magli.eilers._solver
 
-gamkit.eilers._solver
+magli.eilers._solver
 """"""""""""""""""""""""""
-.. automodule:: gamkit.eilers._solver
+.. automodule:: magli.eilers._solver
    :members:
 
-.. literalinclude:: ../src/gamkit/eilers/_solver.py
+.. literalinclude:: ../src/magli/eilers/_solver.py
    :language: python
    :linenos:
 
-.. currentmodule:: gamkit.eilers._terms
+.. currentmodule:: magli.eilers._terms
 
-gamkit.eilers._terms
+magli.eilers._terms
 """""""""""""""""""""""""
-.. automodule:: gamkit.eilers._terms
+.. automodule:: magli.eilers._terms
    :members:
 
-.. literalinclude:: ../src/gamkit/eilers/_terms.py
+.. literalinclude:: ../src/magli/eilers/_terms.py
    :language: python
    :linenos:
 
-.. currentmodule:: gamkit.eilers._lingam
+.. currentmodule:: magli.eilers._lingam
 
-gamkit.eilers._lingam
+magli.eilers._lingam
 """"""""""""""""""""""""""
-.. automodule:: gamkit.eilers._lingam
+.. automodule:: magli.eilers._lingam
    :members:
 
-.. literalinclude:: ../src/gamkit/eilers/_lingam.py
+.. literalinclude:: ../src/magli/eilers/_lingam.py
    :language: python
    :linenos:
 
 
-.. currentmodule:: gamkit.eilers._gam
+.. currentmodule:: magli.eilers._gam
 
-gamkit.eilers._gam
+magli.eilers._gam
 """""""""""""""""""""""
-.. automodule:: gamkit.eilers._gam
+.. automodule:: magli.eilers._gam
    :members:
    :exclude-members: _set_lams_from_combo, _assemble_penalty_from_bases,
                      _precompute_penalty_bases, _build_matrix_from_terms
 
-.. literalinclude:: ../src/gamkit/eilers/_gam.py
+.. literalinclude:: ../src/magli/eilers/_gam.py
    :language: python
    :linenos:
 
 
-Wood Engine (``gamkit.wood``)
+Wood Engine (``magli.wood``)
 -----------------------------
 
 Python implementation of Simon Wood's GAM methods (Wood 2011, 2017): multiple basis types,
 null-space constraint absorption, and continuous REML / GCV smoothing optimization.
 
-.. currentmodule:: gamkit.wood
+.. currentmodule:: magli.wood
 
 Classes
 ^^^^^^^
@@ -161,58 +163,58 @@ Classes
 Modules
 ^^^^^^^
 
-.. currentmodule:: gamkit.wood._smooths
+.. currentmodule:: magli.wood._smooths
 
-gamkit.wood._smooths
+magli.wood._smooths
 """"""""""""""""""""
-.. automodule:: gamkit.wood._smooths
+.. automodule:: magli.wood._smooths
    :members:
 
-.. literalinclude:: ../src/gamkit/wood/_smooths.py
+.. literalinclude:: ../src/magli/wood/_smooths.py
    :language: python
    :linenos:
 
-.. currentmodule:: gamkit.wood._optimizer
+.. currentmodule:: magli.wood._optimizer
 
-gamkit.wood._optimizer
+magli.wood._optimizer
 """"""""""""""""""""""
-.. automodule:: gamkit.wood._optimizer
+.. automodule:: magli.wood._optimizer
    :members:
 
-.. literalinclude:: ../src/gamkit/wood/_optimizer.py
+.. literalinclude:: ../src/magli/wood/_optimizer.py
    :language: python
    :linenos:
 
-.. currentmodule:: gamkit.wood._terms
+.. currentmodule:: magli.wood._terms
 
-gamkit.wood._terms
+magli.wood._terms
 """"""""""""""""""
-.. automodule:: gamkit.wood._terms
+.. automodule:: magli.wood._terms
    :members:
 
-.. literalinclude:: ../src/gamkit/wood/_terms.py
+.. literalinclude:: ../src/magli/wood/_terms.py
    :language: python
    :linenos:
 
-.. currentmodule:: gamkit.wood._lingam
+.. currentmodule:: magli.wood._lingam
 
-gamkit.wood._lingam
+magli.wood._lingam
 """""""""""""""""""
-.. automodule:: gamkit.wood._lingam
+.. automodule:: magli.wood._lingam
    :members:
 
-.. literalinclude:: ../src/gamkit/wood/_lingam.py
+.. literalinclude:: ../src/magli/wood/_lingam.py
    :language: python
    :linenos:
 
 
-.. currentmodule:: gamkit.wood._gam
+.. currentmodule:: magli.wood._gam
 
-gamkit.wood._gam
+magli.wood._gam
 """"""""""""""""
-.. automodule:: gamkit.wood._gam
+.. automodule:: magli.wood._gam
    :members:
 
-.. literalinclude:: ../src/gamkit/wood/_gam.py
+.. literalinclude:: ../src/magli/wood/_gam.py
    :language: python
    :linenos:

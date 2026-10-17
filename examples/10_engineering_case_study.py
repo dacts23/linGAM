@@ -2,7 +2,7 @@
 Example 10 -- Engineering Case Study: Turbine Blade Life Prediction
 ===================================================================
 
-A realistic engineering workflow demonstrating most gamkit features on
+A realistic engineering workflow demonstrating most magli features on
 simulated turbine blade lifetime data:
 
   * Multi-term formula -- ``s()``, ``te()``, ``f()``, ``l()``
@@ -25,7 +25,7 @@ Close each plot window to advance to the next section.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from gamkit import GAMCore
+from magli import GAMCore
 
 # ------------------------------------------------------------------
 # 1. Generate synthetic engineering data (ground truth known)

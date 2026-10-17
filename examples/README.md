@@ -1,4 +1,4 @@
-# gamkit Examples
+# magli Examples
 
 Self-contained scripts demonstrating the library's features.
 Run any script from this directory:

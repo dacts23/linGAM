@@ -17,7 +17,7 @@ non-linear relationship (y vs x):
 
 import numpy as np
 import matplotlib.pyplot as plt
-from gamkit import LinGAM
+from magli import LinGAM
 
 np.random.seed(42)
 

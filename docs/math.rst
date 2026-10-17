@@ -6,7 +6,7 @@ Mathematical Foundations
 This chapter explains the ideas and numerical principles that make GAMs work —
 not just the equations, but *why* we chose each ingredient and what problem it solves.
 
-gamkit provides two distinct engines that solve the same penalized regression problem with
+magli provides two distinct engines that solve the same penalized regression problem with
 different statistical machinery. The mathematical foundations are organized into four
 self-contained chapters:
 

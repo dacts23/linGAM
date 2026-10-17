@@ -2,7 +2,7 @@
 setlocal EnableDelayedExpansion
 
 echo ==========================================
-echo  gamkit — Build wheel and clean leftovers
+echo  magli — Build wheel and clean leftovers
 echo ==========================================
 echo.
 
@@ -40,10 +40,8 @@ exit /b 0
 
 :clean
 if exist build            rmdir /s /q build
-if exist gamkit.egg-info  rmdir /s /q gamkit.egg-info
-if exist src\gamkit.egg-info rmdir /s /q src\gamkit.egg-info
-if exist linGAM.egg-info  rmdir /s /q linGAM.egg-info
-if exist src\linGAM.egg-info rmdir /s /q src\linGAM.egg-info
+if exist magli.egg-info   rmdir /s /q magli.egg-info
+if exist src\magli.egg-info rmdir /s /q src\magli.egg-info
 for /r %%d in (__pycache__) do if exist "%%d" rmdir /s /q "%%d" 2>nul
 for /r %%f in (*.pyc) do if exist "%%f" del /q "%%f" 2>nul
 exit /b 0

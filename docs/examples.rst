@@ -3,13 +3,13 @@ Examples
 
 This chapter collects end-to-end examples demonstrating common use cases.
 
-Basic regression
-----------------
+Basic regression & residual diagnostics
+---------------------------------------
 
 .. code-block:: python
 
    import numpy as np
-   from gamkit import GAMCore
+   from magli import GAMCore
 
    np.random.seed(42)
    n = 300
@@ -19,7 +19,7 @@ Basic regression
    ])
    y = np.sin(x[:, 0]) + 0.3 * x[:, 1] + np.random.normal(0, 0.2, n)
 
-   model = GAMCore("s(0, n_splines=12) + l(1)")
+   model = GAMCore("s(0, n_splines=12) + l(1)", backend="eilers")
    model.fit(x, y)
 
    print("GCV  =", model.statistics_['GCV'])
@@ -31,7 +31,16 @@ Basic regression
    y_hat = model.predict(x)
    ci = model.confidence_intervals(x)
 
-   fig, axes = model.plot_decomposition(x, y)
+   fig_decomp, axes_decomp = model.plot_decomposition(x, y)
+   fig_diag, axes_diag = model.plot_diagnostics(x, y)
+
+.. figure:: _static/images/diagnostics_panel.png
+   :alt: Four-panel model diagnostics plot (Observed vs Fitted, Residuals vs Fitted, Residual Histogram, and Q-Q Plot)
+   :align: center
+   :width: 92%
+
+   Output of ``model.plot_diagnostics(x, y)``: Observed vs. Fitted values,
+   Residuals vs. Fitted values, Residual Histogram, and Normal Q–Q plot.
 
 
 Grid search with selective terms
@@ -39,7 +48,7 @@ Grid search with selective terms
 
 .. code-block:: python
 
-   model = GAMCore("s(0) + s(1) + te(0, 1)")
+   model = GAMCore("s(0) + s(1) + te(0, 1)", backend="eilers")
    model.gridsearch(
        x, y,
        lam_grids=[np.logspace(-2, 2, 5)],
@@ -70,7 +79,7 @@ Categorical + interaction
        + np.random.normal(0, 0.3, n)
    )
 
-   model = GAMCore("s(0) + l(1) + f(2)")
+   model = GAMCore("s(0) + l(1) + f(2)", backend="eilers")
    model.fit(x, y)
    model.gridsearch(x, y)
 
@@ -86,15 +95,15 @@ Wood backend & summary table
 .. code-block:: python
 
    import numpy as np
-   from gamkit import LinGAM
+   from magli import GAM
 
    np.random.seed(42)
    n = 200
    x = np.linspace(0, 1, n)
    y = np.sin(2 * np.pi * x) + np.random.normal(0, 0.15, n)
 
-   # In Wood backend, lambda (sp) is estimated automatically during fit via REML
-   model = LinGAM(k=10, bs="cr", backend="wood")
+   # In Wood backend (the default), lambda (sp) is estimated automatically via REML
+   model = GAM(k=10, bs="cr", backend="wood")
    model.fit(x, y)
 
    # Formatted summary table (Wood 2013)
@@ -111,7 +120,7 @@ Monotonic dose-response
    dose = np.random.uniform(0, 10, 150)
    response = 5 * (1 - np.exp(-0.4 * dose)) + np.random.normal(0, 0.3, 150)
 
-   model = LinGAM(n_splines=12, constraint='mono_inc')
+   model = GAM(n_splines=12, constraint='mono_inc', backend="eilers")
    model.fit(dose, response)
 
    # Grid search respects the monotonic constraint
@@ -134,7 +143,7 @@ Periodic seasonal pattern
    )
 
    # Periodic constraint encloses the daily cycle
-   model = LinGAM(n_splines=12, constraint='periodic')
+   model = GAM(n_splines=12, constraint='periodic', backend="eilers")
    model.fit(hour, temp)
 
    # Predict across a full day
@@ -143,6 +152,38 @@ Periodic seasonal pattern
 
    # 6 AM and 6 PM should have the same prediction as 30 h and 42 h
    assert np.isclose(model.predict([6]), model.predict([30]), atol=1e-3)
+
+
+Observation weights for outlier resistance
+------------------------------------------
+
+.. code-block:: python
+
+   import numpy as np
+   from magli import GAM
+
+   np.random.seed(42)
+   x = np.linspace(0, 10, 150)
+   y = np.sin(x) + np.random.normal(0, 0.18, len(x))
+   y[[20, 55, 95, 130]] += np.array([3.2, -3.0, 3.4, -2.8])  # sensor spikes
+
+   # Initial fit and MAD-scaled Huber weights
+   m0 = GAM(k=14, bs="cr", backend="wood").fit(x, y)
+   resid = y - m0.predict(x)
+   mad_sigma = 1.4826 * np.median(np.abs(resid - np.median(resid)))
+   u = np.abs(resid) / (mad_sigma + 1e-12)
+   weights = np.where(u <= 1.345, 1.0, 1.345 / u)
+
+   # Refit with observation weights (supported in both backends)
+   m_weighted = GAM(k=14, bs="cr", backend="wood").fit(x, y, weights=weights)
+
+.. figure:: _static/images/observation_weights_outliers.png
+   :alt: Unweighted vs observation-weighted GAM fits in presence of outliers across Eilers-Marx and Wood backends
+   :align: center
+   :width: 96%
+
+   Down-weighting sensor spikes via ``weights=...`` prevents outliers from
+   pulling the smooth curve in both the Eilers-Marx and Wood backends.
 
 
 2-D tensor interaction
@@ -162,7 +203,7 @@ Periodic seasonal pattern
        + np.random.normal(0, 0.3, n)
    )
 
-   model = GAMCore("s(0) + s(1) + te(0, 1, n_splines=6)")
+   model = GAMCore("s(0) + s(1) + te(0, 1, n_splines=6)", backend="eilers")
    model.fit(x, y)
    model.gridsearch(x, y)
 

@@ -1,7 +1,7 @@
-gamkit
-======
+magli
+=====
 
-**Simple Fast Linear GAM** — a high-performance Python implementation of
+**magli (Modelo Aditivo Generalizado Lineal)** — a high-performance Python implementation of
 Generalized Additive Models supporting both **Eilers & Marx (1996)** and **Wood (2011)** backends.
 
 .. toctree::
@@ -17,10 +17,10 @@ Generalized Additive Models supporting both **Eilers & Marx (1996)** and **Wood 
    changelog
 
 
-What is gamkit?
----------------
+What is magli?
+--------------
 
-gamkit fits smooth, additive regression models of the form
+magli fits smooth, additive regression models of the form
 
 .. math::
 
@@ -29,9 +29,18 @@ gamkit fits smooth, additive regression models of the form
 where each :math:`f_j` is a flexible smooth function *learned from data*,
 penalised to avoid overfitting.
 
-The package provides two complementary engines accessible through a single, unified interface:
+.. figure:: _static/images/why_gam_sweet_spot.png
+   :alt: Comparison of linear underfit, unpenalized spline overfit, and penalized GAM smooth
+   :align: center
+   :width: 100%
 
-1. **Wood (2011) Backend** (``backend='wood'``):
+   Penalised GAMs balance model flexibility against smoothness: capturing nonlinear
+   structure without chasing random noise.
+
+The package provides two complementary engines accessible through a single, unified interface
+(:class:`GAM` / :class:`LinGAM` for single-term smooths and :class:`GAMCore` for multi-term formulas):
+
+1. **Wood (2011) Backend** (``backend='wood'``, default):
    Python implementation of Simon Wood's GAM methods (Wood 2011, 2017).
    Supports multiple basis types (``'tp'``, ``'ts'``, ``'cr'``, ``'cs'``, ``'cc'``,
    ``'ps'``, ``'cp'``, ``'bs'``, ``'re'``, ``'te'``), null-space constraint absorption,
@@ -52,8 +61,8 @@ The package supports:
 * **Fast evaluation** — QR decomposition with SVD data-augmentation to avoid squaring condition numbers
 * **Confidence & prediction intervals** — Bayesian posterior covariance and frequentist intervals
 
-When to use gamkit
-^^^^^^^^^^^^^^^^^^
+When to use magli
+^^^^^^^^^^^^^^^^^
 
 * You need more flexibility than linear regression but full interpretability without black-box complexity.
 * You want the exact statistical rigor and bases of Simon Wood's GAM formulation in pure Python.
@@ -69,7 +78,7 @@ Using the **Wood backend** with automatic REML smoothing parameter estimation:
 .. code-block:: python
 
    import numpy as np
-   from gamkit import LinGAM, GAMCore
+   from magli import LinGAM, GAMCore
 
    np.random.seed(42)
    x = np.linspace(0, 1, 200)

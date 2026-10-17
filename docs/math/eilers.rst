@@ -83,8 +83,18 @@ smooth shape you want:
    f(x) = \sum_{j=1}^K \beta_j \, B_j(x).
 
 Each :math:`B_j(x)` is one basis function; :math:`\beta_j` is how tall
-you make it; :math:`K` is how many bricks you use (``n_splines`` in the
+you make it; :math:`K` is how many bricks you use (``n_splines`` or ``k`` in the
 API).
+
+.. figure:: ../_static/images/eilers_bspline_decomposition.png
+   :alt: B-spline basis functions, estimated coefficients, and weighted basis sum
+   :align: center
+   :width: 100%
+
+   Single-term ``LinGAM.plot_decomposition`` (Eilers-Marx backend): **(left)** uniform cubic
+   B-spline basis bumps :math:`B_j(x)` and interior knots, **(middle)** estimated coefficients
+   :math:`\hat\beta_j` and intercept, **(right)** scaled basis functions :math:`\hat\beta_j B_j(x) + \hat\beta_0`
+   summing to the fitted curve.
 
 **The De Boor recursion.**  A B-spline of polynomial degree :math:`k`
 (order :math:`k+1`, ``spline_order=k`` in the API) is built recursively.
@@ -124,7 +134,7 @@ is an :math:`n \times K` design matrix :math:`B`.  Each row sums to 1 (the
 bricks tile the space) and each column has compact support (localised
 bumps).
 
-**Why cubic?**  gamkit defaults to ``spline_order=3``, which the recursion
+**Why cubic?**  magli defaults to ``spline_order=3``, which the recursion
 above turns into basis functions of order :math:`k+1 = 4` — cubic
 polynomials, degree 3.  Cubic is the lowest degree that gives *continuous
 second derivatives* — the curve looks smooth to the human eye.  Lower
@@ -133,7 +143,7 @@ benefit.
 
 **Linear extrapolation.**  Outside :math:`[0,1]`, B-splines can oscillate
 or collapse to zero — not useful for prediction beyond the training range.
-gamkit replaces the B-spline values with a linear extension using the
+magli replaces the B-spline values with a linear extension using the
 boundary derivative:
 
 .. math::
@@ -182,8 +192,19 @@ punishes certain patterns in the coefficients.  The smoothing parameter
   basis allows.  Equivalent to unpenalised regression.
 * :math:`\lambda \to \infty`: infinite penalty — the curve is forced to
   be as smooth as possible (a straight line for second-difference penalties).
-* :math:`0 < \lambda < \infty`: a balance.  gamkit uses grid search to
+* :math:`0 < \lambda < \infty`: a balance.  magli uses grid search to
   find the :math:`\lambda` that minimises GCV.
+
+.. figure:: ../_static/images/penalty_lambda_effect.png
+   :alt: Effect of smoothing parameter lambda on weighted B-splines and fitted curve
+   :align: center
+   :width: 100%
+
+   How :math:`\lambda` shapes the fit (:math:`K = 22`): **(left)** weak penalty
+   (:math:`\lambda = 10^{-5}`) lets adjacent B-splines oscillate to chase noise;
+   **(middle)** GCV-optimal :math:`\lambda` balances smoothness and fidelity;
+   **(right)** strong penalty (:math:`\lambda = 10^4`) forces the second differences
+   to zero, collapsing the curve onto its linear null space (:math:`\text{EDF} \approx 2`).
 
 **What each penalty does to the curve:**
 
@@ -275,15 +296,15 @@ error.
    \begin{pmatrix} X \\ E \end{pmatrix} \boldsymbol{\beta}
    \approx \begin{pmatrix} \mathbf{y} \\ \mathbf{0} \end{pmatrix},
 
-where :math:`E` satisfies :math:`E^\top E = P + \varepsilon I` (a tiny
-ridge :math:`\varepsilon` ensures :math:`P` is positive definite even
-when :math:`\lambda = 0`; in the code :math:`E` is the transposed
-Cholesky factor of :math:`P + \varepsilon I`).  The top block says "fit
-the actual data."  The bottom block says "keep the coefficients small in
-the penalised directions."
+where :math:`E` satisfies :math:`E^\top E = P + \sqrt{\varepsilon}\, I` (a tiny
+ridge :math:`\sqrt{\varepsilon}` with machine epsilon :math:`\varepsilon` ensures
+positive definiteness even when :math:`\lambda = 0`; in ``solve_pirls`` :math:`E`
+is the transposed Cholesky factor of :math:`P + \sqrt{\varepsilon}\, I`).  The top
+block says "fit the actual data."  The bottom block says "keep the coefficients
+small in the penalised directions."
 
 Solving this augmented system is equivalent to the penalised normal
-equations, but **never forms** :math:`X^\top X`.  Instead, gamkit uses:
+equations, but **never forms** :math:`X^\top X`.  Instead, magli uses:
 
 1. **QR decomposition** of :math:`X = QR`.  :math:`R` is small
    (:math:`m \times m`, where :math:`m = \sum K_j + 1`), so subsequent
@@ -413,9 +434,19 @@ EDF is small (simple model), the denominator is large → GCV is small →
 good.  When EDF grows, the denominator shrinks → GCV explodes → bad,
 *unless* the extra complexity reduces RSS enough to compensate.
 
+.. figure:: ../_static/images/gcv_curve_and_edf.png
+   :alt: GCV score curve vs smoothing parameter lambda alongside EDF and RSS
+   :align: center
+   :width: 100%
+
+   **(a)** The GCV score attains a minimum at :math:`\lambda^*` where the reduction in
+   RSS no longer justifies the complexity penalty :math:`(n - \gamma\cdot\text{EDF})^{-2}`.
+   **(b)** As :math:`\lambda` increases, EDF decreases smoothly toward the null-space
+   dimension while RSS increases monotonically.
+
 **Why GCV and not plain CV?**  GCV is asymptotically equivalent to LOOCV
 but computes in :math:`O(1)` extra time after a single fit.  It's the
-reason gamkit's grid search can evaluate thousands of hyperparameter
+reason magli's grid search can evaluate thousands of hyperparameter
 combinations in seconds rather than minutes.
 
 **Interpreting GCV values:**
@@ -588,7 +619,7 @@ Grid search evaluates every combination of :math:`K` (``n_splines``) and
 :math:`\lambda` (``lam``) candidates.  A naïve implementation would rebuild
 :math:`X` and solve from scratch for each combination — prohibitively slow.
 
-gamkit's fast path splits the work into two phases:
+magli's fast path splits the work into two phases:
 
 **Phase 1 — Precompute per** :math:`\boldsymbol{K}` **(threaded).**
 For each candidate basis count :math:`K`:
@@ -648,12 +679,22 @@ least-squares objective:
    = \|\mathbf{W}^{1/2}(\mathbf{y} - X\boldsymbol{\beta})\|^2
    + \boldsymbol{\beta}^\top P \boldsymbol{\beta}.
 
-Numerically, gamkit pre-multiplies each row of :math:`X` and each
+Numerically, magli pre-multiplies each row of :math:`X` and each
 element of :math:`\mathbf{y}` by :math:`\sqrt{w_i}` before calling the
 standard solver.  This supports:
 
 - **Precision / inverse-variance weighting** (:math:`w_i = 1 / \sigma_i^2`)
   for heteroskedastic measurements.
 - **Frequency / replicate weights** for grouped observations.
-- **Outlier down-weighting** by assigning small weights to flagged sensor
-  glitches or running user-level iteratively reweighted least squares.
+- **Outlier down-weighting** by assigning small weights (e.g. single-pass
+  MAD-scaled Huber or Tukey biweight weights) to flagged sensor glitches.
+
+.. figure:: ../_static/images/observation_weights_outliers.png
+   :alt: Observation weights down-weighting gross outliers in both Eilers-Marx and Wood backends
+   :align: center
+   :width: 100%
+
+   Passing MAD-scaled Huber or Tukey biweight observation ``weights`` to ``fit()``
+   prevents gross sensor outliers (red crosses) from distorting the smooth curve in
+   both the Eilers-Marx and Wood backends.
+

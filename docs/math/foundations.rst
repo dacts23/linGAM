@@ -38,6 +38,15 @@ This is the central tradeoff of statistical modelling:
   GAMs sit in the sweet spot: flexible enough to fit nonlinear patterns,
   interpretable enough that each term is a plot you can show to a colleague.
 
+.. figure:: ../_static/images/why_gam_sweet_spot.png
+   :alt: Underfitting linear regression vs overfitting unpenalized spline vs penalized GAM
+   :align: center
+   :width: 100%
+
+   **(a)** Ordinary linear regression underfits nonlinear curves. **(b)** An unpenalised
+   high-capacity spline chases noise (:math:`\text{EDF} = 28`). **(c)** A penalised GAM
+   recovers the underlying curve with calibrated 95% confidence and prediction intervals.
+
 When you call ``model.plot_decomposition(x, y)``, what you see is the
 **decomposition** of the prediction into independent pieces:
 
@@ -55,7 +64,7 @@ the model is additive, the pieces are independent: changing :math:`x_1`
 only affects :math:`f_1(x_1)`, not :math:`f_2(x_2)`.  This is the property
 that makes GAMs **interpretable** where black-box models are not.
 
-Both gamkit backends fit exactly this model.  Where they differ is *how*:
+Both magli backends fit exactly this model.  Where they differ is *how*:
 how each :math:`f_j` is represented, how the smoothness penalty is built,
 how the smoothing parameter is chosen, and how uncertainty is reported.
 Part II and Part III cover those differences; the shared philosophy is the
@@ -81,6 +90,14 @@ The defining feature of GAMs is that predictions decompose additively:
 Each :math:`\hat f_j` is a *partial dependence function* — it shows how the
 prediction changes when you vary :math:`x_j` while holding everything else
 fixed (usually at the median).  This is the "all else equal" effect.
+
+.. figure:: ../_static/images/gamcore_decomposition.png
+   :alt: GAMCore additive decomposition across s(), te(), f(), and l() terms
+   :align: center
+   :width: 100%
+
+   Example ``GAMCore.plot_decomposition`` grid for ``s(0) + te(0, 1) + f(2) + l(3)``:
+   overall fit at the top, followed by each term's isolated partial dependence.
 
 **The plot_decomposition grid.**  When you call
 ``model.plot_decomposition(x, y)``, you see:
