@@ -1,6 +1,14 @@
 Changelog
 =========
 
+Version 0.3.1
+-------------
+*Released 2026-10-17*
+
+* Updated documentation styling and replaced em dashes across all guides and examples.
+* Added comparative overview with R mgcv and pygam.
+* Enhanced package keywords, canonical metadata, and repository discoverability.
+
 Version 0.3.0
 -------------
 *Released 2026-10-15*

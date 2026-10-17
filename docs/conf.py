@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.abspath('../src'))
 project = 'magli'
 copyright = '2026, David Ávila Cortés'
 author = 'David Ávila Cortés'
-release = '0.3.0'
+release = '0.3.1'
 version = '0.3'
 
 extensions = [
