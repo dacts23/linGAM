@@ -1,5 +1,5 @@
 """
-Example 03 — Observation Weights (Huber & Tukey) for Outlier Resistance
+Example 03  -  Observation Weights (Huber & Tukey) for Outlier Resistance
 =======================================================================
 
 Compute observation ``weights`` beforehand in a single pass using a

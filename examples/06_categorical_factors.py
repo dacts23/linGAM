@@ -1,5 +1,5 @@
 """
-Example 06 — Categorical Factors
+Example 06  -  Categorical Factors
 ================================
 
 Include a categorical variable with a factor term ``f()``.
@@ -48,7 +48,7 @@ plt.show()
 # --- Backend comparison: Eilers-Marx vs Wood (side-by-side) ---
 # Same s() + f() formula on both backends. Note the defaults differ: Eilers-Marx
 # one-hot encodes f() with a ridge penalty, Wood dummy-encodes it as an
-# unpenalised parametric factor — same fit, different parametrisation.
+# unpenalised parametric factor  -  same fit, different parametrisation.
 wood_model = GAMCore("s(0) + f(1)", backend="wood")
 wood_model.fit(x, y)
 print("\n--- Backend comparison: Eilers-Marx (GCV grid search) vs Wood (REML) ---")
@@ -59,7 +59,7 @@ print(f"{'R^2':<18}{model.deviance_explained():>12.4f}{wood_model.deviance_expla
 
 # --- Same-plot overlay: centered s(0) partial dependence from both backends ---
 # (Centered first: the backends split intercept/level differently, so only
-# the shape is comparable — same convention as the numeric check in 09.)
+# the shape is comparable  -  same convention as the numeric check in 09.)
 x_sweep = np.tile(np.median(x, axis=0), (200, 1))
 x_sweep[:, 0] = np.linspace(x[:, 0].min(), x[:, 0].max(), 200)
 pdep_em = model.partial_dependence(0, x_sweep)

@@ -1,4 +1,4 @@
-"""Single-term penalised GAM — LinGAM class (Wood backend)."""
+"""Single-term penalised GAM: LinGAM class (Wood backend)."""
 
 from __future__ import annotations
 

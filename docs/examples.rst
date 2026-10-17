@@ -40,7 +40,7 @@ Basic regression & residual diagnostics
    :width: 92%
 
    Output of ``model.plot_diagnostics(x, y)``: Observed vs. Fitted values,
-   Residuals vs. Fitted values, Residual Histogram, and Normal Q–Q plot.
+   Residuals vs. Fitted values, Residual Histogram, and Normal Q-Q plot.
 
 
 Grid search with selective terms

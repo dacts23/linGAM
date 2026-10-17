@@ -177,7 +177,7 @@ class _GAMBase:
         return float(max(0.0, 1.0 - self.statistics_["rss"] / null_dev))
 
     def _diagnostics_title(self) -> str:
-        return f"{type(self).__name__} Diagnostics — {self.formula}"
+        return f"{type(self).__name__} Diagnostics: {self.formula}"
 
     def _overall_plot_title(self) -> str:
         s = self.statistics_
@@ -371,7 +371,7 @@ class _GAMBase:
                 )
 
         fig.suptitle(
-            f"GAMCore Decomposition — {self.formula}",
+            f"GAMCore Decomposition: {self.formula}",
             fontsize=12,
             fontweight="bold",
         )

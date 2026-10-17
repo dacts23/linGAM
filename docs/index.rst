@@ -1,7 +1,7 @@
 magli
 =====
 
-**magli (Modelo Aditivo Generalizado Lineal)** — a high-performance Python implementation of
+**magli (Modelo Aditivo Generalizado Lineal)**: a high-performance Python implementation of
 Generalized Additive Models supporting both **Eilers & Marx (1996)** and **Wood (2011)** backends.
 
 .. toctree::
@@ -53,13 +53,13 @@ The package provides two complementary engines accessible through a single, unif
 
 The package supports:
 
-* **Univariate splines** ``s()`` — smooth nonlinear trends
-* **Tensor-product interactions** ``te()`` — multidimensional interactions
-* **Categorical factors** ``f()`` — dummy / one-hot coding
-* **Linear terms** ``l()`` — parametric linear effects
-* **Shape constraints** — monotonicity, convexity, concavity, periodicity
-* **Fast evaluation** — QR decomposition with SVD data-augmentation to avoid squaring condition numbers
-* **Confidence & prediction intervals** — Bayesian posterior covariance and frequentist intervals
+* **Univariate splines** ``s()``: smooth nonlinear trends
+* **Tensor-product interactions** ``te()``: multidimensional interactions
+* **Categorical factors** ``f()``: dummy / one-hot coding
+* **Linear terms** ``l()``: parametric linear effects
+* **Shape constraints**: monotonicity, convexity, concavity, periodicity
+* **Fast evaluation**: QR decomposition with SVD data-augmentation to avoid squaring condition numbers
+* **Confidence & prediction intervals**: Bayesian posterior covariance and frequentist intervals
 
 When to use magli
 ^^^^^^^^^^^^^^^^^
@@ -67,7 +67,7 @@ When to use magli
 * You need more flexibility than linear regression but full interpretability without black-box complexity.
 * You want the exact statistical rigor and bases of Simon Wood's GAM formulation in pure Python.
 * You have domain constraints (monotonic, concave, periodic) to enforce on model components.
-* You need to *explain* predictions to domain experts — each term produces a component plot.
+* You need to *explain* predictions to domain experts: each term produces a component plot.
 
 
 Quick example

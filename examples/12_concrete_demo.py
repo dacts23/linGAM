@@ -1,4 +1,4 @@
-"""Demo for magli — concrete compressive strength GAM."""
+"""Demo for magli  -  concrete compressive strength GAM."""
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,7 +9,7 @@ from magli.eilers._terms import _FactorTerm, _LinearTerm, _SplineTerm, _TensorTe
 
 def _concrete_demo():
     print("=" * 72)
-    print("  GAMCore — Concrete Compressive Strength GAM")
+    print("  GAMCore  -  Concrete Compressive Strength GAM")
     print("=" * 72)
 
     np.random.seed(42)

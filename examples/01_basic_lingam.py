@@ -1,5 +1,5 @@
 """
-Example 01 — Basic LinGAM
+Example 01  -  Basic LinGAM
 =========================
 
 Single smooth term with automatic GCV grid search.
@@ -42,7 +42,7 @@ ax.fill_between(x_grid, ci[:, 0], ci[:, 1], color='blue', alpha=0.15, label='95%
 ax.fill_between(x_grid, pi[:, 0], pi[:, 1], color='blue', alpha=0.05, label='95% PI')
 ax.set_xlabel('x')
 ax.set_ylabel('y')
-ax.set_title('LinGAM — Basic Fit with Intervals')
+ax.set_title('LinGAM  -  Basic Fit with Intervals')
 ax.legend(loc='upper right')
 fig.tight_layout()
 plt.show()

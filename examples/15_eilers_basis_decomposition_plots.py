@@ -1,5 +1,5 @@
 """
-Example 15 — Eilers-Marx Backend: y vs x Basis Decomposition & Visualizations
+Example 15  -  Eilers-Marx Backend: y vs x Basis Decomposition & Visualizations
 =============================================================================
 
 Comprehensive demonstration of the Eilers-Marx (1996) P-spline backend
@@ -217,7 +217,7 @@ fig5.suptitle("Plot 5: Shape-Constrained Eilers-Marx LinGAM Fits", fontsize=13, 
 fig5.tight_layout()
 plt.show()
 
-# ── 8. Plot 6: Visual Basis Comparison — Eilers-Marx vs Wood ──────────────────
+# ── 8. Plot 6: Visual Basis Comparison  -  Eilers-Marx vs Wood ──────────────────
 # Direct visual comparison addressing why B-splines look uniform while Wood bases look wavy:
 # - Eilers-Marx: raw B-splines are localized, uniform positive bumps (sum_j B_j(x) = 1)
 # - Wood: QR null-space projection (Z matrix) absorbs sum-to-zero, forcing wavy zero-mean modes
@@ -274,7 +274,7 @@ ax8.plot(x_grid, model.predict(x_grid), "b-", lw=2, label=f"Eilers-Marx (EDF={mo
 ax8.plot(x_grid, wood_model.predict(x_grid), "r-.", lw=2, label=f"Wood (EDF={wood_model.statistics_['edof']:.2f})")
 ax8.set_xlabel("x")
 ax8.set_ylabel("y")
-ax8.set_title("Plot 8: Backend Overlay — Eilers-Marx vs Wood", fontsize=12, fontweight="bold")
+ax8.set_title("Plot 8: Backend Overlay  -  Eilers-Marx vs Wood", fontsize=12, fontweight="bold")
 ax8.grid(True, linestyle=":", alpha=0.5)
 ax8.legend(loc="upper right")
 fig8.tight_layout()

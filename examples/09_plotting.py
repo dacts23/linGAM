@@ -1,5 +1,5 @@
 """
-Example 09 — Plotting & Partial Dependence
+Example 09  -  Plotting & Partial Dependence
 ===========================================
 
 Visualise term contributions with partial_dependence and

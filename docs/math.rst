@@ -3,7 +3,7 @@
 Mathematical Foundations
 ========================
 
-This chapter explains the ideas and numerical principles that make GAMs work —
+This chapter explains the ideas and numerical principles that make GAMs work:
 not just the equations, but *why* we chose each ingredient and what problem it solves.
 
 magli provides two distinct engines that solve the same penalized regression problem with

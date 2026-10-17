@@ -1,6 +1,6 @@
-# magli
+# magli: Generalized Additive Models (GAMs) in Python
 
-**magli (Modelo Aditivo Generalizado Lineal)** — Modern Pythonic Generalized Additive Models (GAMs) based on classical statistical literature. It supports both single-term smooths (`GAM` / `LinGAM`) and multi-term formula-based models (`GAMCore`) with automatic hyperparameter tuning.
+**magli (Modelo Aditivo Generalizado Lineal)**: Modern Pythonic Generalized Additive Models (GAMs) based on classical statistical literature. It supports both single-term smooths (`GAM` / `LinGAM`) and multi-term formula-based models (`GAMCore`) with automatic hyperparameter tuning.
 
 > **Full documentation:** [https://dacts23.github.io/magli/](https://dacts23.github.io/magli/)
 
@@ -25,14 +25,14 @@
 
 ## Features
 
-- **Dual backend engines** — choose between `wood` (Wood 2011) and `eilers` (Eilers & Marx 1996)
-- **Automatic hyperparameter tuning** — continuous REML/GCV optimization or cached QR+Cholesky GCV grid search
-- **Rich basis suite** — thin plate splines, cubic regression splines, cyclic cubic splines, P-splines, B-splines, random effects
-- **Tensor-product interactions** — multidimensional smooths (`te`) with Kronecker sum penalties
-- **Shape constraints** — monotonic increasing/decreasing, convex, concave, and periodic
-- **Observation weights** — prior precision or frequency weights (`weights=...`) in `fit()` and `gridsearch()`
-- **Uncertainty quantification** — Bayesian posterior covariance and frequentist confidence/prediction intervals
-- **Summary tables** — parametric coefficients, EDF, approximate F-statistics, and p-values (Wood 2013)
+- **Dual backend engines**: choose between `wood` (Wood 2011) and `eilers` (Eilers & Marx 1996)
+- **Automatic hyperparameter tuning**: continuous REML/GCV optimization or cached QR+Cholesky GCV grid search
+- **Rich basis suite**: thin plate splines, cubic regression splines, cyclic cubic splines, P-splines, B-splines, random effects
+- **Tensor-product interactions**: multidimensional smooths (`te`) with Kronecker sum penalties
+- **Shape constraints**: monotonic increasing/decreasing, convex, concave, and periodic
+- **Observation weights**: prior precision or frequency weights (`weights=...`) in `fit()` and `gridsearch()`
+- **Uncertainty quantification**: Bayesian posterior covariance and frequentist confidence/prediction intervals
+- **Summary tables**: parametric coefficients, EDF, approximate F-statistics, and p-values (Wood 2013)
 
 ---
 
@@ -140,17 +140,17 @@ Full documentation, mathematical foundations, and end-to-end tutorials are avail
 
 ### [→ https://dacts23.github.io/magli/](https://dacts23.github.io/magli/)
 
-- **[Quick Start](https://dacts23.github.io/magli/quickstart.html)** — installation and basic workflows
-- **[Mathematical Foundations](https://dacts23.github.io/magli/math.html)** — theory behind both engines:
+- **[Quick Start](https://dacts23.github.io/magli/quickstart.html)**: installation and basic workflows
+- **[Mathematical Foundations](https://dacts23.github.io/magli/math.html)**: theory behind both engines:
   - *Part I:* [Shared Foundations & Additive Decomposition](https://dacts23.github.io/magli/math/foundations.html)
   - *Part II:* [Eilers & Marx B-Splines, Penalties, & SVD Solver](https://dacts23.github.io/magli/math/eilers.html)
   - *Part III:* [Wood Basis Suite, Identifiability, & REML Optimization](https://dacts23.github.io/magli/math/wood.html)
   - *Part IV:* [Side-by-Side Comparison & Engine Selection](https://dacts23.github.io/magli/math/comparison.html)
-- **[Shape Constraints](https://dacts23.github.io/magli/constraints.html)** — monotonic, convex, concave, and periodic splines
-- **[Smoothing Optimization](https://dacts23.github.io/magli/gridsearch.html)** — continuous REML and discrete GCV grid search
-- **[Examples & Case Studies](https://dacts23.github.io/magli/examples.html)** — worked examples across diverse problems
-- **[API Reference](https://dacts23.github.io/magli/api.html)** — full class and method documentation
-- **[Changelog](https://dacts23.github.io/magli/changelog.html)** — release history and version notes
+- **[Shape Constraints](https://dacts23.github.io/magli/constraints.html)**: monotonic, convex, concave, and periodic splines
+- **[Smoothing Optimization](https://dacts23.github.io/magli/gridsearch.html)**: continuous REML and discrete GCV grid search
+- **[Examples & Case Studies](https://dacts23.github.io/magli/examples.html)**: worked examples across diverse problems
+- **[API Reference](https://dacts23.github.io/magli/api.html)**: full class and method documentation
+- **[Changelog](https://dacts23.github.io/magli/changelog.html)**: release history and version notes
 
 ---
 

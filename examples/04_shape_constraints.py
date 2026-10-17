@@ -1,5 +1,5 @@
 """
-Example 04 — Shape Constraints
+Example 04  -  Shape Constraints
 ==============================
 
 Demonstrate soft shape constraints on a single smooth term:
@@ -48,7 +48,7 @@ print(f"Periodic EDF : {model_per.statistics_['edof']:.2f}")
 print(f"Convex   EDF : {model_cvx.statistics_['edof']:.2f}")
 print(f"Concave  EDF : {model_ccv.statistics_['edof']:.2f}")
 
-# Verify periodic wrap-around (soft constraint — approximate equality)
+# Verify periodic wrap-around (soft constraint  -  approximate equality)
 print(f"predict(6)  = {model_per.predict([6])[0]:.4f}")
 print(f"predict(30) = {model_per.predict([30])[0]:.4f}")
 print(f"diff        = {abs(model_per.predict([6])[0] - model_per.predict([30])[0]):.4f}")
@@ -84,7 +84,7 @@ plt.show()
 # Soft shape constraints (mono_inc/mono_dec/convex/concave) are an Eilers-Marx-backend
 # feature; the Wood backend natively supports only the periodic constraint
 # (cyclic cubic splines, bs='cc'). So only the seasonal model has a Wood
-# counterpart — it should match the Eilers-Marx periodic fit up to basis differences.
+# counterpart  -  it should match the Eilers-Marx periodic fit up to basis differences.
 wood_per = LinGAM(k=14, bs="cc", backend="wood")
 wood_per.fit(hour, temp)
 print("\n--- Backend comparison: periodic fit on both backends ---")
@@ -94,7 +94,7 @@ print(f"{'RSS':<18}{model_per.statistics_['rss']:>22.4f}{wood_per.statistics_['r
 print(f"{'R^2':<18}{model_per.deviance_explained():>22.4f}{wood_per.deviance_explained():>12.4f}")
 print(f"Eilers-Marx wrap diff |f(6)-f(30)|  = {abs(model_per.predict([6])[0] - model_per.predict([30])[0]):.4f}")
 print(f"Wood        wrap diff |f(6)-f(30)|  = {abs(wood_per.predict([6])[0] - wood_per.predict([30])[0]):.4f}")
-print("(mono_inc/mono_dec/convex/concave have no Wood equivalent — Eilers-Marx-only.)")
+print("(mono_inc/mono_dec/convex/concave have no Wood equivalent  -  Eilers-Marx-only.)")
 
 # --- Same-plot overlay: periodic fits from both backends ---
 hour_grid = np.linspace(0, 48, 500)

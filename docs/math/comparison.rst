@@ -1,6 +1,6 @@
 .. _part-comparison:
 
-Part IV — Backends compared
+Part IV: Backends Compared
 ===========================
 
 .. _section-backends-compared:
@@ -47,7 +47,7 @@ the differences; the subsections after it explain the ones that matter.
      - t-based CI/PI, df :math:`= n - \text{EDF}`
      - t-based on :math:`V_p` (plus :math:`\hat\sigma^2` for PI), df :math:`= n - \text{EDF}`
    * - Term significance
-     - None — compare GCV scores between models
+     - None (compare GCV scores between models)
      - Wood (2013) approximate F-tests with p-values
    * - Model metrics
      - GCV, AIC, BIC, log-likelihood, deviance explained
@@ -81,16 +81,16 @@ the differences; the subsections after it explain the ones that matter.
 :math:`\|\mathbf{y} - X\boldsymbol{\beta}\|^2 +
 \boldsymbol{\beta}^\top S_\lambda \boldsymbol{\beta}`.  The difference is
 only *which* :math:`\lambda` you evaluate.  Grid search is deterministic,
-embarrassingly parallel, and gives you the whole GCV surface to inspect —
+embarrassingly parallel, and gives you the whole GCV surface to inspect.
 but its resolution is limited to the grid, and cost grows multiplicatively
 with the number of terms (each term adds a dimension to the grid).
 Optimisation is adaptive (it spends evaluations near the minimum), handles
 many :math:`\lambda` values gracefully, and lands on the continuous
-optimum — but it converges to *local* minima, and REML's surface is
+optimum; however, it converges to *local* minima, and REML's surface is
 usually (though not always) nicer than GCV's.
 
 **Numerics.**  The SVD solver is the more robust of the two across the
-full :math:`\lambda` range — it never squares a condition number and it
+full :math:`\lambda` range: it never squares a condition number, and it
 degrades gracefully at :math:`\lambda \to 0`.  The Cholesky path is
 faster per solve (:math:`m^3/3` vs :math:`\sim m^3`) and is protected by
 the penalty itself, which keeps :math:`R^\top R + S_\lambda` positive
@@ -100,14 +100,14 @@ data the SVD path is the safer bet.
 
 **Inference.**  This is where the backends diverge most for the user.
 The Eilers-Marx backend reports GCV and (t-based, frequentist) intervals and
-stops there — model selection is by comparing GCV between fits.  The Wood
+stops there; model selection is by comparing GCV between fits.  The Wood
 backend adds a Bayesian covariance, per-term p-values, AIC/BIC and an
 interpretable summary.  If you need "is this term significant?" or "which of
 these models should I report?", the Wood backend answers directly.
 
 **Constraints.**  Conversely, the Eilers-Marx backend owns soft shape
 constraints (monotonic/convex/concave pushes) that the Wood backend does
-not.  If physics demands a monotone dose–response, the Eilers-Marx backend
+not.  If physics demands a monotone dose-response, the Eilers-Marx backend
 is the one with the knob.  Both handle periodicity, differently: the
 Eilers-Marx backend wraps its basis *and* uses a circular difference
 penalty; the Wood backend uses a purpose-built cyclic cubic or cyclic
@@ -117,7 +117,7 @@ P-spline basis.
 is effectively instant; its cost grows with the product of grid sizes and
 the number of :math:`\lambda` slots, which is why the two-phase
 QR-caching matters.  The Wood backend's cost is dominated by the
-optimiser: typically 10–100 objective evaluations, each one Cholesky —
+optimiser: typically 10-100 objective evaluations, each one Cholesky.
 flat in the number of grid points, but sequential.  In practice: Eilers-Marx
 wins for sweeping many configurations; Wood wins for a single
 many-termed fit with automatically tuned :math:`\lambda` per term.
@@ -126,8 +126,7 @@ many-termed fit with automatically tuned :math:`\lambda` per term.
 *"which of these :math:`\lambda` candidates predicts best out of
 sample?"* (GCV over a grid); the Wood backend asks *"which
 :math:`\lambda` makes the data most likely under a smoothness prior?"*
-(REML over a continuous parameter).  Everything else — bases, solvers,
-covariances — follows from that choice of question.
+(REML over a continuous parameter).  Everything else (bases, solvers, covariances) follows from that choice of question.
 
 .. _section-backends-choose:
 
@@ -150,7 +149,7 @@ Which backend should I use?
 When in doubt, fit both and compare: the decomposition plots and the
 fitted curves should agree on the data's shape even where the p-values and
 :math:`\lambda` philosophies differ.  Disagreement between the two engines
-on the same data is a signal worth investigating — usually it means
+on the same data is a signal worth investigating; usually it means
 under-smoothing by GCV or a basis count too small for the grid being searched.
 
 
@@ -183,7 +182,7 @@ Key takeaways
    * - QR + Cholesky (Wood)
      - Compact, fast solves; :math:`\log|H|` and EDF fall out of the Cholesky factor
    * - Basis zoo (Wood)
-     - tp/ts, cr/cs, cc, ps, re — different penalties and null spaces for different jobs
+     - tp/ts, cr/cs, cc, ps, re: different penalties and null spaces for different jobs
    * - Sum-to-zero (Wood)
      - Absorbed into the basis, so every smooth is centred by construction
    * - Wood F-tests (Wood)

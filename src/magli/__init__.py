@@ -1,4 +1,4 @@
-"""magli (Modelo Aditivo Generalizado Lineal) — Pythonic Generalized Additive Models (GAMs) with Wood and Eilers backends."""
+"""magli (Modelo Aditivo Generalizado Lineal): Pythonic Generalized Additive Models (GAMs) with Wood and Eilers backends."""
 
 from . import eilers, wood
 from .eilers import GAMCore as EilersGAMCore, LinGAM as EilersLinGAM

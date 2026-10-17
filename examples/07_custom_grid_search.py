@@ -1,5 +1,5 @@
 """
-Example 07 — Custom Grid Search
+Example 07  -  Custom Grid Search
 ================================
 
 Restrict grid search to specific terms and supply custom candidate grids.
@@ -40,17 +40,17 @@ print("\n--- Search all 's' terms ---")
 model.gridsearch(x, y, search_terms=['s'])
 print(f"GCV : {model.statistics_['GCV']:.4f}")
 
-# 3. Custom grids — coarse lambda, fine n_splines
+# 3. Custom grids  -  coarse lambda, fine n_splines
 print("\n--- Custom grids ---")
 model.gridsearch(
     x, y,
     lam_grids=[
-        np.logspace(-2, 1, 4),   # s(0) — 4 lambdas
+        np.logspace(-2, 1, 4),   # s(0)  -  4 lambdas
         np.logspace(-2, 1, 4),   # s(1)
-        np.array([0.0]),          # l(2) — fixed
+        np.array([0.0]),          # l(2)  -  fixed
     ],
     n_splines_grids=[
-        np.arange(6, 16, 2),     # s(0) — 5 values
+        np.arange(6, 16, 2),     # s(0)  -  5 values
         np.arange(6, 16, 2),     # s(1)
     ],
 )

@@ -1,6 +1,6 @@
 .. _part-eilers:
 
-Part II — The Eilers & Marx backend
+Part II: The Eilers & Marx Backend
 ===================================
 
 .. _section-eilers-design:
@@ -32,7 +32,7 @@ The whole pipeline is:
 Each step is a section below.  The design bets on three ideas:
 
 1. **Uniform B-splines are good enough.**  A cubic B-spline with
-   10–20 basis functions can approximate almost any smooth engineering
+   10-20 basis functions can approximate almost any smooth engineering
    relationship; the exact knot placement rarely matters at that
    resolution.
 2. **Grid search is honest.**  Instead of optimising :math:`\lambda`
@@ -48,7 +48,7 @@ Identifiability in this backend is *implicit*: the intercept column is
 unpenalised and absorbs the overall level, and each penalty leaves its own
 null space (constant and linear trends for the default penalty) uncharged,
 so the decomposition into intercept + smooths is well defined in practice.
-There is no explicit centering constraint — a deliberate simplification we
+There is no explicit centering constraint, a deliberate simplification we
 compare against Wood's approach later.
 
 .. _section-bsplines:
@@ -62,7 +62,7 @@ way to represent it mathematically.
 **Why not just use a high-degree polynomial?**  A degree-20 polynomial can
 wiggle a lot, but when you fit it to data every point in one corner of the
 plot affects the curve *everywhere*.  You get wild oscillations (Runge's
-phenomenon).  Polynomials are globally coupled — change one coefficient and
+phenomenon).  Polynomials are globally coupled: change one coefficient and
 everything changes.
 
 **The key insight of B-splines**: build the curve from *localised* building
@@ -71,7 +71,7 @@ Adjusting a block only changes the curve in its neighbourhood, not across
 the whole domain.  This is called **compact support**.
 
 Think of LEGO bricks.  A long, curved wall isn't built from one flexible
-piece — it's built from many small, rigid bricks each responsible for a
+piece: it is built from many small, rigid bricks each responsible for a
 tiny segment.  The bricks overlap slightly at the edges for smoothness.
 B-spline basis functions are the mathematical equivalent: each one is a
 smooth "bump" that covers a few neighbouring data points.  When you stack
@@ -135,14 +135,14 @@ bricks tile the space) and each column has compact support (localised
 bumps).
 
 **Why cubic?**  magli defaults to ``spline_order=3``, which the recursion
-above turns into basis functions of order :math:`k+1 = 4` — cubic
+above turns into basis functions of order :math:`k+1 = 4`: cubic
 polynomials, degree 3.  Cubic is the lowest degree that gives *continuous
-second derivatives* — the curve looks smooth to the human eye.  Lower
+second derivatives*, so the curve looks smooth to the human eye.  Lower
 orders look jagged; higher orders increase computation without visible
 benefit.
 
 **Linear extrapolation.**  Outside :math:`[0,1]`, B-splines can oscillate
-or collapse to zero — not useful for prediction beyond the training range.
+or collapse to zero, which is not useful for prediction beyond the training range.
 magli replaces the B-spline values with a linear extension using the
 boundary derivative:
 
@@ -169,7 +169,7 @@ Penalties: why flexibility needs a cost
 ---------------------------------------
 
 Suppose we give the model :math:`K = 30` basis functions.  It could fit the
-data almost *perfectly* — including every random noise wiggle.  When we then
+data almost *perfectly*, including every random noise wiggle.  When we then
 predict on new data, the model falls apart.  This is **overfitting**.
 
 The solution is to penalise complexity.  We don't forbid wiggles; we charge
@@ -188,9 +188,9 @@ The first term rewards fitting the training data closely.  The second term
 punishes certain patterns in the coefficients.  The smoothing parameter
 :math:`\lambda` (``lam`` in the API) controls the tax rate:
 
-* :math:`\lambda = 0`: no penalty — the curve can be as wiggly as the
+* :math:`\lambda = 0`: no penalty; the curve can be as wiggly as the
   basis allows.  Equivalent to unpenalised regression.
-* :math:`\lambda \to \infty`: infinite penalty — the curve is forced to
+* :math:`\lambda \to \infty`: infinite penalty; the curve is forced to
   be as smooth as possible (a straight line for second-difference penalties).
 * :math:`0 < \lambda < \infty`: a balance.  magli uses grid search to
   find the :math:`\lambda` that minimises GCV.
@@ -241,11 +241,11 @@ downward trend in the data remains monotone.
    P = \lambda \, D_1^\top D_1.
 
 *Circular second-difference (periodicity):*  The second-difference operator
-wraps around, connecting the last coefficient back to the first — the
+wraps around, connecting the last coefficient back to the first: the
 mathematical equivalent of gluing the two ends of the curve together.
 
 *Ridge penalty:*  For factor terms (and linear terms, if penalised),
-:math:`P = \lambda I_K`.  This is a "shrink-toward-zero" penalty — it pulls
+:math:`P = \lambda I_K`.  This is a "shrink-toward-zero" penalty that pulls
 all coefficients toward zero by the same amount.  (Linear ``l()`` terms
 default to :math:`\lambda = 0`: unpenalised.)
 
@@ -284,7 +284,7 @@ minimise the penalised objective.
    (X^\top X + P)\hat{\boldsymbol{\beta}} = X^\top \mathbf{y}.
 
 This is mathematically correct but numerically dangerous.  Forming
-:math:`X^\top X` squares the condition number — if :math:`X` has a
+:math:`X^\top X` squares the condition number: if :math:`X` has a
 condition number of :math:`10^4`, then :math:`X^\top X` has :math:`10^8`.
 On a computer with 16-digit precision, this leaves very little room for
 error.
@@ -312,13 +312,13 @@ equations, but **never forms** :math:`X^\top X`.  Instead, magli uses:
 
 2. **SVD of the stacked matrix** :math:`[R; E] = U \Sigma V^\top`.  The
    singular value decomposition is the most numerically stable way to
-   factor a matrix — it exposes the "directions" in which the data has
+   factor a matrix; it exposes the "directions" in which the data has
    information and the directions it doesn't.
 
 3. **Solution operator** :math:`B_{\text{solve}} = V \Sigma^{-1} U_1^\top
    Q^\top` so that :math:`\hat{\boldsymbol{\beta}} = B_{\text{solve}}
    \mathbf{y}`.  This is saved and reused for covariance, EDF, and
-   confidence intervals — no re-solving needed.  (:math:`U_1` is the top
+   confidence intervals with no re-solving needed.  (:math:`U_1` is the top
    :math:`m \times m` block of :math:`U`, the part corresponding to the
    data block :math:`R`.)
 
@@ -335,14 +335,14 @@ Effective Degrees of Freedom (EDF)
 ----------------------------------
 
 In ordinary linear regression with :math:`p` predictors, the model uses
-exactly :math:`p` degrees of freedom — one per coefficient.  You can think
+exactly :math:`p` degrees of freedom: one per coefficient.  You can think
 of each degree of freedom as the model's ability to "move" in one
 independent direction to fit the data.
 
 **Penalised splines blur this picture.**  The model *has* :math:`K`
 coefficients (basis functions), but the penalty restricts how freely each
 one can move.  A heavily penalised coefficient is "shrunken" toward its
-neighbours — it costs you an entire degree of freedom to include, but the
+neighbours: it costs an entire degree of freedom to include, but the
 penalty means you only use a fraction of it.
 
 The EDF measures **how many independent directions the fitted model actually
@@ -376,9 +376,9 @@ computed in a single NumPy call with no matrix inversion.
   slope).
 * ``EDF ≈ K``: the penalty is very weak; the term is using nearly all its
   basis functions.
-* ``EDF << K`` with good fit: the penalty is working well — the data has a
+* ``EDF << K`` with good fit: the penalty is working well: the data has a
   smooth trend that the model captures with few effective parameters.
-* ``EDF`` growing while GCV stays flat: you're overfitting — the extra
+* ``EDF`` growing while GCV stays flat: you're overfitting: the extra
   wiggle doesn't help prediction.
 
 Per-direction EDF is stored in ``statistics_['edof_per_coef']``:
@@ -403,7 +403,7 @@ Generalised Cross Validation (GCV)
 **The problem.**  How do we know if our model is good?  We could hold out
 some data, fit on the rest, and check how well it predicts the held-out
 points.  But we'd have to do this many times (cross-validation), which is
-slow — especially during grid search where we evaluate thousands of models.
+slow, especially during grid search where we evaluate thousands of models.
 
 **The clever solution.**  Leave-one-out cross-validation (LOOCV) fits the
 model :math:`n` times, each time dropping one data point and predicting it.
@@ -419,15 +419,15 @@ The formula:
 
 Let's unpack each piece:
 
-* :math:`n`: number of observations — a larger dataset gives a more stable
+* :math:`n`: number of observations: a larger dataset gives a more stable
   estimate.
 * :math:`\text{RSS} = \sum_i (y_i - \hat y_i)^2`: how far the predictions
   are from the actual values.  Lower is better (better fit).
-* :math:`\text{EDF}`: effective degrees of freedom — the model's complexity.
+* :math:`\text{EDF}`: effective degrees of freedom: the model's complexity.
   More EDF means the model can "chase" data points more aggressively.
 * :math:`\gamma`: the GCV penalty multiplier (default 1.4 in the Eilers-Marx
   backend).  Setting :math:`\gamma > 1` makes the criterion slightly
-  conservative — it prefers simpler models, analogous to AIC's penalty term.
+  conservative: it prefers simpler models, analogous to AIC's penalty term.
 
 The denominator :math:`(n - \gamma \cdot \text{EDF})^2` is the key.  When
 EDF is small (simple model), the denominator is large → GCV is small →
@@ -480,14 +480,14 @@ backend:
 
 3. **Build the penalty.**  Each term's penalty matrix is computed and
    assembled into a block-diagonal :math:`P` (size :math:`m \times m`).
-   The intercept block is zero — we never penalise the overall level.
+   The intercept block is zero: we never penalise the overall level.
 
 4. **Solve.**  The SVD data-augmentation solver finds
    :math:`\hat{\boldsymbol{\beta}}` and stores the solution operator
    :math:`B_{\text{solve}}` for later use.
 
 5. **Compute diagnostics.**  RSS, EDF, GCV, scale estimate, covariance
-   matrix, standard errors — all available via ``model.statistics_``.
+   matrix, standard errors: all available via ``model.statistics_``.
 
 **Why the intercept is special.**  If we penalised the intercept, the
 model would be forced toward :math:`y = 0`, which is almost never what we
@@ -501,7 +501,7 @@ space).  Together with the unpenalised intercept, this pins down the
 decomposition: the intercept owns the level, and each smooth owns only its
 *bending*.  The Eilers-Marx backend relies on this implicit mechanism.  The Wood
 backend, as we'll see, makes the centering explicit with a sum-to-zero
-constraint — same goal, different route.
+constraint (same goal, different route).
 
 
 .. _section-tensor:
@@ -511,8 +511,8 @@ Tensor-product interactions
 
 An additive model with only univariate terms cannot capture relationships
 where the effect of one predictor depends on the value of another.  For
-example, high temperature might be especially damaging at high vibration —
-this is a **synergistic interaction**.
+example, high temperature might be especially damaging at high vibration,
+representing a **synergistic interaction**.
 
 **The tensor product** ``te(f1, f2, ..., fd)`` models this by building a
 multi-dimensional smooth surface.  The design matrix is the column-wise
@@ -524,12 +524,12 @@ Kronecker product of marginal B-spline bases:
 
 If :math:`B_1` is :math:`n \times K_1` and :math:`B_2` is :math:`n \times
 K_2`, then :math:`B_{\text{tensor}}` is :math:`n \times (K_1 K_2)`.  This
-grows quickly — a 2-D tensor with :math:`K_1 = K_2 = 6` creates 36
+grows quickly: a 2-D tensor with :math:`K_1 = K_2 = 6` creates 36
 columns; with :math:`K_1 = K_2 = 10` it's 100 columns.  This is why
 tensor terms use smaller default :math:`K` values (4-8) than univariate
 splines (5-25).
 
-The penalty is a **Kronecker sum** — each dimension gets its own
+The penalty is a **Kronecker sum**: each dimension gets its own
 smoothing parameter:
 
 .. math::
@@ -545,7 +545,7 @@ versa.  (Pass a list to ``lam=`` to give each dimension its own
 
 **When to use a tensor vs. separate s() terms.**  If the interaction
 exists, a model with only ``s(temperature) + s(vibration)`` will show
-patterned residuals — the error at high-temp-high-vibration will be
+patterned residuals: the error at high-temp-high-vibration will be
 systematically wrong.  Adding ``te(temperature, vibration)`` captures this
 extra structure.  Check the decomposition plot: if the te() heatmap shows
 a strong diagonal pattern, the interaction is real.
@@ -567,7 +567,7 @@ estimates.  Narrow where we have lots of data; wide where data is sparse.
 **Prediction intervals** answer: *Where would a single new observation
 likely fall?*  They add the residual variability :math:`\hat\sigma^2` to
 the confidence interval width.  A prediction interval is always wider than
-a confidence interval at the same point — individual observations are
+a confidence interval at the same point: individual observations are
 noisier than averages.
 
 The formulas:
@@ -603,7 +603,7 @@ We use the t-distribution (not the normal) because :math:`\sigma` is
 estimated from the data.  Degrees of freedom are :math:`n - \text{EDF}`
 because the penalty has already "used up" EDF worth of information.
 
-This covariance is the **frequentist** one — it treats :math:`\lambda` as
+This covariance is the **frequentist** one: it treats :math:`\lambda` as
 fixed and propagates only the sampling variability of
 :math:`\hat{\boldsymbol{\beta}}`.  The Wood backend additionally computes
 a *Bayesian* covariance (treating the penalty as a prior); the difference
@@ -617,11 +617,11 @@ Fast grid search: how it works
 
 Grid search evaluates every combination of :math:`K` (``n_splines``) and
 :math:`\lambda` (``lam``) candidates.  A naïve implementation would rebuild
-:math:`X` and solve from scratch for each combination — prohibitively slow.
+:math:`X` and solve from scratch for each combination, which is prohibitively slow.
 
 magli's fast path splits the work into two phases:
 
-**Phase 1 — Precompute per** :math:`\boldsymbol{K}` **(threaded).**
+**Phase 1: Precompute per** :math:`\boldsymbol{K}` **(threaded).**
 For each candidate basis count :math:`K`:
 
 1. Build :math:`X_K` and compute :math:`X_K = Q_K R_K` (QR).
@@ -635,7 +635,7 @@ All :math:`K`-configurations are processed in parallel when
 decomposition, so CPU-bound linear algebra genuinely runs on multiple
 cores).  With the default ``n_jobs=1`` everything runs serially.
 
-**Phase 2 — Evaluate per** :math:`\boldsymbol{(K, \lambda)}` **(threaded).**
+**Phase 2: Evaluate per** :math:`\boldsymbol{(K, \lambda)}` **(threaded).**
 For each combination:
 
 1. Assemble penalty: :math:`P = \lambda S`.

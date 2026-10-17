@@ -1,5 +1,5 @@
 """
-Example 11 — Wood (2011) Backend
+Example 11  -  Wood (2011) Backend
 ================================
 
 Demonstrates magli's native Wood (2011) backend:

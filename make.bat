@@ -2,7 +2,7 @@
 setlocal EnableDelayedExpansion
 
 echo ==========================================
-echo  magli — Build wheel and clean leftovers
+echo  magli - Build wheel and clean leftovers
 echo ==========================================
 echo.
 

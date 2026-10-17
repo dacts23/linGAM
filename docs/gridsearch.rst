@@ -6,8 +6,8 @@ A central question in Generalized Additive Models is choosing the smoothing para
 
 magli supports two distinct mathematical approaches:
 
-1. **Continuous REML Optimization (Wood engine)** — Solves for optimal :math:`\lambda` continuously during ``fit()`` (Wood 2011).
-2. **Discrete GCV Grid Search (Eilers-Marx engine)** — Evaluates a Cartesian grid of candidate :math:`(K, \lambda)` values via cached QR+Cholesky (Eilers & Marx 1996).
+1. **Continuous REML Optimization (Wood engine)**: Solves for optimal :math:`\lambda` continuously during ``fit()`` (Wood 2011).
+2. **Discrete GCV Grid Search (Eilers-Marx engine)**: Evaluates a Cartesian grid of candidate :math:`(K, \lambda)` values via cached QR+Cholesky (Eilers & Marx 1996).
 
 
 1. Continuous REML Optimization (Wood 2011)
@@ -67,11 +67,11 @@ the Generalised Cross Validation (GCV) criterion.
 Two-phase fast QR+Cholesky evaluation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1. **Phase 1 (K precomputation)** — For each candidate spline dimension :math:`K`, construct design matrix :math:`X`,
+1. **Phase 1 (K precomputation)**: For each candidate spline dimension :math:`K`, construct design matrix :math:`X`,
    compute its QR decomposition :math:`X = QR`, and cache :math:`R^\top R` and :math:`R^\top Q^\top y`.
    These depend only on :math:`K` and are computed once.
 
-2. **Phase 2 (Lambda evaluation)** — For each candidate :math:`\lambda`, assemble penalty matrix :math:`P = \lambda S`,
+2. **Phase 2 (Lambda evaluation)**: For each candidate :math:`\lambda`, assemble penalty matrix :math:`P = \lambda S`,
    solve :math:`(R^\top R + P) \boldsymbol{\beta} = R^\top Q^\top y` via Cholesky factorization, compute EDF from the
    Cholesky-based trace :math:`\operatorname{tr}(H^{-1} R^\top R)`, and record GCV.
    Both phases run under ``ThreadPoolExecutor`` when ``n_jobs != 1`` (serial by default).
@@ -79,9 +79,9 @@ Two-phase fast QR+Cholesky evaluation
 Default search grids
 ^^^^^^^^^^^^^^^^^^^^
 
-* **Lambda** — ``np.logspace(-3, 3, 11)`` (11 values from 0.001 to 1000), applied
+* **Lambda**: ``np.logspace(-3, 3, 11)`` (11 values from 0.001 to 1000), applied
   diagonally: every searched slot shares the same candidate value per evaluation.
-* **n_splines** — not searched by default; each term keeps its configured value unless
+* **n_splines**: not searched by default; each term keeps its configured value unless
   explicit ``n_splines`` grids are passed.
 
 Selective search (``search_terms``)

@@ -1,6 +1,6 @@
 .. _part-shared:
 
-Part I — Shared foundations
+Part I: Shared Foundations
 ===========================
 
 .. _section-why-gam:
@@ -26,7 +26,7 @@ x_{ij}` with a *learned smooth function* :math:`f_j(x_{ij})`:
    y_i = \beta_0 + f_1(x_{i1}) + f_2(x_{i2}) + \dots + \varepsilon_i.
 
 Now the model can bend to match the data.  The word **additive** means the
-contributions still *sum* together — there's no multiplicative or nested
+contributions still *sum* together; there is no multiplicative or nested
 structure, just a collection of understandable pieces you can inspect one at
 a time.  The word **generalised** means we replaced "linear coefficient ×
 predictor" with "learned function of predictor."
@@ -87,7 +87,7 @@ The defining feature of GAMs is that predictions decompose additively:
    + \dots
    + \underbrace{\hat f_p(x_{ip})}_{\text{term p}}.
 
-Each :math:`\hat f_j` is a *partial dependence function* — it shows how the
+Each :math:`\hat f_j` is a *partial dependence function*, showing how the
 prediction changes when you vary :math:`x_j` while holding everything else
 fixed (usually at the median).  This is the "all else equal" effect.
 
@@ -102,7 +102,7 @@ fixed (usually at the median).  This is the "all else equal" effect.
 **The plot_decomposition grid.**  When you call
 ``model.plot_decomposition(x, y)``, you see:
 
-* **Top row — overall fit:** The model's prediction when sweeping the first
+* **Top row (overall fit):** The model's prediction when sweeping the first
   predictor across its range, with all others at their medians.  Gray dots
   are the actual data.  This gives you a quick sanity check: does the curve
   pass through the cloud of points?
@@ -111,12 +111,12 @@ fixed (usually at the median).  This is the "all else equal" effect.
 
   - ``s()`` panel: a line plot.  The curve shows how blade life changes with
     temperature (or RPM, or vibration).  A flat line means the term
-    contributes nothing — the predictor doesn't matter.  A steep curve means
+    contributes nothing, meaning the predictor doesn't matter.  A steep curve means
     the predictor is important.
 
   - ``te()`` panel: a 2-D heatmap (or projection line for 3+D).  Blue =
     below-average contribution, red = above-average.  Look for diagonal
-    patterns — they indicate synergy.  A uniform color means no interaction.
+    patterns, as they indicate synergy.  A uniform color means no interaction.
 
   - ``f()`` panel: a bar chart.  Each bar is one category's baseline shift
     relative to the reference level.  Tall bars mean big differences between
@@ -126,7 +126,7 @@ fixed (usually at the median).  This is the "all else equal" effect.
     (:math:`\hat\beta_j` coefficient) is shown in the title, and the line
     passes through zero at :math:`x_j = 0`.
 
-* **Red shaded regions:** Extrapolation — the model is predicting outside
+* **Red shaded regions (Extrapolation):** the model is predicting outside
   the range of the training data.  Treat these regions with caution; the
   linear extrapolation used there is a heuristic, not a guarantee.
 
@@ -143,7 +143,7 @@ term and work right.  Each panel answers one question:
 4. "Does coating type A last longer than B?"
 5. "Is cooling flow linearly protective?"
 
-The answers are *independent* — they add up to the full prediction, but you
+The answers are *independent*: they add up to the full prediction, but you
 can understand each one without reference to the others.  This is the
 superpower of additive models: complex predictions built from simple,
 understandable pieces.
@@ -152,7 +152,7 @@ understandable pieces.
 show the raw data distribution; they show the *model's isolated view* of
 each predictor.  A scatter of raw data against a single predictor mixes in
 the effects of all other predictors, so it can look very different from the
-partial dependence.  The partial dependence is the "clean" signal — the
+partial dependence.  The partial dependence is the "clean" signal, while the
 model's best estimate of what that predictor alone contributes.
 
 One subtlety to remember later: the two backends *centre* these term plots

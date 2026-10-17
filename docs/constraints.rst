@@ -12,7 +12,7 @@ shape.
    Soft monotonicity and convexity constraints (``mono_inc``, ``mono_dec``,
    ``convex``, ``concave``) are provided by the Eilers-Marx engine
    (``backend='eilers'``).  Periodic smooths (``constraint='periodic'``) are
-   supported in both engines — via wrapped B-splines in ``backend='eilers'``
+   supported in both engines: via wrapped B-splines in ``backend='eilers'``
    and via cyclic cubic/P-spline bases (``bs='cc'`` / ``bs='cp'``) in
    ``backend='wood'``.
 
@@ -48,7 +48,7 @@ Available constraints
    :width: 98%
 
    Effect of shape constraints on noisy data: (left) ``constraint='mono_inc'``
-   suppresses non-physical local dips in a dose–response curve; (centre)
+   suppresses non-physical local dips in a dose-response curve; (centre)
    ``constraint='mono_dec'`` damps rebounds in an exponential decay curve;
    (right) ``constraint='periodic'`` (or Wood's ``bs='cc'``) joins value and
    slope seamlessly across the 24-hour cycle boundary.
@@ -71,7 +71,7 @@ How they work
 Minimising :math:`\beta^\top P \beta = \lambda \sum_i (\beta_{i+1} - \beta_i)^2`
 forces adjacent B-spline coefficients to be similar.  Because B-spline basis
 functions are ordered left-to-right across the domain, similar coefficients
-produce a curve that does not reverse direction — hence monotonic.
+produce a curve that does not reverse direction, hence monotonic.
 
 * ``mono_inc`` and ``mono_dec`` both apply the same sign-symmetric
   first-difference penalty :math:`\lambda D_1^\top D_1` (which shrinks
@@ -96,13 +96,13 @@ term.
 When to use which
 -----------------
 
-* **Monotonic increasing** — dose-response curves, learning curves,
+* **Monotonic increasing**: dose-response curves, learning curves,
   cumulative distributions, prices vs. demand.
-* **Monotonic decreasing** — diminishing returns, survival curves,
+* **Monotonic decreasing**: diminishing returns, survival curves,
   price elasticity.
-* **Convex** — cost functions, loss landscapes, risk curves.
-* **Concave** — utility functions, production functions.
-* **Periodic** — time-of-day effects, seasonal patterns, angular
+* **Convex**: cost functions, loss landscapes, risk curves.
+* **Concave**: utility functions, production functions.
+* **Periodic**: time-of-day effects, seasonal patterns, angular
   coordinates (compass directions).
 
 Caveats

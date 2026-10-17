@@ -26,8 +26,8 @@ Unified API & Backends
 
 magli provides two backends via the unified :class:`GAM` (alias :class:`LinGAM`) and :class:`GAMCore` classes:
 
-* ``backend='wood'`` (default) — Simon Wood's GAM algorithm (continuous REML or GCV optimization, multiple basis families, and Wood 2013 summary tables).
-* ``backend='eilers'`` — B-spline basis with discrete GCV grid search and soft shape constraints (Eilers & Marx 1996).
+* ``backend='wood'`` (default): Simon Wood's GAM algorithm (continuous REML or GCV optimization, multiple basis families, and Wood 2013 summary tables).
+* ``backend='eilers'``: B-spline basis with discrete GCV grid search and soft shape constraints (Eilers & Marx 1996).
 
 
 1. Wood (2011) Backend (Automatic REML)
@@ -102,17 +102,17 @@ Formula syntax
 
 Terms are separated by ``+``. Each term has the form ``type(args, kwargs)``.
 
-``s(feature, ...)`` — univariate spline
+``s(feature, ...)``: univariate spline
    Accepts both Wood syntax (``k=10``, ``bs='cr'``, ``sp=0.5``) and Eilers-Marx syntax
    (``n_splines=10``, ``lam=1.0``, ``constraint='mono_inc'``).
 
-``te(f1, f2, ...)`` — tensor-product interaction
+``te(f1, f2, ...)``: tensor-product interaction
    ``te(0, 1, k=5, bs='cr')`` or ``te(0, 1, n_splines=5)``.
 
-``f(feature, ...)`` — categorical factor
+``f(feature, ...)``: categorical factor
    ``f(2, coding='dummy')`` or ``f(2, coding='one-hot')``.
 
-``l(feature, ...)`` — linear term
+``l(feature, ...)``: linear term
    ``l(3)`` (parametric unpenalized or ridge-penalized linear effect).
 
 

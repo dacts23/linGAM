@@ -1,4 +1,4 @@
-# Example 10 -- Engineering Case Study README
+# Example 10: Engineering Case Study README
 
 ## What This Example Does
 
@@ -31,7 +31,7 @@ matplotlib plots.  **Close each plot window to advance** to the next section.
 | x[4] | Blade coating type | {A,B,C} | Baseline shift (+6, 0, -8) |
 
 The ground truth includes a **temperature x vibration interaction** --
-high temperature is worse at high vibration, and vice versa.  5% of
+high temperature is worse at high vibration, and vice versa).  5% of
 points are artificial "sensor outliers" (shifted by sigma=15) to
 demonstrate robust fitting.
 
@@ -39,13 +39,13 @@ demonstrate robust fitting.
 
 ## Section-by-Section Guide
 
-### Section 1 -- Data Summary
+### Section 1: Data Summary
 
 Console output showing data dimensions, feature names, coating level
 counts, and the known ground truth.  The model does **not** see this
-ground truth -- it only sees `x` and `y`.
+ground truth; it only sees `x` and `y`.
 
-### Section 2 -- Baseline Fit
+### Section 2: Baseline Fit
 
 The model is built with this formula:
 
@@ -71,7 +71,7 @@ single-shot pIRLS solve.  It's fast but not optimised.
 - **R^2** (Deviance explained): Pseudo R-squared, 0-1, higher is better.
 - **AIC / BIC**: Information criteria; lower is better.  BIC penalises complexity more than AIC.
 
-### Section 3 -- Grid Search (with new partial-grid flexibility)
+### Section 3: Grid Search (with new partial-grid flexibility)
 
 This is where the **new `search_terms` flexibility** shines.  We tell
 the grid search: "only optimise the spline terms `s(0)` and `s(1)`."
@@ -105,7 +105,7 @@ n_splines combos) and selects the best pair.
 - You can focus the search on the terms whose nonlinear shape is most
   uncertain.
 
-### Section 4 -- Weighted Fitting
+### Section 4: Weighted Fitting
 
 The same formula is fit with `weights=...`, down-weighting the 5%
 noisy sensor readings so they do not distort the smooth terms.
@@ -115,7 +115,7 @@ noisy sensor readings so they do not distort the smooth terms.
 - This means the unweighted fit's GCV is inflated by outlier variance.
 - In practice, pass observation `weights` when sensor precision varies or noisy readings are flagged.
 
-### Section 5 -- Constrained vs Unconstrained
+### Section 5: Constrained vs Unconstrained
 
 We fit the same data with **shape constraints removed**:
 
@@ -133,9 +133,9 @@ noise-driven wiggles.
 - `mono_inc` / `mono_dec`: When physics guarantees monotonicity.
 - `convex` / `concave`: When you expect a single peak or valley.
 - `periodic`: When the feature wraps around (angles, time-of-day).
-- These are **soft** constraints -- they shape the penalty, not hard-clip the curve.
+- These are **soft** constraints: they shape the penalty, not hard-clip the curve.
 
-### Section 6 -- Confidence & Prediction Intervals
+### Section 6: Confidence & Prediction Intervals
 
 - **Confidence Interval (CI)**: How precisely we know the *mean*
   response at each point.  Narrow CI = we're confident about the
@@ -148,7 +148,7 @@ For this dataset, CI ~ 2.4 cycles, PI ~ 14.4 cycles.  This is
 expected -- we can estimate the mean accurately, but individual blades
 vary substantially.
 
-### Section 7 -- Partial Dependence Ranges
+### Section 7: Partial Dependence Ranges
 
 Partial dependence isolates one term's contribution by holding all
 other predictors at their medians:
@@ -173,7 +173,7 @@ effect is modest because most of its influence flows through the
 interaction term.  Always check the decomposition plot to see
 the *shape*, not just the magnitude.
 
-### Section 8 -- Diagnostics Plots
+### Section 8: Diagnostics Plots
 
 **[Plot 1]** Two standard model-checking panels:
 
@@ -185,17 +185,17 @@ the *shape*, not just the magnitude.
    around zero.  Patterns (funnel shapes, curvature) indicate
    heteroscedasticity or missing terms.
 
-### Section 9 -- Decomposition Plot
+### Section 9: Decomposition Plot
 
 **[Plot 2]** This is the most important visualisation.  It shows how
 the model **decomposes** blade life into its components.
 
-**Row 0 -- Overall fit:**
+**Row 0 (Overall fit):**
 The model's predicted y when sweeping x[0] (temperature) with all
 other predictors at their medians.  Gray dots = actual data.  Red
 shaded edges = extrapolation (model is less reliable there).
 
-**Row 1+ -- Per-term panels:**
+**Row 1+ (Per-term panels):**
 
 | Panel shows | How to read it |
 |-------------|---------------|
@@ -204,7 +204,7 @@ shaded edges = extrapolation (model is less reliable there).
 | `f()` bar chart | Baseline shift per category.  Bar above zero = higher than reference level, below = lower. |
 | `l()` line | Linear slope.  The `beta` coefficient is shown in the title. |
 
-Every panel shows **isolated contributions** -- the effect of changing
+Every panel shows **isolated contributions**: the effect of changing
 only that term while everything else stays constant.  The sum of all
 term contributions (plus intercept) equals the full prediction.
 
@@ -213,7 +213,7 @@ term contributions (plus intercept) equals the full prediction.
 - A smooth term that's nearly flat = over-smoothed (lambda too large) or the term is unnecessary.
 - Extrapolation regions (red) show uncertainty: the model has no data there, treat with caution.
 
-### Section 10 -- Weighted vs Standard Comparison
+### Section 10: Weighted vs Standard Comparison
 
 **[Plot 3]** Shows how the 25 outlier points are handled differently:
 

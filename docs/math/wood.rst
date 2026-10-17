@@ -1,6 +1,6 @@
 .. _part-wood:
 
-Part III — The Wood backend
+Part III: The Wood Backend
 ===========================
 
 .. _section-wood-design:
@@ -20,8 +20,8 @@ inference**:
    different way.
 2. **One smoothing parameter per penalty, estimated.**  Instead of
    sweeping a grid, the backend treats :math:`\lambda` as a free
-   parameter and *optimises* a model-selection criterion — Restricted
-   Maximum Likelihood (REML) by default, GCV as an option — in
+   parameter and *optimises* a model-selection criterion: Restricted
+   Maximum Likelihood (REML) by default, GCV as an option, in
    log-:math:`\lambda` space with standard optimisers.
 3. **Explicit identifiability.**  Every smooth is centred by absorbing a
    sum-to-zero constraint into the basis itself, and every penalty is
@@ -45,7 +45,7 @@ The pipeline is:
    \;\to\;
    \underbrace{\text{inference}}_{\S 4}.
 
-Sections 1–4 below follow that order.
+Sections 1-4 below follow that order.
 
 .. _section-wood-bases:
 
@@ -162,7 +162,7 @@ that the minimiser has the form
 subject to :math:`\sum_i \delta_i = \sum_i \delta_i x_i = 0` (the
 :math:`T^\top\delta = 0` constraint).  The :math:`n` "radial" basis
 functions sit one on each data point; the two polynomial terms form the
-**null space** — they have zero curvature, so the penalty never touches
+**null space**: they have zero curvature, so the penalty never touches
 them.
 
 **Why** :math:`\boldsymbol{\eta(r) = |r|^3/12}` **?**  It is the Green's
@@ -184,7 +184,7 @@ the coefficients,
 
 A one-line sanity check: for :math:`r > 0`,
 :math:`\eta'''(r) = 1/2` (and :math:`-1/2` for :math:`r < 0`), so the
-third derivative jumps by exactly 1 at the origin — which is what makes
+third derivative jumps by exactly 1 at the origin, which is what makes
 the fourth derivative a unit Dirac spike.  The "thin plate" name comes
 from the :math:`d=2` generalisation, where the penalty is the bending
 energy of a physical plate.
@@ -193,7 +193,7 @@ energy of a physical plate.
 positive and negative eigenvalues, but it is *positive definite on the
 subspace orthogonal to the null space* (:math:`T^\top\delta = 0`).
 Solving the continuous problem exactly gives :math:`f` with one parameter
-per data point (an :math:`O(n)` model) — beautiful, but too expensive and
+per data point (an :math:`O(n)` model): effective, but too expensive and
 over-flexible for practical use.
 
 **The low-rank approximation.**  Wood's trick (and magli's) is to keep
@@ -211,8 +211,7 @@ sort eigenpairs by :math:`|v_j|`, and truncate to the top :math:`k`:
 
 (The code uses ARPACK's ``eigsh`` for speed when there are many unique
 points, and falls back to a full ``eigh`` otherwise.)  The retained
-eigenfunctions are the smoothest, largest-scale modes — exactly the
-structure you want in a smooth — while the discarded high-frequency modes
+eigenfunctions are the smoothest, largest-scale modes (the structure you want in a smooth), while the discarded high-frequency modes
 are the ones a penalty would crush anyway.
 
 **Absorbing the constraint.**  We still need the retained directions to
@@ -255,7 +254,7 @@ x_j^{\text{train}}|)`.
 **Shrinkage (``ts``).**  The penalty :math:`S` above has a two-dimensional
 null space (the :math:`T` part).  That means :math:`\lambda` can shrink
 the wiggly part all it wants, but the linear trend in :math:`f` is never
-penalised — a ``tp`` smooth can never be removed from the model.  The
+penalised: a ``tp`` smooth can never be removed from the model.  The
 ``ts`` variant changes this by eigen-decomposing :math:`S` and giving the
 null-space eigenvalues a small positive value:
 
@@ -280,7 +279,7 @@ continuously differentiable at each knot, and *linear outside the range of
 the knots* (the "natural" boundary condition: :math:`f'' = 0` beyond the
 first and last knot).
 
-**The value–curvature parametrisation.**  A natural cubic spline is fully
+**The value-curvature parametrisation.**  A natural cubic spline is fully
 determined by its values at the knots together with the natural boundary
 condition.  Within an interval :math:`[x_j, x_{j+1}]` of width
 :math:`h_j`, the spline interpolates between knot values
@@ -332,7 +331,7 @@ on top.)
 :math:`S` has rank :math:`k-2`: its null space is the two-dimensional
 space of linear functions (straight lines have no curvature), which again
 remain unpenalised.  Extrapolation beyond the boundary knots is linear by
-construction — the natural boundary condition *is* linear extrapolation,
+construction: the natural boundary condition *is* linear extrapolation,
 so ``cr`` behaves predictably outside the data range.
 
 **Shrinkage (``cs``)** is the discrete twin of ``ts``: eigen-decompose
@@ -352,12 +351,12 @@ shrink the whole term toward zero.
 Cyclic cubic regression splines (``cc``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For quantities on a circle — time-of-day, wind direction, phase angles —
+For quantities on a circle (such as time-of-day, wind direction, or phase angles),
 the boundary values should agree: :math:`f(x_0) = f(x_1)` and matching
 derivatives.  The cyclic cubic spline (Lancaster & Salkauskas 1986) takes
 the ``cr`` construction and *wraps* it: knots are placed evenly through
 the sorted unique :math:`x` values, and the :math:`B` and :math:`D`
-matrices become **circulant** — the last interval connects back to the
+matrices become **circulant**: the last interval connects back to the
 first, as in the code's ``build_cc_basis``:
 
 .. math::
@@ -367,7 +366,7 @@ first, as in the code's ``build_cc_basis``:
 
 with the mirror entries on the last row, and similarly for :math:`D`.
 The penalty is the same form, :math:`S = D^\top B^{-1} D`, now of rank
-:math:`k-2` with a one-dimensional null space — constants only, since a
+:math:`k-2` with a one-dimensional null space (constants only, since a
 periodic function that is "straight" is exactly constant.  Evaluating the
 basis wraps the covariate cyclically onto :math:`[x_0, x_1]` first.
 
@@ -391,7 +390,7 @@ adjacent coefficients:
 
 The default is :math:`m = 2`: second differences, the discrete
 counterpart of curvature.  The penalty's null space is the space of
-polynomials of degree :math:`< m` — for :math:`m=2`, linear trends are
+polynomials of degree :math:`< m`: for :math:`m=2`, linear trends are
 free.  P-splines trade a little elegance for speed and simplicity (the
 penalty needs no matrix inverse, unlike :math:`B^{-1}` in ``cr``), and
 the equal knot spacing makes the basis numerically well behaved.
@@ -407,7 +406,7 @@ Random-effect smooths (``re``)
 
 For a categorical predictor with many levels, ``re`` builds one column per
 level (an identity/one-hot design matrix) and penalises the coefficients
-with :math:`S = I` — pure ridge shrinkage:
+with :math:`S = I`: pure ridge shrinkage:
 
 .. math::
 
@@ -428,11 +427,11 @@ Identifiability: rescaling and the sum-to-zero constraint
 A GAM with an intercept is over-parametrised: adding a constant to a
 smooth :math:`f_j` and subtracting it from the intercept leaves every
 prediction unchanged.  Fitting "works" regardless, but the decomposition
-becomes arbitrary — you cannot say whether the average blade life came
+becomes arbitrary: you cannot say whether the average blade life came
 from the intercept or from the temperature term.  The Wood backend resolves this with
 two standard moves, both applied to *every* smooth term before fitting.
 
-**Move 1 — ``S.scale``: rescale each penalty.**  A penalty's raw size
+**Move 1 (``S.scale``): Rescale each penalty.**  A penalty's raw size
 depends on its basis: a basis of large-magnitude functions produces a
 large :math:`S`.  To make the smoothing parameter mean "amount of
 smoothing" rather than "basis scale × amount of smoothing", each penalty
@@ -448,10 +447,10 @@ is normalised by
 where :math:`\|\cdot\|_{\text{O}}` is the maximum column sum (the
 operator norm of a symmetric matrix) and :math:`\|\cdot\|_{\text{I}}` is
 the maximum row sum of :math:`X`, squared.  The scale is saved, so
-reported :math:`\lambda` values are on this normalised scale — comparable
+reported :math:`\lambda` values are on this normalised scale: comparable
 across terms and across basis families.
 
-**Move 2 — ``absorb.cons``: absorb the sum-to-zero constraint.**  The
+**Move 2 (``absorb.cons``): Absorb the sum-to-zero constraint.**  The
 constraint is that each smooth's fitted values average to zero:
 
 .. math::
@@ -462,7 +461,7 @@ constraint is that each smooth's fitted values average to zero:
 Rather than solving a constrained problem, the constraint is *absorbed
 into the basis*: compute the full QR of :math:`C^\top`
 (:math:`k \times 1`), take :math:`Z = Q_{[:, 1:]}`
-— an orthonormal basis of :math:`\ker C` — and project:
+, an orthonormal basis of :math:`\ker C`, and project:
 
 .. math::
 
@@ -540,7 +539,7 @@ with :math:`A = R`, :math:`B = H^{-1} = L^{-\top}L^{-1}`), and the score is
    \hat\sigma^2 = \frac{\text{RSS}}{n - \text{EDF}}.
 
 Here the default :math:`\gamma = 1` (``GCV.Cp``), versus 1.4 in
-the Eilers-Marx backend — a small but real difference between the two engines'
+the Eilers-Marx backend, a small but real difference between the two engines'
 model-selection tastes.
 
 **REML (the default).**  Give the coefficients a Gaussian prior whose
@@ -553,7 +552,7 @@ precision *is* the penalty,
    \boldsymbol{\beta} \sim N\bigl(0, \,\sigma^2 S_{\boldsymbol{\lambda}}^{-}\bigr),
 
 where :math:`S_{\boldsymbol{\lambda}}^{-}` denotes the (generalised)
-inverse — an *improper* prior that treats the penalty's null space as
+inverse: an *improper* prior that treats the penalty's null space as
 infinite variance.  Integrating :math:`\boldsymbol{\beta}` out gives the
 marginal (restricted) likelihood for :math:`\boldsymbol{\lambda}` and
 :math:`\sigma^2`.  Profiling out :math:`\sigma^2` at
@@ -580,14 +579,14 @@ Reading it term by term:
 * :math:`D_p / 2\hat\sigma^2`: how well the penalised fit explains the
   data, measured against the estimated noise.  The first two terms
   together are :math:`(n-M_p)(1 + \log 2\pi\hat\sigma^2)/2` after
-  substituting :math:`\hat\sigma^2` — a pure function of the penalised
+  substituting :math:`\hat\sigma^2`, a pure function of the penalised
   deviance.
 * :math:`\frac12 \log|H|`: a complexity tax.  The more the penalty is
   weakened, the larger :math:`H`'s determinant, the worse the score.
   This term is what prevents :math:`\lambda \to 0`.
 * :math:`-\frac12 \log|S_{\boldsymbol{\lambda}}|_+`: a normalisation
   correction for the prior.  :math:`|S|_+` is the product of the
-  *positive* eigenvalues only (the penalty is singular by design — its
+  *positive* eigenvalues only (the penalty is singular by design: its
   null space would otherwise contribute :math:`\log 0 = -\infty`).
 
 Why the ":math:`_+`" matters can be seen by taking :math:`S_\lambda =
@@ -616,7 +615,7 @@ to ``eigvalsh`` only if needed).
 **Why REML and not maximum likelihood?**  In the mixed-model view,
 estimating :math:`\boldsymbol{\beta}` costs degrees of freedom; plain ML
 ignores this and biases :math:`\sigma^2` (and thus :math:`\lambda`)
-downward — it under-smoothes.  The restricted likelihood corrects for
+downward: it under-smoothes.  The restricted likelihood corrects for
 exactly this loss, which is why the criterion uses :math:`n - M_p`
 instead of :math:`n`.  REML also has better-behaved optima than GCV,
 which is notorious for flat minima and occasional near-zero
@@ -624,7 +623,7 @@ which is notorious for flat minima and occasional near-zero
 
 **Optimising in log space.**  :math:`\lambda` must be positive, so the
 backend optimises :math:`\rho = \log\lambda` (unconstrained, with
-:math:`\lambda = e^\rho`) over the range :math:`\rho \in [-15, 15]` —
+:math:`\lambda = e^\rho`) over the range :math:`\rho \in [-15, 15]`:
 i.e. :math:`\lambda` between roughly :math:`3\times10^{-7}` and
 :math:`3\times10^{6}`.  One free :math:`\lambda`: Brent's method
 (``minimize_scalar``, bounded) on the 1-D criterion.  Several free
@@ -659,12 +658,12 @@ inferential kit.  Two covariance matrices appear:
    V_e = H^{-1} X^\top X H^{-1} \hat\sigma^2
        = H^{-1} R^\top R H^{-1} \hat\sigma^2.
 
-* :math:`V_p` is the **Bayesian posterior covariance** — the posterior
+* :math:`V_p` is the **Bayesian posterior covariance**: the posterior
   of :math:`\boldsymbol{\beta}` under the prior that generated REML, with
   :math:`\lambda` treated as known.  It is what the Wood backend reports in
   ``summary()`` tables and uses for confidence bands; standard errors are
   :math:`\operatorname{SE}_j = \sqrt{(V_p)_{jj}}`.
-* :math:`V_e` is the **frequentist (sandwich) covariance** — the
+* :math:`V_e` is the **frequentist (sandwich) covariance**: the
   sampling covariance of :math:`\hat{\boldsymbol{\beta}}` treating the
   penalty as part of the estimator, again with :math:`\lambda` fixed.
   It ignores the uncertainty in :math:`\lambda` itself (a standard
@@ -705,7 +704,7 @@ with the p-value from the right tail of the F distribution.  The
 justification is a moment-matching argument: under the null the
 quadratic form has mean :math:`\text{EDF}_j` and variance
 :math:`2\,\text{EDF}_j`, matching an :math:`F`-like distribution to
-second order.  It is an *approximation* — exact for
+second order.  It is an *approximation*, exact for
 :math:`\lambda = 0` (where it reduces to the classical F-test) and
 well-calibrated for EDF comfortably above 1, but p-values for terms with
 EDF barely above 1 should be read with suspicion (a known caveat in Wood 2013).
@@ -722,7 +721,7 @@ EDF barely above 1 should be read with suspicion (a known caveat in Wood 2013).
 the Gaussian log-likelihood :math:`\ell = -\tfrac{n}{2}\log(2\pi\hat\sigma^2)
 - \tfrac{\text{RSS}}{2\hat\sigma^2}`, and the information criteria
 :math:`\text{AIC} = -2\ell + 2(\text{EDF}+1)`, :math:`\text{BIC} = -2\ell
-+ \log(n)(\text{EDF}+1)` — the :math:`+1` counting the estimated
++ \log(n)(\text{EDF}+1)`, with :math:`+1` counting the estimated
 :math:`\sigma^2`.  These make the Wood backend the choice when you need
 p-values, AIC-based model comparison, or output that matches an R
 ``summary.gam`` table.

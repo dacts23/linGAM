@@ -1,5 +1,5 @@
 """
-Example 05 — 2-D Tensor Interaction
+Example 05  -  2-D Tensor Interaction
 ====================================
 
 A tensor-product interaction captures a non-additive relationship

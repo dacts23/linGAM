@@ -1,5 +1,5 @@
 """
-Example 08 — Intervals & Diagnostics
+Example 08  -  Intervals & Diagnostics
 =====================================
 
 Compute confidence intervals, prediction intervals, and diagnostic

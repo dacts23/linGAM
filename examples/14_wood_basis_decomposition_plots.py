@@ -1,5 +1,5 @@
 """
-Example 14 — Wood Backend: y vs x Basis Decomposition & Visualizations
+Example 14  -  Wood Backend: y vs x Basis Decomposition & Visualizations
 =====================================================================
 
 Comprehensive demonstration of Wood's (2011) penalized GAM on a 1D
@@ -255,7 +255,7 @@ ax7.plot(x_grid, em_model.predict(x_grid), "b-", lw=2, label=f"Eilers-Marx (EDF=
 ax7.plot(x_grid, model.predict(x_grid), "r-.", lw=2, label=f"Wood (EDF={model.statistics_['edof']:.2f})")
 ax7.set_xlabel("x")
 ax7.set_ylabel("y")
-ax7.set_title("Plot 7: Backend Overlay — Wood vs Eilers-Marx Fits", fontsize=12, fontweight="bold")
+ax7.set_title("Plot 7: Backend Overlay  -  Wood vs Eilers-Marx Fits", fontsize=12, fontweight="bold")
 ax7.grid(True, linestyle=":", alpha=0.5)
 ax7.legend(loc="upper right")
 fig7.tight_layout()

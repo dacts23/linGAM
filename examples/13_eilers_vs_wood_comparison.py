@@ -1,5 +1,5 @@
 """
-Example 13 — Head-to-Head Comparison: Eilers-Marx vs Wood Philosophies
+Example 13  -  Head-to-Head Comparison: Eilers-Marx vs Wood Philosophies
 ======================================================================
 
 Demonstrates and contrasts the two GAM philosophies implemented in magli:
@@ -126,7 +126,7 @@ def run_comparison():
     # =========================================================================
     fig = plt.figure(figsize=(15, 10))
 
-    # --- Row 1: Univariate overlay — both backends on the same axes ---
+    # --- Row 1: Univariate overlay  -  both backends on the same axes ---
     ax1 = fig.add_subplot(2, 1, 1)
     ax1.scatter(x, y, color="#7f7f7f", alpha=0.5, s=18, label="Data")
     ax1.plot(x_grid, y_grid_true, "k--", lw=1.5, label="True function")

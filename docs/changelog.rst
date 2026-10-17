@@ -27,9 +27,9 @@ Improvements
 ^^^^^^^^^^^^
 
 * **Shared ``_GAMBase`` lifecycle**: ``magli._base`` now holds the
-  code both engines inherit — ``predict``, ``partial_dependence``,
+  code both engines inherit (``predict``, ``partial_dependence``,
   confidence/prediction intervals, ``loglikelihood``/``aic``/``bic``/
-  ``deviance_explained``, and all decomposition/diagnostic plotting.
+  ``deviance_explained``, and all decomposition/diagnostic plotting).
   Note the scale convention it abstracts: Eilers-Marx stores ``scale`` as
   σ (uses ``s**2`` as variance), Wood stores it as σ² directly.
 * **Observation weights across both backends**: ``fit(x, y, weights=w)`` and
@@ -53,7 +53,7 @@ New features
 
 * **Shape constraints** for ``s()`` terms and ``LinGAM``:
   ``mono_inc``, ``mono_dec``, ``convex``, ``concave``, ``periodic``.
-* **Fast path is now the only path** — removed ``fast`` parameter from
+* **Fast path is now the only path**: removed ``fast`` parameter from
   ``gridsearch()``.  All grid searches use QR+Cholesky by default.
 * **Robust grid search** uses dedicated IRLS path with threaded evaluation.
 * **Statistics methods** added to both ``GAMCore`` and ``LinGAM``:

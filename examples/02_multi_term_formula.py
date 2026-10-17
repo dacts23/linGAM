@@ -1,5 +1,5 @@
 """
-Example 02 — Multi-Term Formula Interface
+Example 02  -  Multi-Term Formula Interface
 =========================================
 
 GAMCore with a smooth term and a linear term.
@@ -13,8 +13,8 @@ from magli import GAMCore
 np.random.seed(42)
 n = 400
 x = np.column_stack([
-    np.random.uniform(0, 10, n),   # feature 0 — smooth
-    np.random.uniform(0, 5, n),    # feature 1 — linear
+    np.random.uniform(0, 10, n),   # feature 0  -  smooth
+    np.random.uniform(0, 5, n),    # feature 1  -  linear
 ])
 y = (
     np.sin(x[:, 0])
