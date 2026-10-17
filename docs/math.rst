@@ -27,7 +27,7 @@ Overview & Chapter Guide
 
 * :doc:`math/eilers` (:ref:`Part II <section-eilers-design>`):
   The **Eilers-Marx backend**: uniform B-splines, discrete difference penalties, SVD data-augmented
-  solver, Generalized Cross Validation (GCV), fast QR+Cholesky grid search, and Huber IRLS robust fitting.
+  solver, Generalized Cross Validation (GCV), fast QR+Cholesky grid search, and observation weights.
 
 * :doc:`math/wood` (:ref:`Part III <section-wood-design>`):
   The **Wood backend**: Simon Wood's rich basis families (thin plate, cubic, cyclic, P-splines, random effects),

@@ -9,6 +9,24 @@ from numpy.typing import ArrayLike
 from scipy import stats
 
 
+def _validate_weights(
+    weights: Optional[ArrayLike], n: int
+) -> Optional[np.ndarray]:
+    """Validate and return 1D observation weights array, or None."""
+    if weights is None:
+        return None
+    w = np.asarray(weights, dtype=float).ravel()
+    if len(w) != n:
+        raise ValueError(
+            f"weights length ({len(w)}) must match n_samples ({n})."
+        )
+    if not np.all(np.isfinite(w)) or np.any(w < 0) or np.all(w == 0):
+        raise ValueError(
+            "weights must be finite, non-negative, and not all zero."
+        )
+    return w
+
+
 def _khatri_rao(marginals: List[np.ndarray]) -> np.ndarray:
     """Row-wise Kronecker (Khatri-Rao) product of marginal basis matrices."""
     n = marginals[0].shape[0]

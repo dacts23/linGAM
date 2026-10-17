@@ -200,21 +200,23 @@ for i, term in enumerate(model._terms):
 print()
 
 # ------------------------------------------------------------------
-# 4. Robust fitting -- handle sensor outliers
+# 4. Weighted fitting -- down-weight noisy sensor readings
 # ------------------------------------------------------------------
+weights = np.ones(n)
+weights[outlier_idx] = 1e-4
 model_robust = GAMCore(formula, backend="eilers")
-model_robust.fit(x, y, robust=True)
+model_robust.fit(x, y, weights=weights)
 
 print("=" * 72)
-print("SECTION 4 -- ROBUST FIT (Huber IRLS, same formula)")
+print("SECTION 4 -- WEIGHTED FIT (observation weights, same formula)")
 print("=" * 72)
 print(f"  Standard GCV : {model.statistics_['GCV']:.4f}")
-print(f"  Robust GCV   : {model_robust.statistics_['GCV']:.4f}")
+print(f"  Weighted GCV : {model_robust.statistics_['GCV']:.4f}")
 print(f"  Standard EDF : {model.statistics_['edof']:.2f}")
-print(f"  Robust EDF   : {model_robust.statistics_['edof']:.2f}")
+print(f"  Weighted EDF : {model_robust.statistics_['edof']:.2f}")
 print(f"  Standard R^2 : {model.deviance_explained():.4f}")
-print(f"  Robust R^2   : {model_robust.deviance_explained():.4f}")
-print("  -> Robust fit down-weights the 5% sensor outliers,")
+print(f"  Weighted R^2 : {model_robust.deviance_explained():.4f}")
+print("  -> Observation weights down-weight the 5% noisy sensor readings,")
 print("     yielding lower GCV (better fit) with similar EDF.")
 print()
 
@@ -416,12 +418,11 @@ plt.show()
 # ------------------------------------------------------------------
 # 11. Backend comparison -- Eilers-Marx vs Wood (side-by-side)
 # ------------------------------------------------------------------
-# Shape constraints (mono_inc/concave) and Huber robust fitting are
-# Eilers-Marx-backend features with no Wood equivalent, so the comparison uses the
-# unconstrained formula on both backends: Eilers-Marx with its GCV-tuned fit from
-# Section 5, Wood with automatic REML smoothing in a single fit. Conversely,
-# the R-style summary() table with F-tests/p-values and bs basis choices are
-# Wood-only (see 11_wood_backend.py).
+# Shape constraints (mono_inc/concave) are Eilers-Marx-backend features with no
+# Wood equivalent, so the comparison uses the unconstrained formula on both
+# backends: Eilers-Marx with its GCV-tuned fit from Section 5, Wood with
+# automatic REML smoothing in a single fit. Conversely, the R-style summary()
+# table with F-tests/p-values and bs basis choices are Wood-only (see 11_wood_backend.py).
 wood_unc = GAMCore(formula_unconstrained, backend="wood")
 wood_unc.fit(x, y)
 print("=" * 72)
@@ -432,7 +433,7 @@ print(f"  {'EDF':<10}{model_unc.statistics_['edof']:>14.2f}{wood_unc.statistics_
 print(f"  {'GCV':<10}{model_unc.statistics_['GCV']:>14.4f}{wood_unc.statistics_['GCV']:>14.4f}")
 print(f"  {'R^2':<10}{model_unc.deviance_explained():>14.4f}{wood_unc.deviance_explained():>14.4f}")
 print("  -> Same additive structure recovered with similar complexity and fit.")
-print("  -> Eilers-Marx-only here: mono_inc/concave constraints, robust=True.")
+print("  -> Eilers-Marx-only here: mono_inc/concave constraints.")
 print("  -> Wood-only: summary() F-tests/p-values, bs='tp'/'cr'/'ps'/'cc'.")
 
 # --- Same-plot overlay: observed vs predicted for both backends ---

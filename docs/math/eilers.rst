@@ -633,59 +633,27 @@ model" behaviour.
 
 .. _section-robust:
 
-Huber IRLS: handling outliers
------------------------------
+Observation weights
+-------------------
 
-Real data has outliers — sensor glitches, data-entry errors, anomalous
-operating conditions.  Ordinary least squares weights every point equally,
-so a single extreme outlier can pull the entire curve toward it.
-
-**The Huber loss** replaces squared error with a hybrid: small residuals
-are penalised quadratically (like OLS), large residuals are penalised
-linearly (less harshly).  The transition point :math:`c` is set
-automatically from the data's median absolute deviation (MAD):
+Both backends accept a 1-D vector of non-negative observation weights
+:math:`\mathbf{w} = (w_1, \dots, w_n)` in ``fit(x, y, weights=w)`` and
+``gridsearch(x, y, weights=w)`` to minimise the weighted penalised
+least-squares objective:
 
 .. math::
 
-   \rho(r) = \begin{cases}
-   \tfrac12 r^2            & |r| \le c \\
-   c(|r| - \tfrac12 c)     & |r| > c
-   \end{cases},
-   \qquad
-   c = 1.345 \cdot \text{MAD} / 0.6745.
+   \sum_{i=1}^n w_i (y_i - \mathbf{x}_i^\top \boldsymbol{\beta})^2
+   + \boldsymbol{\beta}^\top P \boldsymbol{\beta}
+   = \|\mathbf{W}^{1/2}(\mathbf{y} - X\boldsymbol{\beta})\|^2
+   + \boldsymbol{\beta}^\top P \boldsymbol{\beta}.
 
-The constant 1.345 gives ~95% asymptotic efficiency under Gaussian errors
-— when there are no outliers, the robust fit is almost as good as OLS.
-When there are outliers, it's vastly better.
+Numerically, gamkit pre-multiplies each row of :math:`X` and each
+element of :math:`\mathbf{y}` by :math:`\sqrt{w_i}` before calling the
+standard solver.  This supports:
 
-**IRLS iterates:**
-
-1. Fit the model with current weights.
-2. Compute residuals :math:`r_i = y_i - \hat y_i`.
-3. Update weights: :math:`w_i = \min(1, \, c / |r_i|)`.  Points with
-   large residuals get small weights — they're effectively ignored.
-4. Re-fit with the new weights.  Repeat until convergence.
-
-This is equivalent to M-estimation with the Huber ψ-function.  gamkit
-implements it in ``irls_solve`` (used via ``fit(x, y, robust=True)``) by
-scaling each row of :math:`X` and element of :math:`\mathbf{y}` by
-:math:`\sqrt{w_i}` before calling the standard PIRLS solver, running up
-to 15 such re-weighting iterations.  The reported RSS — and hence the
-scale estimate and GCV — use the final weights,
-:math:`\sum_i w_i r_i^2`, so outliers don't inflate the reported
-uncertainty either.
-
-**When to use robust fitting:**
-
-- You suspect outliers (always a good default in engineering data).
-- Your residuals show a few extreme values.
-- Standard and robust fits give very different GCV scores -- the standard fit is being distorted by outliers.
-
-**When NOT to use it:**
-
-- Your data is clean and you need maximum speed (robust is ~5x slower due to iterations).
-- Your "outliers" are actually the most important data points (e.g., rare failure events you want to model accurately).
-
-Both backends support ``robust=True`` using Huber P-IRLS.
-
-
+- **Precision / inverse-variance weighting** (:math:`w_i = 1 / \sigma_i^2`)
+  for heteroskedastic measurements.
+- **Frequency / replicate weights** for grouped observations.
+- **Outlier down-weighting** by assigning small weights to flagged sensor
+  glitches or running user-level iteratively reweighted least squares.

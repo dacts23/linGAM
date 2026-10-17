@@ -55,14 +55,14 @@ the differences; the subsections after it explain the ones that matter.
    * - Shape constraints
      - Soft: ``mono_inc``/``mono_dec`` (:math:`D_1` penalty), ``convex``/``concave`` (:math:`D_2` penalty), ``periodic`` (wrapped basis + circular :math:`D_2`)
      - Periodic via ``cc`` and ``cp``; no monotonic/convex options
-   * - Robust fitting
-     - Huber IRLS, MAD-scaled
-     - Not available (plain penalised least squares)
+   * - Observation weights
+     - Supported in ``fit()`` and ``gridsearch()`` via :math:`\sqrt{w_i}` scaling
+     - Supported in ``fit()`` and ``gridsearch()`` via :math:`\sqrt{w_i}` scaling
    * - Cost profile
      - Many cheap evaluations (grid); threaded with ``n_jobs != 1``; QR cached per :math:`K`
      - Few, heavier evaluations (optimiser iterations); one QR, repeated Cholesky
    * - Best fit for
-     - Fast sweeps, shape constraints, outlier-heavy data, teaching the machinery
+     - Fast sweeps, shape constraints, teaching the machinery
      - p-values & rigorous summary, automatic :math:`\lambda`, basis choice, tensor margin mixing
 
 **The same objective, two strategies.**  Both engines minimise
@@ -93,14 +93,12 @@ backend adds a Bayesian covariance, per-term p-values, AIC/BIC and an
 interpretable summary.  If you need "is this term significant?" or "which of
 these models should I report?", the Wood backend answers directly.
 
-**Robustness and constraints.**  Conversely, the Eilers-Marx backend owns two
-practical features Wood does not: Huber-robust fitting (outlier-tolerant
-by design) and soft shape constraints (monotonic/convex/concave pushes).
-If your data has sensor glitches or physics demands a monotone
-dose–response, the Eilers-Marx backend is the one with the knob.  Both handle
-periodicity, differently: the Eilers-Marx backend wraps its basis *and* uses a
-circular difference penalty; the Wood backend uses a purpose-built cyclic
-cubic basis.
+**Constraints.**  Conversely, the Eilers-Marx backend owns soft shape
+constraints (monotonic/convex/concave pushes) that the Wood backend does
+not.  If physics demands a monotone dose–response, the Eilers-Marx backend
+is the one with the knob.  Both handle periodicity, differently: the
+Eilers-Marx backend wraps its basis *and* uses a circular difference
+penalty; the Wood backend uses a purpose-built cyclic cubic basis.
 
 **Speed and scaling.**  With few terms and a small grid the Eilers-Marx backend
 is effectively instant; its cost grows with the product of grid sizes and
@@ -127,7 +125,7 @@ Which backend should I use?
   ``backend='wood'`` with default REML.
 * **You need automatic per-term smoothing with many terms** → Wood's
   optimisation scales better than a per-term grid.
-* **You want monotonic/convex/concave pushes or Huber robustness** →
+* **You want monotonic/convex/concave pushes** →
   ``backend='eilers'``; these features don't exist in the Wood backend.
 * **You want to sweep basis counts and smoothing parameters and inspect
   the GCV surface** → Eilers-Marx's grid search, threaded.
@@ -140,8 +138,7 @@ When in doubt, fit both and compare: the decomposition plots and the
 fitted curves should agree on the data's shape even where the p-values and
 :math:`\lambda` philosophies differ.  Disagreement between the two engines
 on the same data is a signal worth investigating — usually it means
-under-smoothing by GCV, an outlier distorting the unrobust Wood fit, or a
-basis count too small for the grid being searched.
+under-smoothing by GCV or a basis count too small for the grid being searched.
 
 
 .. _section-summary:
@@ -180,10 +177,10 @@ Key takeaways
      - Approximate per-term significance tests with p-values
    * - Shape constraints (Eilers-Marx)
      - Soft monotonic/convex/periodic pushes via the choice of penalty
-   * - Huber IRLS (Eilers-Marx)
-     - Down-weight outliers so they don't hijack the curve
+   * - Observation weights (both)
+     - Scale observations by precision or down-weight known outliers via ``weights``
    * - Grid search (Eilers-Marx)
      - Two-phase QR+Cholesky: precompute K-dim work, then evaluate all lambdas in parallel
    * - Comparison rule of thumb
-     - Wood for inference and automatic :math:`\lambda`; Eilers-Marx for constraints, robustness, and fast sweeps
+     - Wood for inference and automatic :math:`\lambda`; Eilers-Marx for constraints and fast sweeps
 

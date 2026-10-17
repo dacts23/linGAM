@@ -206,25 +206,51 @@ def test_gridsearch_both_backends():
     assert g_wd._terms[1].k == 10
 
 
-def test_robust_fitting_both_backends():
-    """Verify that robust=True reduces outlier distortion on both backends."""
+def test_weights_both_backends():
+    """Verify observation weights across fit() and gridsearch() on both backends."""
     np.random.seed(42)
     x = np.linspace(0, 10, 150)
     y_clean = np.sin(x)
     y = y_clean + np.random.normal(0, 0.15, len(x))
+    outlier_idx = [20, 75, 120]
     y[20] += 8.0
     y[75] -= 8.0
     y[120] += 7.0
 
-    for backend in ("eilers", "wood"):
-        m_std = LinGAM(n_splines=14, backend=backend).fit(x, y, robust=False)
-        m_rob = LinGAM(n_splines=14, backend=backend).fit(x, y, robust=True)
-        rmse_std = np.sqrt(np.mean((m_std.predict(x) - y_clean) ** 2))
-        rmse_rob = np.sqrt(np.mean((m_rob.predict(x) - y_clean) ** 2))
-        assert rmse_rob < rmse_std * 0.6
+    w = np.ones_like(y)
+    w[outlier_idx] = 1e-4
 
-        g_std = GAMCore("s(0, k=14)", backend=backend).fit(x, y, robust=False)
-        g_rob = GAMCore("s(0, k=14)", backend=backend).fit(x, y, robust=True)
-        assert np.sqrt(np.mean((g_rob.predict(x) - y_clean) ** 2)) < np.sqrt(
-            np.mean((g_std.predict(x) - y_clean) ** 2)
+    for backend in ("eilers", "wood"):
+        # Unit weights match unweighted fit
+        m_unw = LinGAM(n_splines=14, backend=backend).fit(x, y)
+        m_ones = LinGAM(n_splines=14, backend=backend).fit(
+            x, y, weights=np.ones_like(y)
+        )
+        assert np.allclose(m_unw.coef_, m_ones.coef_)
+
+        # Downweighting outliers recovers clean curve
+        m_w = LinGAM(n_splines=14, backend=backend).fit(x, y, weights=w)
+        rmse_unw = np.sqrt(np.mean((m_unw.predict(x) - y_clean) ** 2))
+        rmse_w = np.sqrt(np.mean((m_w.predict(x) - y_clean) ** 2))
+        assert rmse_w < rmse_unw * 0.6
+
+        g_unw = GAMCore("s(0, k=14)", backend=backend).fit(x, y)
+        g_w = GAMCore("s(0, k=14)", backend=backend).fit(x, y, weights=w)
+        assert np.sqrt(np.mean((g_w.predict(x) - y_clean) ** 2)) < np.sqrt(
+            np.mean((g_unw.predict(x) - y_clean) ** 2)
         ) * 0.6
+
+        # Gridsearch with weights
+        gs_w = LinGAM(backend=backend).gridsearch(
+            x, y, n_splines=[10, 14], weights=w
+        )
+        assert np.sqrt(np.mean((gs_w.predict(x) - y_clean) ** 2)) < rmse_unw * 0.6
+
+        # Invalid weights validation
+        with pytest.raises(ValueError, match="weights length"):
+            LinGAM(backend=backend).fit(x, y, weights=np.ones(5))
+        with pytest.raises(ValueError, match="weights must be finite"):
+            LinGAM(backend=backend).fit(x, y, weights=-np.ones_like(y))
+        with pytest.raises(ValueError, match="weights must be finite"):
+            LinGAM(backend=backend).fit(x, y, weights=np.zeros_like(y))
+

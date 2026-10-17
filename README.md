@@ -16,10 +16,10 @@
 | **Basis function suite** | Thin plate (`tp`, `ts`), Cubic (`cr`, `cs`), Cyclic (`cc`), P-splines (`ps`, `cp`), Random effects (`re`) | Uniform B-splines (`bs`) with linear extrapolation |
 | **Statistical summaries** | Full summary tables with **approximate F-tests and p-values** (Wood 2013) | Basic statistics (EDF, GCV, deviance explained) |
 | **Shape constraints** | Periodic boundaries via cyclic bases (`cc`, `cp`) | **Soft constraints**: `mono_inc`, `mono_dec`, `convex`, `concave`, `periodic` |
-| **Outlier resistance** | Standard penalized least-squares | **Huber IRLS** robust regression (`robust=True`) |
+| **Observation weights** | Weighted penalized least-squares (`weights=...`) | Weighted penalized least-squares (`weights=...`) |
 
 * **Use `wood`** for general regression, automatic parameter tuning, hypothesis testing, and maximum flexibility in basis types (equivalent to R's `mgcv`).
-* **Use `eilers`** when you have physical domain constraints (e.g. monotonicity or convexity), heavy sensor noise/outliers, or want explicit B-spline grid sweeps.
+* **Use `eilers`** when you have physical domain constraints (e.g. monotonicity or convexity) or want explicit B-spline grid sweeps.
 
 ---
 
@@ -30,7 +30,7 @@
 - **Rich basis suite** — thin plate splines, cubic regression splines, cyclic cubic splines, P-splines, B-splines, random effects
 - **Tensor-product interactions** — multidimensional smooths (`te`) with Kronecker sum penalties
 - **Shape constraints** — monotonic increasing/decreasing, convex, concave, and periodic
-- **Robust fitting** — Huber-weighted iteratively reweighted least squares (IRLS)
+- **Observation weights** — prior precision or frequency weights (`weights=...`) in `fit()` and `gridsearch()`
 - **Uncertainty quantification** — Bayesian posterior covariance and frequentist confidence/prediction intervals
 - **Summary tables** — parametric coefficients, EDF, approximate F-statistics, and p-values (Wood 2013)
 
@@ -109,12 +109,12 @@ mono_model = GAM(n_splines=12, constraint="mono_inc", backend="eilers")
 mono_model.fit(x, y)
 ```
 
-Robust fitting against sensor outliers:
+Fitting with observation weights (e.g. inverse variance or down-weighted outliers):
 
 ```python
-# Huber IRLS fitting (outlier-tolerant)
-robust_model = GAM(n_splines=12, backend="eilers")
-robust_model.fit(x, y, robust=True)
+# Weighted penalized least-squares
+weighted_model = GAM(n_splines=12, backend="eilers")
+weighted_model.fit(x, y, weights=w)
 ```
 
 ---

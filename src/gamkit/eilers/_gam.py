@@ -11,9 +11,9 @@ import numpy as np
 from numpy.typing import ArrayLike
 from scipy.linalg import block_diag, cho_factor, cho_solve
 
-from .._base import _GAMBase
+from .._base import _GAMBase, _validate_weights
 from .._formula import parse_formula
-from ._solver import irls_solve, solve_pirls
+from ._solver import solve_pirls
 from ._terms import (
     _FactorTerm,
     _LinearTerm,
@@ -58,7 +58,12 @@ class GAMCore(_GAMBase):
             blocks.append(np.zeros((1, 1)))
         return blocks[0] if len(blocks) == 1 else block_diag(*blocks)
 
-    def fit(self, x: ArrayLike, y: ArrayLike, robust: bool = False) -> "GAMCore":
+    def fit(
+        self,
+        x: ArrayLike,
+        y: ArrayLike,
+        weights: Optional[ArrayLike] = None,
+    ) -> "GAMCore":
         """Fit the model."""
         x_arr = np.asarray(x)
         y_arr = np.asarray(y).ravel()
@@ -66,12 +71,16 @@ class GAMCore(_GAMBase):
             raise ValueError("Input data contains NaN or infinity.")
         if x_arr.ndim == 1:
             x_arr = x_arr.reshape(-1, 1)
+        w_arr = _validate_weights(weights, len(y_arr))
         self._compile(x_arr)
-        self._fit_internal(x_arr, y_arr, robust=robust)
+        self._fit_internal(x_arr, y_arr, weights=w_arr)
         return self
 
     def _fit_internal(
-        self, x: np.ndarray, y: np.ndarray, robust: bool = False
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        weights: Optional[np.ndarray] = None,
     ) -> None:
         n = len(x)
         X = self._build_model_matrix(x)
@@ -79,18 +88,22 @@ class GAMCore(_GAMBase):
         P = self._build_penalty()
         self._compute_coef_slices()
 
-        if robust:
-            coef, U1, B_solve, w = irls_solve(X, y, P, n_iter=15)
-            rss = np.sum(w * (y - X @ coef) ** 2)
+        if weights is not None:
+            w_sqrt = np.sqrt(weights)
+            coef, U1, B_solve = solve_pirls(X * w_sqrt[:, None], y * w_sqrt, P)
+            rss = float(np.sum(weights * (y - X @ coef) ** 2))
+            null_deviance = float(
+                np.sum(weights * (y - np.average(y, weights=weights)) ** 2)
+            )
         else:
             coef, U1, B_solve = solve_pirls(X, y, P)
-            rss = np.sum((y - X @ coef) ** 2)
+            rss = float(np.sum((y - X @ coef) ** 2))
+            null_deviance = float(np.sum((y - np.mean(y)) ** 2))
 
         self.coef_ = coef
         edof_per_coef = np.sum(U1**2, axis=1)
         edof = np.sum(edof_per_coef)
 
-        null_deviance = float(np.sum((y - np.mean(y)) ** 2))
         scale = np.sqrt(rss / max(n - edof, 1))
         cov = (B_solve @ B_solve.T) * scale**2
 
@@ -115,6 +128,7 @@ class GAMCore(_GAMBase):
         gamma: float = 1.4,
         search_terms: Optional[Union[List[Union[int, str]], str]] = None,
         n_jobs: int = 1,
+        weights: Optional[ArrayLike] = None,
         **kwargs,
     ) -> "GAMCore":
         """Select optimal hyper-parameters via GCV grid search."""
@@ -131,6 +145,7 @@ class GAMCore(_GAMBase):
         y_arr = np.asarray(y).ravel()
         if x_arr.ndim == 1:
             x_arr = x_arr.reshape(-1, 1)
+        w_arr = _validate_weights(weights, len(y_arr))
 
         return self._gridsearch(
             x_arr,
@@ -140,6 +155,7 @@ class GAMCore(_GAMBase):
             gamma=gamma,
             search_terms=search_terms,
             n_jobs=n_jobs,
+            weights=w_arr,
         )
 
     def _resolve_search_terms(
@@ -387,12 +403,15 @@ class GAMCore(_GAMBase):
         gamma: float = 1.4,
         search_terms: Optional[Union[List[Union[int, str]], str]] = None,
         n_jobs: int = 1,
+        weights: Optional[np.ndarray] = None,
     ) -> "GAMCore":
         all_k_combos, lam_combos = self._build_combos(
             x, lam, n_splines, search_terms
         )
         n = len(y)
-        yty = float(np.dot(y, y))
+        w_sqrt = np.sqrt(weights) if weights is not None else None
+        y_w = y * w_sqrt if w_sqrt is not None else y
+        yty = float(np.dot(y_w, y_w))
 
         def _precompute_k(k_combo):
             configs_copy = [
@@ -411,8 +430,10 @@ class GAMCore(_GAMBase):
             for t in terms_copy:
                 t.compile(x)
             X_k = _build_matrix_from_terms(terms_copy, x, self.fit_intercept)
+            if w_sqrt is not None:
+                X_k = X_k * w_sqrt[:, None]
             Q, R = np.linalg.qr(X_k)
-            qty = Q.T @ y
+            qty = Q.T @ y_w
             RtR = R.T @ R
             Rt_qty = R.T @ qty
             ss_orth = max(0.0, yty - float(np.dot(qty, qty)))
@@ -483,7 +504,7 @@ class GAMCore(_GAMBase):
         self._terms = precomputed[best_k_idx][-1]
         _set_lams_from_combo(self._terms, lam_combos[best_l_idx])
         self._compile(x)
-        self._fit_internal(x, y)
+        self._fit_internal(x, y, weights=weights)
         return self
 
     def plot_decomposition(

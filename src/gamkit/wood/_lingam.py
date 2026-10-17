@@ -121,7 +121,12 @@ class LinGAM(GAMCore):
     def _diagnostics_title(self) -> str:
         return f"LinGAM Diagnostics (k={self.n_splines}, bs='{self.bs}', sp={self.lam:.4f})"
 
-    def fit(self, x: ArrayLike, y: ArrayLike, robust: bool = False) -> "LinGAM":
+    def fit(
+        self,
+        x: ArrayLike,
+        y: ArrayLike,
+        weights: Optional[ArrayLike] = None,
+    ) -> "LinGAM":
         """Fit the GAM model using Wood REML or GCV criteria."""
         x_arr = np.asarray(x, dtype=float).ravel()
         y_arr = np.asarray(y, dtype=float).ravel()
@@ -132,7 +137,7 @@ class LinGAM(GAMCore):
         )
         cfg_sp = self._term_configs[0]["kwargs"].get("sp")
         self._term.sp = [float(cfg_sp)] if cfg_sp is not None else None
-        super().fit(x_arr.reshape(-1, 1), y_arr, robust=robust)
+        super().fit(x_arr.reshape(-1, 1), y_arr, weights=weights)
         meta = self._term._meta
         xp = meta.get("xp") if meta.get("xp") is not None else meta.get("knots")
         if xp is None:
@@ -153,6 +158,7 @@ class LinGAM(GAMCore):
         n_splines: Optional[ArrayLike] = None,
         lam: Optional[ArrayLike] = None,
         gamma: float = 1.0,
+        weights: Optional[ArrayLike] = None,
     ) -> "LinGAM":
         """Select optimal basis dimension k (and optionally lam) via REML or GCV."""
         x_arr = np.asarray(x, dtype=float).ravel()
@@ -182,7 +188,7 @@ class LinGAM(GAMCore):
                         method=self.method,
                         gamma=gamma,
                         spline_order=self.spline_order,
-                    ).fit(x_arr, y_arr)
+                    ).fit(x_arr, y_arr, weights=weights)
                     if cand.statistics_[crit_key] < best_score:
                         best_score = cand.statistics_[crit_key]
                         best_cand = cand
@@ -200,7 +206,7 @@ class LinGAM(GAMCore):
             self.knots_ = best_cand.knots_
             return self
 
-        return self.fit(x_arr, y_arr)
+        return self.fit(x_arr, y_arr, weights=weights)
 
     def plot_decomposition(
         self,

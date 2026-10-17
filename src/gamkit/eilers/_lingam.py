@@ -106,12 +106,19 @@ class LinGAM(GAMCore):
         n_splines: Optional[ArrayLike] = None,
         gamma: float = 1.4,
         n_jobs: int = 1,
+        weights: Optional[ArrayLike] = None,
     ) -> "LinGAM":
         """Select optimal (lam, n_splines) by minimising GCV."""
         nsp = [np.atleast_1d(n_splines)] if n_splines is not None else None
         lam_g = np.atleast_1d(lam) if lam is not None else None
         super().gridsearch(
-            x, y, lam=lam_g, n_splines=nsp, gamma=gamma, n_jobs=n_jobs
+            x,
+            y,
+            lam=lam_g,
+            n_splines=nsp,
+            gamma=gamma,
+            n_jobs=n_jobs,
+            weights=weights,
         )
         return self
 

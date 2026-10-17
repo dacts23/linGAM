@@ -9,7 +9,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 from scipy import stats
 
-from .._base import _GAMBase
+from .._base import _GAMBase, _validate_weights
 from .._formula import parse_formula
 from ._optimizer import fit_wood_engine
 from ._terms import (
@@ -53,7 +53,12 @@ class GAMCore(_GAMBase):
         status = "fitted" if self.is_fitted else "unfitted"
         return f"GAMCore(formula='{self.formula}', method='{self.method}') [{status}]"
 
-    def fit(self, x: ArrayLike, y: ArrayLike, robust: bool = False) -> "GAMCore":
+    def fit(
+        self,
+        x: ArrayLike,
+        y: ArrayLike,
+        weights: Optional[ArrayLike] = None,
+    ) -> "GAMCore":
         """Fit multi-term GAM model using REML or GCV criteria."""
         x_arr = np.asarray(x, dtype=float)
         y_arr = np.asarray(y, dtype=float).ravel()
@@ -61,6 +66,7 @@ class GAMCore(_GAMBase):
             raise ValueError("Input data contains NaN or infinity.")
         if x_arr.ndim == 1:
             x_arr = x_arr.reshape(-1, 1)
+        w_arr = _validate_weights(weights, len(y_arr))
 
         self._compile(x_arr)
         self._compute_coef_slices()
@@ -96,7 +102,7 @@ class GAMCore(_GAMBase):
             gamma=self.gamma,
             coef_slices=self._coef_slices,
             M_p=1 if self.fit_intercept else 0,
-            robust=robust,
+            weights=w_arr,
         )
 
         self.coef_ = fit_res["coef"]
@@ -135,10 +141,11 @@ class GAMCore(_GAMBase):
         self,
         x: ArrayLike,
         y: ArrayLike,
-        n_splines_grids: Optional[ Any ] = None,
+        n_splines_grids: Optional[Any] = None,
         gamma: float = 1.0,
-        n_splines: Optional[ Any ] = None,
-        search_terms: Optional[ Any ] = None,
+        n_splines: Optional[Any] = None,
+        search_terms: Optional[Any] = None,
+        weights: Optional[ArrayLike] = None,
         **kwargs: Any,
     ) -> "GAMCore":
         """Search over candidate basis dimensions k for smooth terms via GCV."""
@@ -146,6 +153,7 @@ class GAMCore(_GAMBase):
         y_arr = np.asarray(y, dtype=float).ravel()
         if x_arr.ndim == 1:
             x_arr = x_arr.reshape(-1, 1)
+        w_arr = _validate_weights(weights, len(y_arr))
 
         if n_splines_grids is None:
             n_splines_grids = n_splines if n_splines is not None else kwargs.get("k")
@@ -156,7 +164,7 @@ class GAMCore(_GAMBase):
             if isinstance(t, (_WoodSplineTerm, _WoodTensorTerm))
         ]
         if not all_smooth:
-            return self.fit(x_arr, y_arr)
+            return self.fit(x_arr, y_arr, weights=w_arr)
 
         if search_terms is None:
             smooth_indices = all_smooth
@@ -174,7 +182,7 @@ class GAMCore(_GAMBase):
                     allowed.update(i for i, t in enumerate(self._terms) if isinstance(t, _WoodTensorTerm))
             smooth_indices = [i for i in all_smooth if i in allowed]
             if not smooth_indices:
-                return self.fit(x_arr, y_arr)
+                return self.fit(x_arr, y_arr, weights=w_arr)
 
         if n_splines_grids is None:
             grids = [
@@ -209,7 +217,7 @@ class GAMCore(_GAMBase):
             cand_model._terms = instantiate_wood_terms(configs_copy)
             cand_model._term_configs = configs_copy
             try:
-                cand_model.fit(x_arr, y_arr)
+                cand_model.fit(x_arr, y_arr, weights=w_arr)
                 if cand_model.statistics_["GCV"] < best_gcv:
                     best_gcv = cand_model.statistics_["GCV"]
                     best_model = cand_model
@@ -225,7 +233,7 @@ class GAMCore(_GAMBase):
             self._design_matrix_ = best_model._design_matrix_
             return self
 
-        return self.fit(x_arr, y_arr)
+        return self.fit(x_arr, y_arr, weights=w_arr)
 
     def summary(self) -> str:
         """Formatted summary table for the fitted Wood GAM."""

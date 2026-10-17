@@ -105,16 +105,15 @@ n_splines combos) and selects the best pair.
 - You can focus the search on the terms whose nonlinear shape is most
   uncertain.
 
-### Section 4 -- Robust Fitting
+### Section 4 -- Weighted Fitting
 
-The same formula is fit with `robust=True`, which uses 15 iterations
-of Huber IRLS.  Huber loss down-weights points with large residuals,
-making the fit resistant to the 5% sensor outliers.
+The same formula is fit with `weights=...`, down-weighting the 5%
+noisy sensor readings so they do not distort the smooth terms.
 
 **Interpreting the comparison:**
-- Robust GCV is *lower* (5.99 vs 13.81) despite similar EDF.
-- This means the standard fit's GCV is inflated by outlier variance.
-- In practice, run robust when you suspect data quality issues.
+- Weighted GCV is *lower* despite similar EDF.
+- This means the unweighted fit's GCV is inflated by outlier variance.
+- In practice, pass observation `weights` when sensor precision varies or noisy readings are flagged.
 
 ### Section 5 -- Constrained vs Unconstrained
 
@@ -250,8 +249,8 @@ term contributions (plus intercept) equals the full prediction.
    model is adequate.  If GCV is high or residuals show patterns,
    consider adding interaction terms or different constraints.
 
-6. **Use robust fitting** (`robust=True`) if your data might contain
-   sensor errors, recording mistakes, or other outliers.
+6. **Use observation weights** (`weights=...`) if your data has known
+   precision differences or flagged sensor outliers.
 
 ---
 

@@ -89,12 +89,12 @@ Shape constraints:
    model = LinGAM(n_splines=12, constraint='mono_inc', backend="eilers")
    model.fit(x, y)
 
-Robust fitting (Huber IRLS, outlier-tolerant):
+Observation weights (precision weights or down-weighted outliers):
 
 .. code-block:: python
 
    model = LinGAM(n_splines=12, backend="eilers")
-   model.fit(x, y, robust=True)
+   model.fit(x, y, weights=w)
 
 
 Formula syntax

@@ -17,7 +17,7 @@ def fit_wood_engine(
     gamma: float = 1.0,
     coef_slices: Optional[List[Tuple[int, int]]] = None,
     M_p: int = 1,
-    robust: bool = False,
+    weights: Optional[np.ndarray] = None,
 ) -> Dict[str, Any]:
     """Fit GAM using Wood (2011) REML or GCV criteria and compute full statistics."""
     n, p = X.shape
@@ -25,53 +25,15 @@ def fit_wood_engine(
     if method not in ("REML", "GCV.CP", "GCV"):
         raise ValueError(f"Unknown method '{method}'. Choose 'REML' or 'GCV.Cp'.")
 
-    if robust:
-        residuals = y - np.median(y)
-        w = np.ones(n, dtype=float)
-        S_tot = sum(S_list) if S_list else np.zeros((p, p), dtype=float)
-        res: Dict[str, Any] = {}
-        for _ in range(3):
-            for _ in range(5):
-                mad = float(np.median(np.abs(residuals - np.median(residuals))))
-                scale_h = mad / 0.6745 if mad > 1e-6 else 1e-6
-                c_h = 1.345 * scale_h
-                abs_r = np.abs(residuals)
-                w = np.where(abs_r <= c_h, 1.0, c_h / np.maximum(abs_r, 1e-6))
-                W_sqrt = np.sqrt(w)
-                Xw = X * W_sqrt[:, None]
-                H = Xw.T @ Xw + S_tot
-                H.flat[:: p + 1] += 1e-12
-                coef = linalg.solve(
-                    H, Xw.T @ (y * W_sqrt), assume_a="pos", check_finite=False
-                )
-                residuals = y - X @ coef
-            W_sqrt = np.sqrt(w)
-            res = fit_wood_engine(
-                X * W_sqrt[:, None],
-                y * W_sqrt,
-                S_list,
-                sp_fixed=sp_fixed,
-                method=method,
-                gamma=gamma,
-                coef_slices=coef_slices,
-                M_p=M_p,
-                robust=False,
-            )
-            coef = res["coef"]
-            S_tot = sum(l_val * s_mat for l_val, s_mat in zip(res["sp"], S_list))
-            residuals = y - X @ coef
-        y_mean_w = float(np.sum(w * y) / max(float(np.sum(w)), 1e-12))
-        null_dev = float(np.sum(w * (y - y_mean_w) ** 2))
-        rss = res["rss"]
-        total_edf = res["edof"]
-        res["null_deviance"] = null_dev
-        res["deviance_explained"] = max(0.0, 1.0 - rss / max(null_dev, 1e-12))
-        res["r_sq_adj"] = max(
-            0.0,
-            1.0
-            - (rss / max(n - total_edf, 1)) / (null_dev / max(n - 1, 1)),
+    if weights is not None:
+        null_deviance = float(
+            np.sum(weights * (y - float(np.average(y, weights=weights))) ** 2)
         )
-        return res
+        w_sqrt = np.sqrt(weights)
+        X = X * w_sqrt[:, None]
+        y = y * w_sqrt
+    else:
+        null_deviance = float(np.sum((y - float(np.mean(y))) ** 2))
 
     if n > p:
         R_aug = linalg.qr(
@@ -388,7 +350,6 @@ def fit_wood_engine(
             f_stat_per_term.append(stat)
             p_values_per_term.append(pval)
 
-    null_deviance = float(np.sum((y - float(np.mean(y))) ** 2))
     dev_explained = max(0.0, 1.0 - best_rss / max(null_deviance, 1e-12))
     r_sq_adj = max(
         0.0,
