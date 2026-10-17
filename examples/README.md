@@ -31,6 +31,7 @@ that can run automatically if reference packages are installed.
 | 12 | `12_concrete_demo.py` | Concrete strength GAM: EDA plots, s+te+f+l formula, selective grid search, key-age predictions | Eilers-Marx + Wood |
 | 13 | `13_eilers_vs_wood_comparison.py` | Head-to-head comparison with plots: univariate + multivariate fits, EDF/RSS/R²/timings | Eilers-Marx vs Wood |
 | 14 | `14_wood_basis_decomposition_plots.py` | Simon Wood's y vs x test function: all plot types, basis decomposition (unweighted/weighted/cumulative), penalty effects, basis comparison | Wood + Eilers-Marx |
+| 15 | `15_eilers_basis_decomposition_plots.py` | Eilers-Marx (P-spline) y vs x: uniform B-spline decomposition, partition of unity, shape constraints, visual basis comparison vs Wood | Eilers-Marx + Wood |
 
 Every example ends with a console **backend comparison** block fitting the same
 data on both backends, except where a feature exists on one backend only:

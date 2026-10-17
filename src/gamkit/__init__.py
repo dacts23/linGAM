@@ -9,6 +9,7 @@ __version__ = "0.3.0"
 _BACKENDS = {
     "wood": (WoodLinGAM, WoodGAMCore),
     "eilers": (EilersLinGAM, EilersGAMCore),
+    "pygam": (EilersLinGAM, EilersGAMCore),
 }
 
 
