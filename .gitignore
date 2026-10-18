@@ -24,3 +24,23 @@ MANIFEST
 .coverage
 htmlcov/
 docs/_build/
+
+# AI assistants and agent instructions
+AGENTS.md
+CLAUDE.md
+.cursor/
+.cursorrules
+.windsurf/
+.windsurfrules
+.clinerules
+.claude/
+.gemini/
+.copilot/
+.aider*
+*.ai/
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
