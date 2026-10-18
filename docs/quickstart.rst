@@ -24,6 +24,14 @@ For building documentation locally::
    cd docs
    make html
 
+.. tip::
+
+   **Interactive Tutorial:** If you learn best by executing code cell-by-cell, check out
+   the comprehensive hands-on tutorial notebook `examples/gam_tutorial.ipynb`_ covering
+   underfitting vs. overfitting, EDF interpretation, 2-D tensor products, and physical shape constraints.
+
+.. _examples/gam_tutorial.ipynb: https://github.com/dacts23/magli/blob/main/examples/gam_tutorial.ipynb
+
 
 Unified API & Backends
 ----------------------

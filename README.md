@@ -170,9 +170,12 @@ Full documentation, mathematical foundations, and end-to-end tutorials are avail
 
 ---
 
-## Demo Scripts
+## Interactive Tutorial & Demo Scripts
 
-Run any of the 15 self-contained demo scripts in the `examples/` directory:
+Step through the interactive Jupyter notebook tutorial:
+* **[examples/gam_tutorial.ipynb](examples/gam_tutorial.ipynb)**: An end-to-end hands-on guide covering underfitting vs. overfitting, EDF interpretation, 2-D tensor interactions, and shape constraints.
+
+Or run any of the self-contained demo scripts:
 
 ```bash
 python examples/01_basic_lingam.py

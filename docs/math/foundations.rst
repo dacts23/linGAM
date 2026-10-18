@@ -162,3 +162,183 @@ Eilers-Marx backend lets the intercept absorb each term's overall level.  We'll
 make this precise in :ref:`Part III<section-wood-identifiability>`.
 
 
+.. _section-core-intuitions:
+
+Core Intuitions & Mental Models
+-------------------------------
+
+Before diving into the matrix algebra of the two backends, having the right physical
+and geometric mental models makes GAMs intuitive.
+
+The Elastic Spring Analogy for Penalties
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A standard polynomial or unpenalised spline treats each coefficient as a free, independent
+lever.  If noise moves one data point, the unpenalised model will twist the curve wildly
+to chase it.
+
+In a GAM, think of the spline coefficients :math:`\beta_1, \beta_2, \dots, \beta_K`
+as heights of pegs, connected to their neighbours by **elastic springs**:
+
+* **Second-difference penalty (:math:`D_2`):** The springs penalise sharp changes in slope
+  (curvature).  If one peg is pulled out of line with its two neighbours, the spring
+  resists with tension proportional to :math:`\lambda`.
+* **Zero penalty (:math:`\lambda \to 0`):** The springs are completely slack.  Every peg moves
+  freely, overfitting local noise.
+* **Infinite penalty (:math:`\lambda \to \infty`):** The springs become rigid steel rods.  The
+  pegs are forced into a perfectly straight line, collapsing the spline to its linear null space.
+* **The sweet spot (:math:`0 < \lambda < \infty`):** The springs allow the curve to bend where
+  multiple data points agree on a genuine signal, while damping out high-frequency noise.
+
+Demystifying Effective Degrees of Freedom (EDF)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In ordinary regression, degrees of freedom are integers: an unpenalised model with 10 basis
+functions has exactly 10 parameters (10 degrees of freedom).
+
+In a GAM, you will routinely see outputs like:
+
+.. code-block:: text
+
+   s(0):  EDF = 3.42,  k = 10
+
+What does **3.42 degrees of freedom** mean?
+
+Because the penalty matrix :math:`S_\lambda` ties the coefficients together, they cannot
+move independently.  The mathematical definition is the trace of the influence (hat) matrix:
+
+.. math::
+
+   \text{EDF} = \operatorname{tr}\bigl( (X^\top X + S_\lambda)^{-1} X^\top X \bigr).
+
+Intuitively:
+
+* An EDF of **1.0** means the term has collapsed to a simple straight line (1 linear slope parameter).
+* An EDF of **2.0** represents a pure quadratic curve (parabola).
+* An EDF of **3.42** means the curve has the flexibility of approximately a cubic polynomial,
+  but with the localized smoothness and stability of a spline.
+* An EDF close to the basis dimension (:math:`\text{EDF} \approx k - 1`) is a warning sign that
+  the basis has **saturated**: the true underlying function may be wigglier than :math:`k` allows,
+  and you should increase ``k``.
+
+Confidence Intervals vs. Prediction Intervals
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+magli models provide two distinct uncertainty bands via ``model.confidence_intervals(x)``
+and ``model.prediction_intervals(x)``:
+
+1. **Confidence Interval (Credible Band on :math:`f(x)`):**
+   Reflects the uncertainty in estimating the *true underlying mean curve* :math:`f(x)`.
+   If you gathered infinite data points, this band would shrink to zero width.
+   Mathematically, it depends only on the parameter covariance:
+   :math:`\operatorname{Var}(\hat{f}(x)) = \mathbf{b}(x)^\top V_{\boldsymbol{\beta}} \mathbf{b}(x)`.
+
+2. **Prediction Interval (Spread of New Data Points :math:`y_{\text{new}}`):**
+   Answers: *"Where will a future individual measurement fall?"*
+   Even if the mean curve :math:`f(x)` were known with 100% certainty, individual observations
+   still vary with residual noise :math:`\sigma^2`.
+   The prediction variance includes this observation noise:
+   :math:`\operatorname{Var}(y_{\text{new}} \mid x) = \operatorname{Var}(\hat{f}(x)) + \hat\sigma^2`.
+   Consequently, prediction intervals never collapse to zero width, regardless of sample size.
+
+Multidimensional Geometry: How Tensor Products Work
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When two variables interact (e.g., turbine blade temperature :math:`x_1` and vibration amplitude :math:`x_2`),
+an additive model :math:`f_1(x_1) + f_2(x_2)` cannot capture the synergy: high temperature
+might be benign at low vibration, but catastrophic at high vibration.
+
+``te(0, 1)`` solves this by taking the **tensor product** of the marginal bases:
+
+.. math::
+
+   B_{i, j}(x_1, x_2) = B_i(x_1) \times B_j(x_2).
+
+.. figure:: ../_static/images/tensor_product_interaction.png
+   :alt: Tensor-product splines from 1-D bases to 2-D interaction surfaces
+   :align: center
+   :width: 100%
+
+   Constructing a 2-D interaction surface with ``te()``: **(1)** Marginal 1-D basis functions
+   along :math:`x_1` and :math:`x_2`; **(2)** A single 2-D tensor basis bump :math:`B_{3,3}(x_1, x_2)`
+   localized at the intersection of both intervals; **(3)** Fitted 2-D surface :math:`\hat{f}(x_1, x_2)`
+   capturing non-linear interaction with data points.
+
+Crucially, tensor products use **Kronecker sum penalties**:
+
+.. math::
+
+   S_{\text{total}} = \lambda_1 \, (S_1 \otimes I) + \lambda_2 \, (I \otimes S_2).
+
+This allows the model to have different amounts of smoothness along each coordinate axis:
+if :math:`x_1` varies rapidly while :math:`x_2` changes slowly, REML estimates
+:math:`\lambda_1 \ne \lambda_2` automatically.
+
+
+.. _section-diagnostic-guide:
+
+A Practitioner's Diagnostic & Troubleshooting Guide
+---------------------------------------------------
+
+Once you fit a GAM, how do you verify whether the model is trustworthy?
+
+1. How to Read `model.summary()`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Wood backend summary provides:
+
+* **Parametric coefficients:** Linear effects and intercept, reported with standard errors,
+  t-statistics, and p-values matching standard regression.
+
+* **Smooth terms table:**
+
+  * **EDF:** Effective degrees of freedom. Higher EDF = wigglier curve.
+  * **Ref.df:** Reference degrees of freedom used in the denominator of the F-test.
+  * **F-statistic & p-value (Wood 2013):** Tests the null hypothesis :math:`H_0: f(x) = 0`
+    (i.e. the predictor has *zero effect* across its entire range). A small p-value
+    (:math:`p < 0.05`) indicates significant non-linear evidence.
+
+* **Model-level metrics:**
+
+  * **R-sq.(adj):** Adjusted :math:`R^2` accounting for EDF.
+  * **Deviance explained:** Percentage of variation captured by the model relative to the null (mean-only) model.
+  * **REML / GCV score:** Model-selection criterion (lower is better).
+
+2. Checking for Basis Saturation (Is k large enough?)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The basis dimension :math:`k` sets the **maximum possible flexibility** of the term.
+The penalty shrinks that flexibility down to the optimal EDF.
+
+* **Rule of thumb:** If the estimated EDF is substantially lower than :math:`k`
+  (e.g., :math:`\text{EDF} = 3.2` with :math:`k = 10`), :math:`k` is sufficient.
+* **Saturation warning:** If :math:`\text{EDF} \approx k - 1` (or :math:`k - 2`),
+  the penalty wanted more freedom than the basis could supply.
+  **Action:** Re-fit with a larger basis (e.g. ``k=20`` or ``k=30``).
+
+3. Boundary Flares and Data Sparsity
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you notice the 95% confidence bands flare out widely at the left or right edges of a
+decomposition plot, check your predictor distribution:
+
+* Splines have fewer basis functions overlapping near boundaries.
+* If data is sparse near extremes, there are fewer observations to constrain the curve,
+  causing parameter variance :math:`V_{\boldsymbol{\beta}}` to inflate.
+* **Action:** Avoid interpreting or extrapolating in regions where confidence bands flare widely.
+
+4. Four-Panel Diagnostic Checks
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Calling ``model.plot_diagnostics(x, y)`` renders four essential diagnostic checks:
+
+1. **Observed vs. Fitted:** Points should cluster tightly along the identity line :math:`y = \hat{y}`.
+2. **Residuals vs. Fitted:** Points should scatter symmetrically around zero with no curvature.
+   Any curve or bow indicates an unmodeled non-linear pattern or missing interaction.
+3. **Residual Histogram:** Should be roughly bell-shaped, centered at zero.
+4. **Normal Q-Q Plot:** Residual quantiles should follow the diagonal red reference line.
+   Departures in the tails indicate heavy-tailed errors or outliers (for which observation
+   weights ``weights=...`` can be used).
+
+
+
