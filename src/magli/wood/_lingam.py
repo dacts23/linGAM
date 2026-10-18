@@ -53,8 +53,10 @@ class LinGAM(GAMCore):
 
         bs_lower = bs.lower()
         m_param = (
-            (int(spline_order) - 1, 2)
-            if bs_lower in ("ps", "cp", "bs", "b")
+            (int(spline_order), 2)
+            if bs_lower in ("bs", "b")
+            else (int(spline_order) - 1, 2)
+            if bs_lower in ("ps", "cp")
             else None
         )
         lam_val = float(lam) if lam is not None else None

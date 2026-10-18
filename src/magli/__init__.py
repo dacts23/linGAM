@@ -4,7 +4,7 @@ from . import eilers, wood
 from .eilers import GAMCore as EilersGAMCore, LinGAM as EilersLinGAM
 from .wood import GAMCore as WoodGAMCore, LinGAM as WoodLinGAM
 
-__version__ = "0.3.0"
+__version__ = "1.0.0"
 
 _BACKENDS = {
     "wood": (WoodLinGAM, WoodGAMCore),

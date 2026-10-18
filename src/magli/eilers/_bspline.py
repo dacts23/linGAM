@@ -20,14 +20,14 @@ def b_spline_basis(
     n_splines : int
         Number of basis functions K.  For periodic splines this is the
         *full* count before wrapping; the returned matrix has
-        ``K - spline_order + 1`` columns.
+        ``K - spline_order`` columns.
     spline_order : int
         Order k of the B-spline (polynomial degree).
     edge_knots : np.ndarray, shape (2,)
         Domain boundaries [min, max] for mapping data to [0, 1].
     periodic : bool, default False
-        If True, wrap the first ``spline_order - 1`` basis functions
-        to enforce f(0) = f(1), returning a periodic basis.
+        If True, wrap the first ``spline_order`` basis functions
+        to enforce periodic continuity across f(0) = f(1).
 
     Returns
     -------
@@ -103,7 +103,7 @@ def b_spline_basis(
     result = bases[:-2]
 
     if periodic:
-        n_wrap = k - 1
+        n_wrap = k
         if n_wrap > 0 and n_wrap < K:
             K_eff = K - n_wrap
             wrapped = result[:, :K_eff].copy()

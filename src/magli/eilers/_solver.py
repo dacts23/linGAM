@@ -17,7 +17,6 @@ def solve_pirls(
     Q, R = np.linalg.qr(X)
     min_nm = min(m, n)
     U, d, Vt = np.linalg.svd(np.vstack([R, E]), full_matrices=False)
-    U1 = U[:min_nm, :min_nm]
-    d_inv = 1.0 / d[:min_nm]
-    B_solve = (Vt[:min_nm].T * d_inv) @ U1.T @ Q.T
+    U1 = U[:min_nm, :]
+    B_solve = (Vt.T / d) @ U1.T @ Q.T
     return B_solve @ y, U1, B_solve

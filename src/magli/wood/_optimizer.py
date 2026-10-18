@@ -29,11 +29,13 @@ def fit_wood_engine(
         null_deviance = float(
             np.sum(weights * (y - float(np.average(y, weights=weights))) ** 2)
         )
+        log_w_sum = float(np.sum(np.log(weights[weights > 0])))
         w_sqrt = np.sqrt(weights)
         X = X * w_sqrt[:, None]
         y = y * w_sqrt
     else:
         null_deviance = float(np.sum((y - float(np.mean(y))) ** 2))
+        log_w_sum = 0.0
 
     if n > p:
         R_aug = linalg.qr(
@@ -133,6 +135,11 @@ def fit_wood_engine(
                 for g_i in grp
             }
             overlap_groups.append((grp, U_pos.shape[1], proj_subs))
+
+    total_pen_rank = sum(
+        rank_S_list[i] for i in range(n_pens) if not overlapping[i]
+    ) + sum(r_dim for _, r_dim, _ in overlap_groups)
+    M_p = max(p - total_pen_rank, 0)
 
     eye_p = np.eye(p, dtype=float)
 
@@ -249,7 +256,11 @@ def fit_wood_engine(
             elif c is not None:
                 try:
                     Z_Rt = linalg.solve_triangular(
-                        c, R.T, lower=lower, check_finite=False
+                        c,
+                        R.T,
+                        lower=lower,
+                        trans="N" if lower else "T",
+                        check_finite=False,
                     )
                     edf = float(np.sum(Z_Rt**2))
                 except Exception:
@@ -289,28 +300,22 @@ def fit_wood_engine(
         return score, coef, H_inv, rss, scale_est, edf
 
     if len(free_indices) == 0:
-        best_score, best_coef, best_H_inv, best_rss, best_scale, best_edf = (
+        best_score, best_coef, best_H_inv, best_rss, _, best_edf = (
             _eval_criterion(np.zeros(0), compute_details=True)
         )
+        best_scale = best_rss / max(n - best_edf, 1)
         best_sp = sp_vals
-    elif len(free_indices) == 1:
-        opt = optimize.minimize_scalar(
-            lambda r: _eval_criterion(np.array([r]))[0],
-            bounds=(-15.0, 15.0),
-            method="bounded",
-        )
-        best_score, best_coef, best_H_inv, best_rss, best_scale, best_edf = (
-            _eval_criterion(np.array([opt.x]), compute_details=True)
-        )
-        best_sp = list(sp_vals)
-        best_sp[free_indices[0]] = float(np.exp(opt.x))
     else:
+        n_free = len(free_indices)
+        candidates = [np.full(n_free, v) for v in (-8.0, -4.0, 0.0, 4.0, 8.0)]
+        rho_init = min(candidates, key=lambda r: _eval_criterion(r)[0])
         opt = optimize.minimize(
             lambda r: _eval_criterion(r, compute_grad=True),
-            np.zeros(len(free_indices)),
+            rho_init,
             jac=True,
             method="L-BFGS-B",
-            bounds=[(-15.0, 15.0)] * len(free_indices),
+            bounds=[(-15.0, 15.0)] * n_free,
+            options={"ftol": 1e-14, "gtol": 1e-10},
         )
         best_score, best_coef, best_H_inv, best_rss, best_scale, best_edf = (
             _eval_criterion(opt.x, compute_details=True)
@@ -360,7 +365,9 @@ def fit_wood_engine(
 
     gcv_score = (n * best_rss) / (max(n - gamma * total_edf, 1.0) ** 2)
     loglik = (
-        -0.5 * n * np.log(2.0 * np.pi * scale_val) - 0.5 * best_rss / scale_val
+        -0.5 * n * np.log(2.0 * np.pi * scale_val)
+        - 0.5 * best_rss / scale_val
+        + 0.5 * log_w_sum
     )
 
     return {
@@ -384,6 +391,7 @@ def fit_wood_engine(
         "score": best_score,
         "method": method,
         "loglik": loglik,
+        "log_weights_sum": log_w_sum,
         "aic": -2.0 * loglik + 2.0 * (total_edf + 1),
         "bic": -2.0 * loglik + np.log(n) * (total_edf + 1),
         "n_samples": n,

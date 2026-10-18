@@ -8,14 +8,15 @@ from .._base import _khatri_rao, _kron_sum
 from ._bspline import b_spline_basis
 from ._penalty import (
     circular_second_diff_penalty,
-    first_diff_penalty,
     ridge_penalty,
     second_diff_penalty,
+    shape_constraint_penalty,
 )
 
 _CONSTRAINTS = frozenset({
     None, 'mono_inc', 'mono_dec', 'convex', 'concave', 'periodic',
 })
+_SHAPE_CONSTRAINTS = frozenset({'mono_inc', 'mono_dec', 'convex', 'concave'})
 
 
 class _Term:
@@ -52,10 +53,12 @@ class _SplineTerm(_Term):
                 f"Unknown constraint '{constraint}'. "
                 f"Choose from: {sorted(c for c in _CONSTRAINTS if c is not None)}."
             )
-        if n_splines <= spline_order:
+        min_k = (2 * spline_order) if constraint == 'periodic' else (spline_order + 1)
+        if n_splines < min_k:
             raise ValueError(
-                f"n_splines ({n_splines}) must be greater than "
-                f"spline_order ({spline_order}). Use at least {spline_order + 1}."
+                f"n_splines ({n_splines}) must be at least {min_k} "
+                f"for spline_order ({spline_order})"
+                + (" with periodic constraint." if constraint == 'periodic' else ".")
             )
         self.feature = feature
         self.n_splines = n_splines
@@ -63,7 +66,7 @@ class _SplineTerm(_Term):
         self.spline_order = spline_order
         self.constraint = constraint
         self.n_coefs = (
-            n_splines - spline_order + 1
+            n_splines - spline_order
             if constraint == 'periodic'
             else n_splines
         )
@@ -85,11 +88,18 @@ class _SplineTerm(_Term):
     def build_penalty(self, lam: Optional[float] = None) -> np.ndarray:
         l = lam if lam is not None else self.lam
         K_eff = self.n_coefs
-        if self.constraint in ('mono_inc', 'mono_dec'):
-            return first_diff_penalty(K_eff, l)
         if self.constraint == 'periodic':
             return circular_second_diff_penalty(K_eff, l)
         return second_diff_penalty(K_eff, l)
+
+    @property
+    def has_shape_constraint(self) -> bool:
+        return self.constraint in _SHAPE_CONSTRAINTS
+
+    def build_constraint_penalty(self, coef_sub: np.ndarray) -> np.ndarray:
+        if self.constraint in _SHAPE_CONSTRAINTS:
+            return shape_constraint_penalty(coef_sub, self.constraint)
+        return np.zeros((self.n_coefs, self.n_coefs))
 
     def penalty_bases(self) -> List[Tuple[np.ndarray, int]]:
         return [(self.build_penalty(1.0), 1)]

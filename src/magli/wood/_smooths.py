@@ -204,7 +204,6 @@ def build_cc_basis(
     D[idx, prev_i] = 1.0 / h[prev_i]
     D[idx, idx] = -(1.0 / h[prev_i] + 1.0 / h[idx])
     D[idx, next_i] = 1.0 / h[idx]
-    D[n - 1, 0] = 0.0  # cyclic boundary convention
 
     BD = np.linalg.solve(B, D)
     S = D.T @ BD
@@ -375,6 +374,74 @@ def build_cp_basis(
     )
 
 
+def build_bs_basis(
+    x: np.ndarray,
+    k: int = 10,
+    knots: Optional[np.ndarray] = None,
+    m: Tuple[int, int] = (3, 2),
+) -> Tuple[np.ndarray, List[np.ndarray], Dict]:
+    """B-spline basis ('bs') with integrated squared derivative penalty."""
+    x = np.asarray(x, dtype=float).ravel()
+    m1, m2 = m
+    k = max(k, m1 + 1)
+    nk = k - m1 + 1
+
+    if knots is None or len(knots) == 2:
+        xl, xu = (
+            (float(knots[0]), float(knots[1]))
+            if knots is not None and len(knots) == 2
+            else (float(np.min(x)), float(np.max(x)))
+        )
+        xr = xu - xl
+        xl -= xr * 0.001
+        xu += xr * 0.001
+        dx = (xu - xl) / (nk - 1)
+        knots_full = np.linspace(xl - dx * m1, xu + dx * m1, nk + 2 * m1)
+    else:
+        knots_full = np.asarray(knots, dtype=float).ravel()
+
+    order = m1 + 1
+    X = _spline_design(knots_full, x, order, outer_ok=True)
+
+    k0 = knots_full[m1 : m1 + nk]
+    h = np.diff(k0)
+    pord = m1 - m2
+    if pord > 0:
+        xi, wi = np.polynomial.legendre.leggauss(pord + 1)
+        pts = (0.5 * (k0[:-1, None] + k0[1:, None]) + 0.5 * h[:, None] * xi[None, :]).ravel()
+        wts = (0.5 * h[:, None] * wi[None, :]).ravel()
+    else:
+        pts = 0.5 * (k0[:-1] + k0[1:])
+        wts = h
+
+    k_pad = np.concatenate(
+        [
+            np.repeat(knots_full[0] - 1.0, m1),
+            knots_full,
+            np.repeat(knots_full[-1] + 1.0, m1),
+        ]
+    )
+    c = np.zeros((len(k_pad) - order, k), dtype=float)
+    c[m1 : m1 + k, :] = np.eye(k)
+    G = BSpline(k_pad, c, m1, extrapolate=False)(pts, nu=m2)
+    np.nan_to_num(G, copy=False, nan=0.0)
+    S = G.T @ (wts[:, None] * G)
+    S = 0.5 * (S + S.T)
+
+    return (
+        X,
+        [S],
+        {
+            "bs": "bs",
+            "knots": knots_full,
+            "ord": order,
+            "m": m,
+            "rank": k - m2,
+            "null_space_dim": m2,
+        },
+    )
+
+
 def _eta_1d(r: np.ndarray) -> np.ndarray:
     """Thin plate spline Green's function for d=1, m=2: eta(r) = (1/12) * |r|^3."""
     out = np.abs(r)
@@ -431,21 +498,10 @@ def build_tp_basis(
     E = _eta_1d(xu[:, None] - xu[None, :])
     T = np.column_stack([np.ones(nu), xu])
 
-    if nu > k + 2 and nu >= 50:
-        try:
-            from scipy.sparse.linalg import eigsh
-
-            v_k, U_k = eigsh(E, k=k, which="LM", v0=np.ones(nu, dtype=float))
-            sort_idx = np.argsort(np.abs(v_k))[::-1]
-            v_k, U_k = v_k[sort_idx], U_k[:, sort_idx]
-        except Exception:
-            eigvals, eigvecs = np.linalg.eigh(E)
-            sort_idx = np.argsort(np.abs(eigvals))[::-1][:k]
-            v_k, U_k = eigvals[sort_idx], eigvecs[:, sort_idx]
-    else:
-        eigvals, eigvecs = np.linalg.eigh(E)
-        sort_idx = np.argsort(np.abs(eigvals))[::-1][:k]
-        v_k, U_k = eigvals[sort_idx], eigvecs[:, sort_idx]
+    eigvals, eigvecs = np.linalg.eigh(E)
+    top_k = np.argsort(np.abs(eigvals))[::-1][:k]
+    sort_idx = top_k[np.argsort(eigvals[top_k])[::-1]]
+    v_k, U_k = eigvals[sort_idx], eigvecs[:, sort_idx]
 
     Q = _wood_qt(T.T @ U_k)
     X_u = (U_k * v_k[None, :]) @ Q
@@ -535,7 +591,7 @@ def build_smooth_basis(
             x, k=k, knots=knots, m=m if isinstance(m, tuple) else (2, 2)
         )
     if bs in ("bs", "b"):
-        return build_ps_basis(
+        return build_bs_basis(
             x, k=k, knots=knots, m=m if isinstance(m, tuple) else (3, 2)
         )
     if bs == "re":

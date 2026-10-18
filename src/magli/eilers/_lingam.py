@@ -42,7 +42,7 @@ class LinGAM(GAMCore):
         val = int(val)
         self._term.n_splines = val
         self._term.n_coefs = (
-            val - self.spline_order + 1
+            val - self.spline_order
             if self.constraint == "periodic"
             else val
         )

@@ -158,9 +158,10 @@ B-spline derivative formula :math:`B'_{i,k+1} = k
 \bigl( B_{i,k}/\Delta\tau - B_{i+1,k}/\Delta\tau \bigr)`.
 
 **Periodic basis.**  When ``constraint='periodic'``, the domain wraps
-around: the input is taken modulo 1 and the first :math:`k-1` columns fold
-into the last :math:`k-1`, enforcing :math:`f(0) = f(1)` and reducing the
-coefficient count from :math:`K` to :math:`K_{\text{eff}} = K - k + 1`.
+around: the input is taken modulo 1 and the last :math:`k` columns fold
+into the first :math:`k`, preserving the partition of unity
+:math:`\sum_j B_j(x) = 1`, enforcing :math:`f(0) = f(1)`, and reducing the
+coefficient count from :math:`K` to :math:`K_{\text{eff}} = K - k`.
 
 
 .. _section-penalties:
@@ -223,22 +224,13 @@ curves we expect.
    \qquad
    P = \lambda \, D_2^\top D_2.
 
-*First-difference penalty (``mono_inc`` / ``mono_dec``):*  Penalises
-*changes* between adjacent coefficients, :math:`\sum_i (\beta_{i+1} -
-\beta_i)^2` (a discrete first-derivative penalty whose null space is
-constants only).  Because adjacent coefficients are pulled toward each
-other, local oscillations are damped so a strong underlying upward or
-downward trend in the data remains monotone.
-
-.. math::
-
-   D_1 = \begin{pmatrix}
-   -1 & 1 &   &   \\
-      & -1 & 1 &   \\
-      &    & \ddots & \ddots
-   \end{pmatrix}_{(K-1) \times K},
-   \qquad
-   P = \lambda \, D_1^\top D_1.
+*Active-set directional shape penalties (``mono_inc``, ``mono_dec``, ``convex``, ``concave``):*
+In addition to the smoothness penalty :math:`\lambda D_2^\top D_2`, shape-constrained
+terms add ``pyGAM``'s iterative active-set penalty
+:math:`C(\boldsymbol{\beta}) = \lambda_{\text{con}} D_m^\top \operatorname{diag}(\mathbf{v}(\boldsymbol{\beta})) D_m + \lambda_{L2} I`
+with :math:`\lambda_{\text{con}} = 10^9` and :math:`\lambda_{L2} = 10^{-3}`, where
+:math:`\mathbf{v}(\boldsymbol{\beta})` selects violated first differences (:math:`m=1`
+for monotonicity) or second differences (:math:`m=2` for convexity/concavity).
 
 *Circular second-difference (periodicity):*  The second-difference operator
 wraps around, connecting the last coefficient back to the first: the
@@ -248,17 +240,6 @@ mathematical equivalent of gluing the two ends of the curve together.
 :math:`P = \lambda I_K`.  This is a "shrink-toward-zero" penalty that pulls
 all coefficients toward zero by the same amount.  (Linear ``l()`` terms
 default to :math:`\lambda = 0`: unpenalised.)
-
-**An honest caveat about "constraints".**  The ``constraint=`` argument maps
-both ``'mono_inc'`` and ``'mono_dec'`` to the same sign-symmetric
-first-difference penalty :math:`\lambda D_1^\top D_1` (which shrinks toward
-a flat constant and does not distinguish :math:`+` from :math:`-` slopes),
-and maps both ``'convex'`` and ``'concave'`` to the standard
-second-difference penalty :math:`\lambda D_2^\top D_2` (identical to
-``constraint=None``).  Only ``constraint='periodic'`` alters the basis and
-penalty structure asymmetrically (wrapping the basis and circularly
-connecting :math:`D_2`).  Enforcing true directional monotonicity or
-convexity/concavity requires an asymmetric or inequality-constrained solver.
 
 **The role of** :math:`\boldsymbol{\lambda}` **cannot be overstated.**
 :math:`\lambda` determines how much information the model extracts from the

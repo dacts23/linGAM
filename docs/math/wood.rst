@@ -106,9 +106,9 @@ the map:
      - constants (dim 1)
    * - ``bs``
      - B-spline
-     - degree-:math:`m_{\text{basis}}` B-splines (default cubic), equally spaced knots
-     - :math:`m_{\text{pen}}`-th order differences of coefficients
-     - polynomials of degree :math:`< m_{\text{pen}}`
+     - degree-:math:`m_1` B-splines (default cubic), equally spaced knots
+     - exact integral :math:`\int \bigl(f^{(m_2)}(x)\bigr)^2 dx`
+     - polynomials of degree :math:`< m_2`
    * - ``re``
      - Random effect
      - one column per factor level
@@ -203,15 +203,16 @@ only the :math:`k` most important radial directions.  Eigen-decompose
 
    E = U \operatorname{diag}(v) U^\top,
 
-sort eigenpairs by :math:`|v_j|`, and truncate to the top :math:`k`:
+select the :math:`k` eigenpairs of largest magnitude :math:`|v_j|`, and order
+them in descending algebraic order (positive eigenvalues descending, followed
+by negative eigenvalues):
 
 .. math::
 
    E_k = U_k \operatorname{diag}(v_k) U_k^\top.
 
-(The code uses ARPACK's ``eigsh`` for speed when there are many unique
-points, and falls back to a full ``eigh`` otherwise.)  The retained
-eigenfunctions are the smoothest, largest-scale modes (the structure you want in a smooth), while the discarded high-frequency modes
+The retained eigenfunctions are the smoothest, largest-scale modes (the
+structure you want in a smooth), while the discarded high-frequency modes
 are the ones a penalty would crush anyway.
 
 **Absorbing the constraint.**  We still need the retained directions to
@@ -396,7 +397,7 @@ penalty needs no matrix inverse, unlike :math:`B^{-1}` in ``cr``), and
 the equal knot spacing makes the basis numerically well behaved.
 
 * ``'ps'`` defaults to ``m=(2, 2)`` (in Wood's convention :math:`m_{\text{basis}} = 2` denotes cubic B-splines and :math:`m_{\text{pen}} = 2` denotes second differences).
-* ``'bs'`` uses standard B-spline degree indexing (default ``m=(3, 2)`` for cubic B-splines with second-difference penalty) and shares the same underlying builder.
+* ``'bs'`` uses standard B-spline degree indexing (default ``m=(3, 2)`` for cubic B-splines with second-derivative penalty) and computes the exact integrated squared derivative penalty :math:`S_{ij} = \int B_i^{(m_2)}(x) B_j^{(m_2)}(x)\,dx` via Gauss-Legendre quadrature over the interior knot spans.
 * For cyclic P-splines (``'cp'``), both the B-spline basis (via cyclic knot wrapping) and the :math:`m`-th order difference penalty wrap around the boundaries, leaving only constants in the one-dimensional null space.
 
 .. _section-wood-re:
@@ -563,8 +564,9 @@ marginal (restricted) likelihood for :math:`\boldsymbol{\lambda}` and
    D_p = \underbrace{\|\mathbf{y} - X\hat{\boldsymbol{\beta}}\|^2}_{\text{RSS}}
        + \underbrace{\hat{\boldsymbol{\beta}}^\top S_{\boldsymbol{\lambda}} \hat{\boldsymbol{\beta}}}_{\text{penalty cost}},
 
-where :math:`M_p` is the dimension of the parametric part of the model
-(the intercept, :math:`M_p = 1`), the criterion to minimise is
+where :math:`M_p = p - \operatorname{rank}(S_{\boldsymbol{\lambda}})` is the
+total unpenalised null-space dimension of the model (the intercept plus any
+unpenalised polynomial modes in the smooths), the criterion to minimise is
 
 .. math::
 
@@ -625,11 +627,10 @@ which is notorious for flat minima and occasional near-zero
 backend optimises :math:`\rho = \log\lambda` (unconstrained, with
 :math:`\lambda = e^\rho`) over the range :math:`\rho \in [-15, 15]`:
 i.e. :math:`\lambda` between roughly :math:`3\times10^{-7}` and
-:math:`3\times10^{6}`.  One free :math:`\lambda`: Brent's method
-(``minimize_scalar``, bounded) on the 1-D criterion.  Several free
-:math:`\lambda` (e.g. multi-term models or one per tensor dimension):
-L-BFGS-B with exact **analytic gradients** (``jac=True``) starting from
-:math:`\rho = 0` (:math:`\lambda = 1`).  Because the envelope theorem cancels
+:math:`3\times10^{6}`.  Both single- and multi-penalty models use
+L-BFGS-B with exact **analytic gradients** (``jac=True``), seeded from the
+best point on a coarse initial grid :math:`\rho_0 \in \{-8, -4, 0, 4, 8\}`
+to avoid flat-tail trapping.  Because the envelope theorem cancels
 the implicit :math:`\partial\hat{\boldsymbol{\beta}}/\partial\rho_j` terms in
 :math:`\partial D_p / \partial\rho_j = \lambda_j \hat{\boldsymbol{\beta}}^\top S_j \hat{\boldsymbol{\beta}}`,
 both the REML and GCV gradients fall out of the existing Cholesky factor

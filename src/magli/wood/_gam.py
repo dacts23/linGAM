@@ -134,6 +134,7 @@ class GAMCore(_GAMBase):
             "edf_per_term": fit_res["edf_per_term"],
             "f_stat_per_term": fit_res["f_stat_per_term"],
             "p_values_per_term": fit_res["p_values_per_term"],
+            "log_weights_sum": fit_res["log_weights_sum"],
         }
         return self
 

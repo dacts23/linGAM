@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "magli"
-version = "0.3.1"
+version = "1.0.0"
 description = "magli (Modelo Aditivo Generalizado Lineal): Modern Pythonic Generalized Additive Models (GAMs) with Eilers-Marx (1996) and Wood (2011) backends"
 readme = "README.md"
 license = "GPL-3.0-or-later"

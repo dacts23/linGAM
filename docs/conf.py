@@ -10,8 +10,8 @@ sys.path.insert(0, os.path.abspath('../src'))
 project = 'magli'
 copyright = '2026, David Ávila Cortés'
 author = 'David Ávila Cortés'
-release = '0.3.1'
-version = '0.3'
+release = '1.0.0'
+version = '1.0'
 
 extensions = [
     'sphinx.ext.autodoc',

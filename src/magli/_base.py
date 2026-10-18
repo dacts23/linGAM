@@ -153,7 +153,10 @@ class _GAMBase:
         rss = self.statistics_["rss"]
         s = self.statistics_["scale"]
         s2 = s if self._scale_is_var else s**2
-        return float(-0.5 * n * np.log(2.0 * np.pi * s2) - 0.5 * rss / s2)
+        log_w = self.statistics_.get("log_weights_sum", 0.0)
+        return float(
+            -0.5 * n * np.log(2.0 * np.pi * s2) - 0.5 * rss / s2 + 0.5 * log_w
+        )
 
     def aic(self) -> float:
         """Akaike Information Criterion (AIC)."""
