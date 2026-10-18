@@ -1,6 +1,26 @@
 Changelog
 =========
 
+Version 1.0.0
+-------------
+*Released 2026-10-18*
+
+* **Reference Parity with R ``mgcv`` & ``pyGAM``**:
+  Full numerical and mathematical alignment against reference implementations.
+* **Exact Integrated Derivative B-Spline Penalties**:
+  Upgraded Wood backend ``bs`` basis penalty to Gauss-Legendre quadrature of
+  integrated squared derivatives matching R's ``smooth.construct.bs.smooth.spec``.
+* **REML Null Space Dimension**:
+  Corrected REML calculation of unpenalised null space dimension
+  :math:`M_p = p - \operatorname{rank}(S_{\text{total}})` and added coarse-grid
+  seeding before L-BFGS-B optimization.
+* **Active-Set Shape Constraints**:
+  Enforced ``pyGAM`` active-set asymmetric penalty formulation with
+  :math:`\lambda_{\text{con}} = 10^9`, :math:`\lambda_{L2} = 10^{-3} I`, and
+  exact periodic basis column wrapping.
+* **Verification & Test Suite**:
+  55 automated tests verifying numerical tolerances against R ``mgcv`` and mathematical invariants.
+
 Version 0.3.1
 -------------
 *Released 2026-10-17*

@@ -48,7 +48,14 @@
 ## Installation
 
 ```bash
-pip install numpy scipy matplotlib
+pip install magli
+```
+
+Or install from source for development:
+
+```bash
+git clone https://github.com/dacts23/magli.git
+cd magli
 pip install -e .
 ```
 

@@ -55,10 +55,10 @@ The basis zoo
 All of the Wood bases share one objective: represent a smooth
 :math:`f(x)` as a linear combination of basis functions with an attached
 **wiggliness penalty** :math:`\boldsymbol{\beta}^\top S
-\boldsymbol{\beta}`.  Three of the families (``tp``, ``cr``, ``cc``)
-penalise the exact curvature integral :math:`\int f''(x)^2\,dx`; the
-P-spline and B-spline families penalise a discrete difference approximation
-of it; the random effect family penalises the coefficients directly.  Here's
+\boldsymbol{\beta}`.  Four of the families (``tp``, ``cr``, ``cc``, ``bs``)
+penalise an exact derivative integral :math:`\int (f^{(m_2)}(x))^2\,dx`; the
+P-spline families (``ps``, ``cp``) penalise discrete differences of
+coefficients; the random effect family (``re``) penalises the coefficients directly.  Here's
 the map:
 
 .. list-table::

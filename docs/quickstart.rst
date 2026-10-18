@@ -10,7 +10,11 @@ magli requires Python ≥3.8 and the following packages:
 * ``scipy >= 1.7``
 * ``matplotlib >= 3.5``
 
-Install from the repository root::
+Install from PyPI::
+
+   pip install magli
+
+Or install from the repository root::
 
    pip install -e .
 
