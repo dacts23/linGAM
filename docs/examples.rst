@@ -3,6 +3,39 @@ Examples
 
 This chapter collects end-to-end examples demonstrating common use cases.
 
+Runnable notebooks
+------------------
+
+Three executed notebooks live in ``examples/``. The two backend tutorials are
+generated, re-executed and asserted from scratch by their companion scripts, so
+they can never drift away from the library:
+
+* `examples/gam_tutorial.ipynb`_ (``create_tutorial_notebook.py``): a hands-on
+  tour across both backends: underfitting vs. overfitting, EDF interpretation,
+  2-D tensor interactions, and shape constraints.
+* `examples/wood_backend_math_tutorial.ipynb`_ (``create_wood_math_notebook.py``):
+  the Wood backend's mathematics and workflow: the basis zoo, ``S.scale`` and
+  sum-to-zero absorption, continuous REML/GCV optimisation, Wood (2013)
+  approximate F-tests, and a full engineering case study.
+* `examples/eilers_backend_math_tutorial.ipynb`_ (``create_eilers_math_notebook.py``):
+  the Eilers-Marx backend's mathematics and workflow: De Boor B-splines,
+  difference penalties, the SVD data-augmentation solver, GCV grid search,
+  shape constraints, and the same case study end to end.
+
+Regenerating a notebook needs the Jupyter stack (``nbformat``, ``nbclient``,
+``ipykernel``): install it with ``pip install -e .[notebooks]`` from the
+repository root.
+
+.. code-block:: bash
+
+   python examples/create_wood_math_notebook.py
+   python examples/create_eilers_math_notebook.py
+
+.. _examples/gam_tutorial.ipynb: https://github.com/dacts23/magli/blob/main/examples/gam_tutorial.ipynb
+.. _examples/wood_backend_math_tutorial.ipynb: https://github.com/dacts23/magli/blob/main/examples/wood_backend_math_tutorial.ipynb
+.. _examples/eilers_backend_math_tutorial.ipynb: https://github.com/dacts23/magli/blob/main/examples/eilers_backend_math_tutorial.ipynb
+
+
 Basic regression & residual diagnostics
 ---------------------------------------
 

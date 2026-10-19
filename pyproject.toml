@@ -51,6 +51,11 @@ docs = [
     "furo",
     "sphinx-copybutton",
 ]
+notebooks = [
+    "nbformat>=5.0",
+    "nbclient>=0.7",
+    "ipykernel>=6.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/dacts23/magli"

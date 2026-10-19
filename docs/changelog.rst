@@ -1,6 +1,22 @@
 Changelog
 =========
 
+Unreleased
+----------
+
+* **Self-checking teaching notebooks** (documentation only, no library changes):
+  two executed notebooks now walk through the mathematics and the workflow of
+  each backend, with every derivation followed by an assertion and a closing
+  pass/fail audit:
+  `examples/wood_backend_math_tutorial.ipynb
+  <https://github.com/dacts23/magli/blob/main/examples/wood_backend_math_tutorial.ipynb>`_
+  and
+  `examples/eilers_backend_math_tutorial.ipynb
+  <https://github.com/dacts23/magli/blob/main/examples/eilers_backend_math_tutorial.ipynb>`_.
+  They are generated and re-executed by ``examples/create_wood_math_notebook.py``
+  and ``examples/create_eilers_math_notebook.py``, and are linked from
+  :doc:`quickstart`, :doc:`examples`, :doc:`math` and the backend math chapters.
+
 Version 1.0.0
 -------------
 *Released 2026-10-18*

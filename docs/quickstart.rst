@@ -20,17 +20,33 @@ Or install from the repository root::
 
 For building documentation locally::
 
-   pip install sphinx furo sphinx-copybutton
+   pip install -e .[docs]
    cd docs
    make html
 
+The tutorial notebooks are regenerated with ``pip install -e .[notebooks]``
+followed by the ``create_*_notebook.py`` scripts in ``examples/``.
+
 .. tip::
 
-   **Interactive Tutorial:** If you learn best by executing code cell-by-cell, check out
-   the comprehensive hands-on tutorial notebook `examples/gam_tutorial.ipynb`_ covering
-   underfitting vs. overfitting, EDF interpretation, 2-D tensor products, and physical shape constraints.
+   **Interactive Tutorials:** If you learn best by executing code cell-by-cell, the
+   repository ships three self-checking notebooks:
+
+   * `examples/gam_tutorial.ipynb`_: a hands-on tour of underfitting vs. overfitting,
+     EDF interpretation, 2-D tensor products, and physical shape constraints.
+   * `examples/wood_backend_math_tutorial.ipynb`_: the Wood backend from the inside:
+     basis zoo, identifiability absorption, continuous REML/GCV optimisation,
+     Wood (2013) inference, and an end-to-end workflow.
+   * `examples/eilers_backend_math_tutorial.ipynb`_: the Eilers-Marx backend from the
+     inside: De Boor B-splines, difference penalties, the SVD solver, GCV grid search,
+     shape constraints, and the same workflow end to end.
+
+   Every formula in the two backend notebooks is followed by code that asserts it
+   numerically, and each ends with a pass/fail audit of its identities.
 
 .. _examples/gam_tutorial.ipynb: https://github.com/dacts23/magli/blob/main/examples/gam_tutorial.ipynb
+.. _examples/wood_backend_math_tutorial.ipynb: https://github.com/dacts23/magli/blob/main/examples/wood_backend_math_tutorial.ipynb
+.. _examples/eilers_backend_math_tutorial.ipynb: https://github.com/dacts23/magli/blob/main/examples/eilers_backend_math_tutorial.ipynb
 
 
 Unified API & Backends

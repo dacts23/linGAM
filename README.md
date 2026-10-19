@@ -170,10 +170,27 @@ Full documentation, mathematical foundations, and end-to-end tutorials are avail
 
 ---
 
-## Interactive Tutorial & Demo Scripts
+## Interactive Tutorials & Demo Scripts
 
-Step through the interactive Jupyter notebook tutorial:
-* **[examples/gam_tutorial.ipynb](examples/gam_tutorial.ipynb)**: An end-to-end hands-on guide covering underfitting vs. overfitting, EDF interpretation, 2-D tensor interactions, and shape constraints.
+Step through the interactive Jupyter notebooks in [`examples/`](examples):
+
+| Notebook | What it covers |
+| :--- | :--- |
+| [`gam_tutorial.ipynb`](examples/gam_tutorial.ipynb) | Hands-on GAM tour: underfitting vs. overfitting, EDF interpretation, 2-D tensor interactions, shape constraints |
+| [`wood_backend_math_tutorial.ipynb`](examples/wood_backend_math_tutorial.ipynb) | The Wood backend from the inside: basis zoo, `S.scale` and sum-to-zero absorption, continuous REML/GCV optimisation, Wood (2013) approximate F-tests, and an end-to-end workflow |
+| [`eilers_backend_math_tutorial.ipynb`](examples/eilers_backend_math_tutorial.ipynb) | The Eilers-Marx backend from the inside: De Boor B-splines, difference penalties, the SVD data-augmentation solver, GCV grid search, shape constraints, and the same workflow |
+
+Every formula in the two backend notebooks is followed by code that asserts it
+numerically, and each closes with a pass/fail audit of its identities. They are
+generated, executed and validated by their companion scripts, so they cannot drift
+away from the library:
+
+```bash
+python examples/create_wood_math_notebook.py
+python examples/create_eilers_math_notebook.py
+```
+
+(Rebuilding needs the Jupyter stack: `pip install -e .[notebooks]`.)
 
 Or run any of the self-contained demo scripts:
 

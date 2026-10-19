@@ -4,7 +4,7 @@ magli
 **magli (Modelo Aditivo Generalizado Lineal)**: a high-performance Python implementation of
 Generalized Additive Models supporting both **Eilers & Marx (1996)** and **Wood (2011)** backends.
 
-`GitHub Repository <https://github.com/dacts23/magli>`_ | `PyPI Package <https://pypi.org/project/magli/>`_ | `Interactive Tutorial <https://github.com/dacts23/magli/blob/main/examples/gam_tutorial.ipynb>`_
+`GitHub Repository <https://github.com/dacts23/magli>`_ | `PyPI Package <https://pypi.org/project/magli/>`_ | `Getting-started notebook <https://github.com/dacts23/magli/blob/main/examples/gam_tutorial.ipynb>`_ | `Wood backend notebook <https://github.com/dacts23/magli/blob/main/examples/wood_backend_math_tutorial.ipynb>`_ | `Eilers-Marx notebook <https://github.com/dacts23/magli/blob/main/examples/eilers_backend_math_tutorial.ipynb>`_
 
 .. toctree::
    :maxdepth: 2

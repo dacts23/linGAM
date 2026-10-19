@@ -25,6 +25,9 @@ MANIFEST
 htmlcov/
 docs/_build/
 
+# Jupyter
+.ipynb_checkpoints/
+
 # AI assistants and agent instructions
 AGENTS.md
 CLAUDE.md
