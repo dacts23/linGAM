@@ -9,8 +9,7 @@ Part III: The Wood Backend
    `examples/wood_backend_math_tutorial.ipynb`_. It follows the same order,
    recomputes every identity below numerically (Green's function, `S = D^T B^{-1} D`,
    the sum-to-zero absorption, the REML criterion and its analytic gradient), and
-   ends with a pass/fail audit. Regenerate it with
-   ``python examples/create_wood_math_notebook.py``.
+   ends with a pass/fail audit.
 
 .. _examples/wood_backend_math_tutorial.ipynb: https://github.com/dacts23/magli/blob/main/examples/wood_backend_math_tutorial.ipynb
 

@@ -15,13 +15,11 @@ Demonstrates and contrasts the two GAM philosophies implemented in magli:
 """
 
 import time
-from pathlib import Path
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 from magli import LinGAM, GAMCore
-
 
 def run_comparison():
     print("=" * 78)
@@ -180,11 +178,7 @@ def run_comparison():
     fig.suptitle("magli Engine Comparison: Eilers-Marx vs Wood", fontsize=14, fontweight="bold")
     plt.tight_layout()
 
-    out_path = Path(__file__).with_name("eilers_vs_wood_comparison.png")
-    plt.savefig(out_path, dpi=150)
-    print(f"\n[Saved figure to {out_path}]")
-    plt.close(fig)
-
+    plt.show()
 
 if __name__ == "__main__":
     run_comparison()

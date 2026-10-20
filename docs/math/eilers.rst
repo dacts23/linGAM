@@ -10,7 +10,7 @@ Part II: The Eilers & Marx Backend
    rebuilds the Cox-de Boor recursion by hand, checks the difference penalty and
    the singular normal equations (``X^T X + P`` has a one-dimensional null space
    that the solver's augmentation ridge repairs), and ends with a pass/fail audit.
-   Regenerate it with ``python examples/create_eilers_math_notebook.py``.
+  
 
 .. _examples/eilers_backend_math_tutorial.ipynb: https://github.com/dacts23/magli/blob/main/examples/eilers_backend_math_tutorial.ipynb
 

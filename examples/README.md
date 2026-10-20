@@ -21,11 +21,8 @@ that can run automatically if reference packages are installed.
 | `wood_backend_math_tutorial.ipynb` | Wood backend mathematics and workflow: basis zoo, identifiability absorption, REML/GCV optimisation, Wood (2013) F-tests, engineering case study (executed, self-checking) |
 | `eilers_backend_math_tutorial.ipynb` | Eilers-Marx backend mathematics and workflow: De Boor recursion, difference penalties, SVD solver, GCV grid search, shape constraints, same case study (executed, self-checking) |
 
-The two `*_math_tutorial` notebooks are generated: edit and re-run
-`create_wood_math_notebook.py` / `create_eilers_math_notebook.py` rather than
-editing the `.ipynb` in place. `create_tutorial_notebook.py` regenerates
-`gam_tutorial.ipynb` the same way. Regeneration needs the Jupyter stack
-(`pip install -e .[notebooks]` from the repository root).
+Run any notebook using Jupyter (jupyter notebook) or VS Code.
+Running them needs the Jupyter stack (pip install -e .[notebooks] from the repository root).
 
 ## Scripts
 

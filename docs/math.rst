@@ -53,9 +53,7 @@ Each backend chapter has an executed, self-checking notebook in the repository t
 follows the same order as the text, formula by formula:
 
 * :ref:`Part II <part-eilers>` -> `examples/eilers_backend_math_tutorial.ipynb`_
-  (rebuild with ``python examples/create_eilers_math_notebook.py``).
 * :ref:`Part III <part-wood>` -> `examples/wood_backend_math_tutorial.ipynb`_
-  (rebuild with ``python examples/create_wood_math_notebook.py``).
 
 Every identity in those chapters is recomputed and asserted in the corresponding
 notebook, and each notebook closes with a pass/fail audit of the head-line checks.

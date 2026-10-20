@@ -24,8 +24,7 @@ For building documentation locally::
    cd docs
    make html
 
-The tutorial notebooks are regenerated with ``pip install -e .[notebooks]``
-followed by the ``create_*_notebook.py`` scripts in ``examples/``.
+Running the tutorial notebooks needs the Jupyter stack: ``pip install -e .[notebooks]``.
 
 .. tip::
 

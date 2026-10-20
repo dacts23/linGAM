@@ -181,16 +181,8 @@ Step through the interactive Jupyter notebooks in [`examples/`](examples):
 | [`eilers_backend_math_tutorial.ipynb`](examples/eilers_backend_math_tutorial.ipynb) | The Eilers-Marx backend from the inside: De Boor B-splines, difference penalties, the SVD data-augmentation solver, GCV grid search, shape constraints, and the same workflow |
 
 Every formula in the two backend notebooks is followed by code that asserts it
-numerically, and each closes with a pass/fail audit of its identities. They are
-generated, executed and validated by their companion scripts, so they cannot drift
-away from the library:
-
-```bash
-python examples/create_wood_math_notebook.py
-python examples/create_eilers_math_notebook.py
-```
-
-(Rebuilding needs the Jupyter stack: `pip install -e .[notebooks]`.)
+numerically, and each closes with a pass/fail audit of its identities.
+(Running notebooks needs the Jupyter stack: pip install -e .[notebooks].)
 
 Or run any of the self-contained demo scripts:
 
