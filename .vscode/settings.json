@@ -1,5 +1,5 @@
 {
-  "python.defaultInterpreterPath": "C:\\Users\\dacts\\Python\\WPy64-313110\\python\\python.exe",
+  "python.defaultInterpreterPath": "C:\\Users\\dacts\\Python\\WinPython\\python\\python.exe",
   "python.testing.pytestArgs": [
     "tests"
   ],
