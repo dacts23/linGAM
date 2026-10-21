@@ -17,9 +17,9 @@ that can run automatically if reference packages are installed.
 
 | File | What it covers |
 |---|----------------|
-| `gam_tutorial.ipynb` | Hands-on GAM tour across both backends: underfitting vs. overfitting, EDF interpretation, 2-D tensor interactions, shape constraints |
-| `wood_backend_math_tutorial.ipynb` | Wood backend mathematics and workflow: basis zoo, identifiability absorption, REML/GCV optimisation, Wood (2013) F-tests, engineering case study (executed, self-checking) |
-| `eilers_backend_math_tutorial.ipynb` | Eilers-Marx backend mathematics and workflow: De Boor recursion, difference penalties, SVD solver, GCV grid search, shape constraints, same case study (executed, self-checking) |
+| `gam_tutorial.ipynb` | Hands-on GAM tour across both backends, covering underfitting vs. overfitting, EDF interpretation, 2-D tensor interactions, and shape constraints |
+| `wood_backend_math_tutorial.ipynb` | Wood backend mathematics and workflow, covering the basis zoo, identifiability absorption, REML/GCV optimisation, Wood (2013) F-tests, and an engineering case study (executed, self-checking) |
+| `eilers_backend_math_tutorial.ipynb` | Eilers-Marx backend mathematics and workflow, covering De Boor recursion, difference penalties, SVD solver, GCV grid search, shape constraints, and the same case study (executed, self-checking) |
 
 Run any notebook using Jupyter (jupyter notebook) or VS Code.
 Running them needs the Jupyter stack (pip install -e .[notebooks] from the repository root).
@@ -37,12 +37,12 @@ Running them needs the Jupyter stack (pip install -e .[notebooks] from the repos
 | 07 | `07_custom_grid_search.py` | Selective term search and custom lambda / n_splines grids | Eilers-Marx grids vs Wood REML + k-search |
 | 08 | `08_intervals_and_diagnostics.py` | Confidence intervals, prediction intervals, AIC, BIC, deviance explained | Eilers-Marx + Wood (incl. CI/PI widths) |
 | 09 | `09_plotting.py` | Partial dependence and decomposition plots for multi-term models | Eilers-Marx + Wood (partial-dependence agreement) |
-| 10 | `10_engineering_case_study.py` | Full workflow: s+te+f+l formula, shape constraints, partial grid search, weighted fit, intervals, decomposition with named features (see [EXAMPLE_10_README.md](EXAMPLE_10_README.md)) | Eilers-Marx full; Wood for unconstrained formula |
-| 11 | `11_wood_backend.py` | Wood (2011) backend: REML auto-tuning, `summary()` F-tests/p-values, `bs='tp'/'cr'/'ps'/'cc'`, tensor + linear terms | Wood + Eilers-Marx |
-| 12 | `12_concrete_demo.py` | Concrete strength GAM: EDA plots, s+te+f+l formula, selective grid search, key-age predictions | Eilers-Marx + Wood |
-| 13 | `13_eilers_vs_wood_comparison.py` | Head-to-head comparison with plots: univariate + multivariate fits, EDF/RSS/R²/timings | Eilers-Marx vs Wood |
-| 14 | `14_wood_basis_decomposition_plots.py` | Simon Wood's y vs x test function: all plot types, basis decomposition (unweighted/weighted/cumulative), penalty effects, basis comparison | Wood + Eilers-Marx |
-| 15 | `15_eilers_basis_decomposition_plots.py` | Eilers-Marx (P-spline) y vs x: uniform B-spline decomposition, partition of unity, shape constraints, visual basis comparison vs Wood | Eilers-Marx + Wood |
+| 10 | `10_engineering_case_study.py` | Full workflow with s+te+f+l formula, shape constraints, partial grid search, weighted fit, intervals, and decomposition with named features (see [EXAMPLE_10_README.md](EXAMPLE_10_README.md)) | Eilers-Marx full; Wood for unconstrained formula |
+| 11 | `11_wood_backend.py` | Wood (2011) backend with REML auto-tuning, `summary()` F-tests/p-values, `bs='tp'/'cr'/'ps'/'cc'`, and tensor + linear terms | Wood + Eilers-Marx |
+| 12 | `12_concrete_demo.py` | Concrete strength GAM with EDA plots, s+te+f+l formula, selective grid search, and key-age predictions | Eilers-Marx + Wood |
+| 13 | `13_eilers_vs_wood_comparison.py` | Head-to-head comparison with plots, covering univariate + multivariate fits, EDF/RSS/R²/timings | Eilers-Marx vs Wood |
+| 14 | `14_wood_basis_decomposition_plots.py` | Simon Wood's y vs x test function with all plot types, basis decomposition (unweighted/weighted/cumulative), penalty effects, and basis comparison | Wood + Eilers-Marx |
+| 15 | `15_eilers_basis_decomposition_plots.py` | Eilers-Marx (P-spline) y vs x with uniform B-spline decomposition, partition of unity, shape constraints, and visual basis comparison vs Wood | Eilers-Marx + Wood |
 
 Every example ends with a console **backend comparison** block fitting the same
 data on both backends, except where a feature exists on one backend only:

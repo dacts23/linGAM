@@ -176,13 +176,13 @@ Step through the interactive Jupyter notebooks in [`examples/`](examples):
 
 | Notebook | What it covers |
 | :--- | :--- |
-| [`gam_tutorial.ipynb`](examples/gam_tutorial.ipynb) | Hands-on GAM tour: underfitting vs. overfitting, EDF interpretation, 2-D tensor interactions, shape constraints |
-| [`wood_backend_math_tutorial.ipynb`](examples/wood_backend_math_tutorial.ipynb) | The Wood backend from the inside: basis zoo, `S.scale` and sum-to-zero absorption, continuous REML/GCV optimisation, Wood (2013) approximate F-tests, and an end-to-end workflow |
-| [`eilers_backend_math_tutorial.ipynb`](examples/eilers_backend_math_tutorial.ipynb) | The Eilers-Marx backend from the inside: De Boor B-splines, difference penalties, the SVD data-augmentation solver, GCV grid search, shape constraints, and the same workflow |
+| [`gam_tutorial.ipynb`](examples/gam_tutorial.ipynb) | Hands-on GAM tour exploring underfitting vs. overfitting, EDF interpretation, 2-D tensor interactions, and shape constraints |
+| [`wood_backend_math_tutorial.ipynb`](examples/wood_backend_math_tutorial.ipynb) | The Wood backend from the inside, covering the basis zoo, `S.scale` and sum-to-zero absorption, continuous REML/GCV optimisation, Wood (2013) approximate F-tests, and an end-to-end workflow |
+| [`eilers_backend_math_tutorial.ipynb`](examples/eilers_backend_math_tutorial.ipynb) | The Eilers-Marx backend from the inside, covering De Boor B-splines, difference penalties, the SVD data-augmentation solver, GCV grid search, shape constraints, and an end-to-end workflow |
 
 Every formula in the two backend notebooks is followed by code that asserts it
 numerically, and each closes with a pass/fail audit of its identities.
-(Running notebooks needs the Jupyter stack: pip install -e .[notebooks].)
+(Running notebooks requires the Jupyter stack via `pip install -e .[notebooks]`.)
 
 Or run any of the self-contained demo scripts:
 

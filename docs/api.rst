@@ -29,7 +29,7 @@ Shared Architecture
 magli._base
 ^^^^^^^^^^^^
 
-Shared ``_GAMBase`` lifecycle inherited by both engines: prediction, partial
+Shared ``_GAMBase`` lifecycle inherited by both engines, handling prediction, partial
 dependence, confidence/prediction intervals, information criteria, and all
 decomposition/diagnostic plotting.  (``scale`` is σ for Eilers-Marx, σ² for Wood.)
 
@@ -145,7 +145,7 @@ magli.eilers._gam
 Wood Engine (``magli.wood``)
 -----------------------------
 
-Python implementation of Simon Wood's GAM methods (Wood 2011, 2017): multiple basis types,
+Python implementation of Simon Wood's GAM methods (Wood 2011, 2017) with multiple basis types,
 null-space constraint absorption, and continuous REML / GCV smoothing optimization.
 
 .. currentmodule:: magli.wood

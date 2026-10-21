@@ -19,12 +19,12 @@ In the Wood backend, smoothing parameters are estimated automatically during mod
 
    from magli import LinGAM, GAMCore
 
-   # Single-term: REML estimates lambda automatically
+   # Single-term - REML estimates lambda automatically
    m = LinGAM(k=10, bs="cr", backend="wood")
    m.fit(x, y)
    print(f"Optimal estimated lambda: {m.lam:.4f}")
 
-   # Multi-term: Simultaneous multi-dimensional REML optimization
+   # Multi-term - Simultaneous multi-dimensional REML optimization
    g = GAMCore("s(0, k=10) + s(1, k=10) + l(2)", backend="wood")
    g.fit(X, y)
    print(g.summary())
@@ -59,8 +59,8 @@ the Generalised Cross Validation (GCV) criterion.
    :align: center
    :width: 96%
 
-   *Left*: The U-shaped GCV curve across candidate :math:`\lambda` values,
-   balancing residual sum of squares against model complexity.  *Right*: As
+   The left panel shows the U-shaped GCV curve across candidate :math:`\lambda` values,
+   balancing residual sum of squares against model complexity, while the right panel shows how
    :math:`\lambda` increases, the effective degrees of freedom (EDF) contract
    toward the linear null space while the residual sum of squares (RSS) rises.
 
@@ -80,7 +80,7 @@ Default search grids
 ^^^^^^^^^^^^^^^^^^^^
 
 * **Lambda**: ``np.logspace(-3, 3, 11)`` (11 values from 0.001 to 1000), applied
-  diagonally: every searched slot shares the same candidate value per evaluation.
+  diagonally, meaning that every searched slot shares the same candidate value per evaluation.
 * **n_splines**: not searched by default; each term keeps its configured value unless
   explicit ``n_splines`` grids are passed.
 

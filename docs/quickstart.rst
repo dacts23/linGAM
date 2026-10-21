@@ -24,20 +24,20 @@ For building documentation locally::
    cd docs
    make html
 
-Running the tutorial notebooks needs the Jupyter stack: ``pip install -e .[notebooks]``.
+Running the tutorial notebooks needs the Jupyter stack (``pip install -e .[notebooks]``).
 
 .. tip::
 
-   **Interactive Tutorials:** If you learn best by executing code cell-by-cell, the
+   **Interactive Tutorials.** If you learn best by executing code cell-by-cell, the
    repository ships three self-checking notebooks:
 
    * `examples/gam_tutorial.ipynb`_: a hands-on tour of underfitting vs. overfitting,
      EDF interpretation, 2-D tensor products, and physical shape constraints.
-   * `examples/wood_backend_math_tutorial.ipynb`_: the Wood backend from the inside:
-     basis zoo, identifiability absorption, continuous REML/GCV optimisation,
+   * `examples/wood_backend_math_tutorial.ipynb`_: the Wood backend from the inside,
+     covering the basis zoo, identifiability absorption, continuous REML/GCV optimisation,
      Wood (2013) inference, and an end-to-end workflow.
    * `examples/eilers_backend_math_tutorial.ipynb`_: the Eilers-Marx backend from the
-     inside: De Boor B-splines, difference penalties, the SVD solver, GCV grid search,
+     inside, covering De Boor B-splines, difference penalties, the SVD solver, GCV grid search,
      shape constraints, and the same workflow end to end.
 
    Every formula in the two backend notebooks is followed by code that asserts it
@@ -53,7 +53,7 @@ Unified API & Backends
 
 magli provides two backends via the unified :class:`GAM` (alias :class:`LinGAM`) and :class:`GAMCore` classes:
 
-* ``backend='wood'`` (default): Simon Wood's GAM algorithm (continuous REML or GCV optimization, multiple basis families, and Wood 2013 summary tables).
+* ``backend='wood'`` (default): Simon Wood's GAM algorithm with continuous REML or GCV optimization, multiple basis families, and Wood 2013 summary tables.
 * ``backend='eilers'``: B-spline basis with discrete GCV grid search and soft shape constraints (Eilers & Marx 1996).
 
 
@@ -129,17 +129,17 @@ Formula syntax
 
 Terms are separated by ``+``. Each term has the form ``type(args, kwargs)``.
 
-``s(feature, ...)``: univariate spline
+``s(feature, ...)`` for univariate splines
    Accepts both Wood syntax (``k=10``, ``bs='cr'``, ``sp=0.5``) and Eilers-Marx syntax
    (``n_splines=10``, ``lam=1.0``, ``constraint='mono_inc'``).
 
-``te(f1, f2, ...)``: tensor-product interaction
+``te(f1, f2, ...)`` for tensor-product interactions
    ``te(0, 1, k=5, bs='cr')`` or ``te(0, 1, n_splines=5)``.
 
-``f(feature, ...)``: categorical factor
+``f(feature, ...)`` for categorical factors
    ``f(2, coding='dummy')`` or ``f(2, coding='one-hot')``.
 
-``l(feature, ...)``: linear term
+``l(feature, ...)`` for linear terms
    ``l(3)`` (parametric unpenalized or ridge-penalized linear effect).
 
 
@@ -164,6 +164,6 @@ Inspect the additive contribution of individual terms and validate model residua
    :align: center
    :width: 100%
 
-   Multi-term ``GAMCore.plot_decomposition`` output: overall fit (top) and isolated partial
+   Multi-term ``GAMCore.plot_decomposition`` output showing overall fit (top) and isolated partial
    dependence panels for ``s()``, ``te()``, ``f()``, and ``l()`` terms.
 

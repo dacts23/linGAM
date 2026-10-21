@@ -1,6 +1,6 @@
 .. _part-wood:
 
-Part III: The Wood Backend
+Part III — The Wood Backend
 ===========================
 
 .. tip::
@@ -30,7 +30,7 @@ inference**:
    different way.
 2. **One smoothing parameter per penalty, estimated.**  Instead of
    sweeping a grid, the backend treats :math:`\lambda` as a free
-   parameter and *optimises* a model-selection criterion: Restricted
+   parameter and *optimises* a model-selection criterion, using Restricted
    Maximum Likelihood (REML) by default, GCV as an option, in
    log-:math:`\lambda` space with standard optimisers.
 3. **Explicit identifiability.**  Every smooth is centred by absorbing a
@@ -62,7 +62,7 @@ Sections 1-4 below follow that order.
 The basis zoo
 -------------
 
-All of the Wood bases share one objective: represent a smooth
+All of the Wood bases share one objective, representing a smooth
 :math:`f(x)` as a linear combination of basis functions with an attached
 **wiggliness penalty** :math:`\boldsymbol{\beta}^\top S
 \boldsymbol{\beta}`.  Four of the families (``tp``, ``cr``, ``cc``, ``bs``)
@@ -131,14 +131,14 @@ the map:
    :width: 98%
 
    Four representative families from the Wood basis zoo (:math:`k = 10`).
-   *Top row*: centred basis modes after absorbing the sum-to-zero constraint
+   The top row shows centred basis modes after absorbing the sum-to-zero constraint
    (notice how ``tp`` orders modes from global low-frequency to local
-   high-frequency, whereas ``cr`` and ``ps`` localise bumps around knots).
-   *Bottom row*: REML-fitted smooths and 95% Bayesian credible bands on the
+   high-frequency, whereas ``cr`` and ``ps`` localise bumps around knots),
+   while the bottom row shows REML-fitted smooths and 95% Bayesian credible bands on the
    same noisy signal, with ``cc`` enforcing periodic wrap-around at the
    boundaries.
 
-The table's "null space" column matters more than it looks: those are the
+The table's "null space" column matters more than it looks, because those are the
 function shapes that cost *nothing* to include.  A penalty with a null
 space leaves the corresponding pattern unpenalised and lets the intercept
 (or the model's other terms) absorb it.
@@ -172,7 +172,7 @@ that the minimiser has the form
 subject to :math:`\sum_i \delta_i = \sum_i \delta_i x_i = 0` (the
 :math:`T^\top\delta = 0` constraint).  The :math:`n` "radial" basis
 functions sit one on each data point; the two polynomial terms form the
-**null space**: they have zero curvature, so the penalty never touches
+**null space**, meaning they have zero curvature and the penalty never touches
 them.
 
 **Why** :math:`\boldsymbol{\eta(r) = |r|^3/12}` **?**  It is the Green's
@@ -225,9 +225,9 @@ The retained eigenfunctions are the smoothest, largest-scale modes (the
 structure you want in a smooth), while the discarded high-frequency modes
 are the ones a penalty would crush anyway.
 
-**Absorbing the constraint.**  We still need the retained directions to
+**Absorbing the constraint.** We still need the retained directions to
 be orthogonal to the null space, i.e. :math:`T^\top U_k \delta = 0`.
-Compute a Householder rotation :math:`Q` such that
+We compute a Householder rotation :math:`Q` such that
 
 .. math::
 
@@ -246,8 +246,8 @@ basis and penalty become
    S = Q^\top \operatorname{diag}(v_k) Q
        \;\text{with rows/cols}\; k-M \dots k-1 \;\text{zeroed}.
 
-The last :math:`M` columns of :math:`X` are :math:`[1, x-\bar x]`
-(the null space, unpenalised); the first :math:`k-M` columns are the
+The last :math:`M` columns of :math:`X` represent :math:`[1, x-\bar x]`
+(the unpenalised null space), while the first :math:`k-M` columns contain the
 penalised modes, each charged by its eigenvalue :math:`v_j`.
 
 **Column rescaling.**  Finally each column of :math:`X` is scaled to unit
@@ -257,7 +257,7 @@ numerical scale of :math:`X` and :math:`S` comparable no matter what
 units :math:`x` is measured in.
 
 **Prediction at new points** follows the same construction without
-re-truncating: :math:`X_{\text{new}} = \bigl[ E_{\text{new}} U_k Q_{[:, :k-M]},\;\;
+re-truncating, using :math:`X_{\text{new}} = \bigl[ E_{\text{new}} U_k Q_{[:, :k-M]},\;\;
 [1, x_{\text{new}} - \bar x] \bigr]` (then divided by the same column
 scales), where :math:`(E_{\text{new}})_{ij} = \eta(|x_i^{\text{new}} -
 x_j^{\text{train}}|)`.
@@ -265,7 +265,7 @@ x_j^{\text{train}}|)`.
 **Shrinkage (``ts``).**  The penalty :math:`S` above has a two-dimensional
 null space (the :math:`T` part).  That means :math:`\lambda` can shrink
 the wiggly part all it wants, but the linear trend in :math:`f` is never
-penalised: a ``tp`` smooth can never be removed from the model.  The
+penalised, so a ``tp`` smooth can never be removed from the model.  The
 ``ts`` variant changes this by eigen-decomposing :math:`S` and giving the
 null-space eigenvalues a small positive value:
 
@@ -287,7 +287,7 @@ regression splines serve as the workhorse discrete alternative. Their
 construction places :math:`k` knots at the sample **quantiles** of the
 unique :math:`x` values, ensuring that :math:`f` is a cubic polynomial between
 knots, twice continuously differentiable at each knot, and linear beyond
-the boundary knots (the "natural" boundary condition: :math:`f'' = 0` beyond the
+the boundary knots (the "natural" boundary condition where :math:`f'' = 0` beyond the
 first and last knot).
 
 **The value-curvature parametrisation.**  A natural cubic spline is fully
@@ -335,18 +335,18 @@ on top.)
      \;\Rightarrow\;
      S = D^\top B^{-1} D.
 
-  Deriving it is a two-line calculus exercise: between knots :math:`f''`
+  Deriving it is a two-line calculus exercise. Between knots, :math:`f''`
   is a straight line, so its integral is exactly the quadratic form with
   the tridiagonal :math:`B`.
 
-:math:`S` has rank :math:`k-2`: its null space is the two-dimensional
+:math:`S` has rank :math:`k-2`, with a two-dimensional null space of
 space of linear functions (straight lines have no curvature), which again
 remain unpenalised.  Extrapolation beyond the boundary knots is linear by
-construction: the natural boundary condition *is* linear extrapolation,
+construction, as the natural boundary condition *is* linear extrapolation,
 so ``cr`` behaves predictably outside the data range.
 
-**Shrinkage (``cs``)** is the discrete twin of ``ts``: eigen-decompose
-:math:`S`, and charge the two null-space eigenvalues at 0.1× and 0.01× the
+**Shrinkage (``cs``)** is the discrete twin of ``ts``, which eigen-decomposes
+:math:`S` and charges the two null-space eigenvalues at 0.1× and 0.01× the
 smallest positive one:
 
 .. math::
@@ -363,11 +363,11 @@ Cyclic cubic regression splines (``cc``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For quantities on a circle (such as time-of-day, wind direction, or phase angles),
-the boundary values should agree: :math:`f(x_0) = f(x_1)` and matching
+the boundary values should agree, requiring :math:`f(x_0) = f(x_1)` and matching
 derivatives.  The cyclic cubic spline (Lancaster & Salkauskas 1986) takes
-the ``cr`` construction and *wraps* it: knots are placed evenly through
+the ``cr`` construction and *wraps* it, placing knots evenly through
 the sorted unique :math:`x` values, and the :math:`B` and :math:`D`
-matrices become **circulant**: the last interval connects back to the
+matrices become **circulant**, connecting the last interval back to the
 first, as in the code's ``build_cc_basis``:
 
 .. math::
@@ -386,8 +386,8 @@ basis wraps the covariate cyclically onto :math:`[x_0, x_1]` first.
 P-splines and B-splines (``ps``, ``cp``, ``bs``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Eilers & Marx (1996) cut the problem even further: forget exact curvature
-integrals; place a **uniformly spaced** grid of knots (extended 0.1%
+Eilers & Marx (1996) simplified the problem even further by replacing exact curvature
+integrals with a **uniformly spaced** grid of knots (extended 0.1%
 beyond the data range, plus :math:`m_{\text{basis}}+1` knots past each
 end so all :math:`k` basis functions are well defined), build cubic
 B-splines on it, and penalise the *:math:`m`-th order differences* of
@@ -399,9 +399,9 @@ adjacent coefficients:
    D = \underbrace{\Delta^m}_{\text{repeated differencing}},
    \qquad (k-m) \times k.
 
-The default is :math:`m = 2`: second differences, the discrete
+The default is :math:`m = 2`, representing second differences, the discrete
 counterpart of curvature.  The penalty's null space is the space of
-polynomials of degree :math:`< m`: for :math:`m=2`, linear trends are
+polynomials of degree :math:`< m`, meaning that for :math:`m=2` linear trends are
 free.  P-splines trade a little elegance for speed and simplicity (the
 penalty needs no matrix inverse, unlike :math:`B^{-1}` in ``cr``), and
 the equal knot spacing makes the basis numerically well behaved.
@@ -425,25 +425,25 @@ with :math:`S = I`: pure ridge shrinkage:
    = \sum_j \beta_j^2.
 
 In the Bayesian view (see the REML section) this is exactly a
-random-effects model: level effects drawn from :math:`N(0, \sigma^2 /
-\lambda)`, and :math:`\lambda` estimated from the data is the
+random-effects model with level effects drawn from :math:`N(0, \sigma^2 /
+\lambda)`, where :math:`\lambda` estimated from the data is the
 inverse-variance of the random effect.  Larger :math:`\lambda` shrinks
 all level effects toward zero, pooling the levels together.
 
 .. _section-wood-identifiability:
 
-Identifiability: rescaling and the sum-to-zero constraint
----------------------------------------------------------
+Identifiability, Rescaling, and the Sum-to-Zero Constraint
+----------------------------------------------------------
 
-A GAM with an intercept is over-parametrised: adding a constant to a
+A GAM with an intercept is over-parametrised, because adding a constant to a
 smooth :math:`f_j` and subtracting it from the intercept leaves every
 prediction unchanged.  Fitting "works" regardless, but the decomposition
-becomes arbitrary: you cannot say whether the average blade life came
+becomes arbitrary, leaving it unclear whether the average blade life came
 from the intercept or from the temperature term.  The Wood backend resolves this with
 two standard moves, both applied to *every* smooth term before fitting.
 
-**Move 1 (``S.scale``): Rescale each penalty.**  A penalty's raw size
-depends on its basis: a basis of large-magnitude functions produces a
+**Move 1 (``S.scale``) rescales each penalty.** A penalty's raw size
+depends on its basis, since a basis of large-magnitude functions produces a
 large :math:`S`.  To make the smoothing parameter mean "amount of
 smoothing" rather than "basis scale × amount of smoothing", each penalty
 is normalised by
@@ -458,11 +458,11 @@ is normalised by
 where :math:`\|\cdot\|_{\text{O}}` is the maximum column sum (the
 operator norm of a symmetric matrix) and :math:`\|\cdot\|_{\text{I}}` is
 the maximum row sum of :math:`X`, squared.  The scale is saved, so
-reported :math:`\lambda` values are on this normalised scale: comparable
+reported :math:`\lambda` values are on this normalised scale, making them comparable
 across terms and across basis families.
 
-**Move 2 (``absorb.cons``): Absorb the sum-to-zero constraint.**  The
-constraint is that each smooth's fitted values average to zero:
+**Move 2 (``absorb.cons``) absorbs the sum-to-zero constraint.** The
+constraint requires each smooth's fitted values to average to zero:
 
 .. math::
 
@@ -470,16 +470,16 @@ constraint is that each smooth's fitted values average to zero:
    \;\; \text{(the row of column sums)}.
 
 Rather than solving a constrained problem, the constraint is *absorbed
-into the basis*: compute the full QR of :math:`C^\top`
-(:math:`k \times 1`), take :math:`Z = Q_{[:, 1:]}`
-, an orthonormal basis of :math:`\ker C`, and project:
+into the basis* by computing the full QR of :math:`C^\top`
+(:math:`k \times 1`), taking :math:`Z = Q_{[:, 1:]}`
+as an orthonormal basis of :math:`\ker C`, and projecting:
 
 .. math::
 
    \tilde X = X Z, \qquad \tilde S_i = Z^\top S_i Z.
 
-Now :math:`\mathbf{1}^\top \tilde X = 0` identically: the smooth is
-centred *by construction*, in every fit, at every :math:`\lambda`, and in
+Now :math:`\mathbf{1}^\top \tilde X = 0` identically, so the smooth is
+centred *by construction* in every fit, at every :math:`\lambda`, and in
 every prediction.  The intercept owns the level; each smooth owns only
 its shape.  This is why Wood decomposition panels are genuinely centred at
 zero, while the Eilers-Marx panels rely on the intercept to absorb levels.
@@ -489,9 +489,9 @@ zero, while the Eilers-Marx panels rely on the intercept to absorb levels.
    :align: center
    :width: 96%
 
-   *Left*: Eilers-Marx B-spline basis columns (:math:`K = 8`) are non-negative
-   and satisfy the partition of unity :math:`\sum_j B_j(x) = 1`, so any
-   constant shift can be traded with the intercept.  *Right*: Wood's
+   The left panel shows that Eilers-Marx B-spline basis columns (:math:`K = 8`) are non-negative
+   and satisfy the partition of unity :math:`\sum_j B_j(x) = 1`, meaning any
+   constant shift can be traded with the intercept. The right panel shows how Wood's
    ``absorb_constraints`` projects the basis onto the :math:`(K-1)`-dimensional
    subspace where every column has zero sample mean (:math:`\mathbf{1}^\top \tilde{X} = \mathbf{0}`),
    guaranteeing a unique, zero-centred partial effect.
@@ -504,8 +504,8 @@ full tensor basis.
 
 .. _section-wood-reml:
 
-Smoothing parameter selection: REML and GCV.Cp
-----------------------------------------------
+Smoothing Parameter Selection with REML and GCV.Cp
+--------------------------------------------------
 
 Both backends minimise the same penalised objective,
 
@@ -540,7 +540,7 @@ Cholesky factor instead of an SVD.  The EDF is
    \text{EDF} = \operatorname{tr}(H^{-1} R^\top R)
    = \| L^{-1} R^\top \|_F^2,
 
-(a trace identity: :math:`\operatorname{tr}(ABA^\top) = \|AB^{1/2}\|_F^2`
+(using the trace identity :math:`\operatorname{tr}(ABA^\top) = \|AB^{1/2}\|_F^2`
 with :math:`A = R`, :math:`B = H^{-1} = L^{-\top}L^{-1}`), and the score is
 
 .. math::
@@ -563,7 +563,7 @@ precision *is* the penalty,
    \boldsymbol{\beta} \sim N\bigl(0, \,\sigma^2 S_{\boldsymbol{\lambda}}^{-}\bigr),
 
 where :math:`S_{\boldsymbol{\lambda}}^{-}` denotes the (generalised)
-inverse: an *improper* prior that treats the penalty's null space as
+inverse, representing an *improper* prior that treats the penalty's null space as
 infinite variance.  Integrating :math:`\boldsymbol{\beta}` out gives the
 marginal (restricted) likelihood for :math:`\boldsymbol{\lambda}` and
 :math:`\sigma^2`.  Profiling out :math:`\sigma^2` at
@@ -592,9 +592,9 @@ Each component in this score has an intuitive interpretation:
 * The second term, :math:`\frac12 \log|H|`, acts as an explicit complexity penalty. When you weaken the smoothing penalty, the determinant of :math:`H` swells, penalizing over-flexible models and preventing :math:`\lambda \to 0`.
 * The third term, :math:`-\frac12 \log|S_{\boldsymbol{\lambda}}|_+$ provides the normalization constant for the Gaussian prior. Because the penalty matrix has a null space for flat or linear functions, this determinant is evaluated over positive eigenvalues only (:math:`|S|_+`), avoiding the undefined logarithm of zero while correctly adjusting for the rank of the penalty.
 
-Why the ":math:`_+`" matters can be seen by taking :math:`S_\lambda =
-\lambda S` with :math:`\operatorname{rank}(S) = r`:
-:math:`\log|S_\lambda|_+ = r\log\lambda + \log|S|_+`, which scales
+Why the positive-eigenvalue determinant matters can be seen by taking :math:`S_\lambda =
+\lambda S` with :math:`\operatorname{rank}(S) = r`,
+yielding :math:`\log|S_\lambda|_+ = r\log\lambda + \log|S|_+`, which scales
 correctly with the rank.  When each penalty acts on its own disjoint block of
 coefficients, ``_precompute_penalty_structure`` precomputes the rank and
 positive eigenvalues once:
@@ -618,7 +618,7 @@ to ``eigvalsh`` only if needed).
 **Why REML and not maximum likelihood?**  In the mixed-model view,
 estimating :math:`\boldsymbol{\beta}` costs degrees of freedom; plain ML
 ignores this and biases :math:`\sigma^2` (and thus :math:`\lambda`)
-downward: it under-smoothes.  The restricted likelihood corrects for
+downward and under-smoothes. The restricted likelihood corrects for
 exactly this loss, which is why the criterion uses :math:`n - M_p`
 instead of :math:`n`.  REML also has better-behaved optima than GCV,
 which is notorious for flat minima and occasional near-zero
@@ -648,8 +648,8 @@ restricted likelihood.
 
 .. _section-wood-inference:
 
-Inference: two covariances, one F-test
---------------------------------------
+Inference with Two Covariances and Wood's F-Test
+------------------------------------------------
 
 With :math:`\boldsymbol{\lambda}` estimated, the backend computes a full
 inferential kit.  Two covariance matrices appear:
@@ -660,12 +660,12 @@ inferential kit.  Two covariance matrices appear:
    V_e = H^{-1} X^\top X H^{-1} \hat\sigma^2
        = H^{-1} R^\top R H^{-1} \hat\sigma^2.
 
-* :math:`V_p` is the **Bayesian posterior covariance**: the posterior
+* :math:`V_p` is the **Bayesian posterior covariance**, representing the posterior
   of :math:`\boldsymbol{\beta}` under the prior that generated REML, with
   :math:`\lambda` treated as known.  It is what the Wood backend reports in
   ``summary()`` tables and uses for confidence bands; standard errors are
   :math:`\operatorname{SE}_j = \sqrt{(V_p)_{jj}}`.
-* :math:`V_e` is the **frequentist (sandwich) covariance**: the
+* :math:`V_e` is the **frequentist (sandwich) covariance**, representing the
   sampling covariance of :math:`\hat{\boldsymbol{\beta}}` treating the
   penalty as part of the estimator, again with :math:`\lambda` fixed.
   It ignores the uncertainty in :math:`\lambda` itself (a standard
@@ -703,7 +703,7 @@ barely exceeds 1 despite a large :math:`k` is doing very little.
    \;\; \text{under } H_0,
 
 with the p-value from the right tail of the F distribution.  The
-justification is a moment-matching argument: under the null the
+justification relies on a moment-matching argument where under the null the
 quadratic form has mean :math:`\text{EDF}_j` and variance
 :math:`2\,\text{EDF}_j`, matching an :math:`F`-like distribution to
 second order.  It is an *approximation*, exact for

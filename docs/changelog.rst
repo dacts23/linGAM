@@ -73,8 +73,8 @@ Improvements
   code both engines inherit (``predict``, ``partial_dependence``,
   confidence/prediction intervals, ``loglikelihood``/``aic``/``bic``/
   ``deviance_explained``, and all decomposition/diagnostic plotting).
-  Note the scale convention it abstracts: Eilers-Marx stores ``scale`` as
-  σ (uses ``s**2`` as variance), Wood stores it as σ² directly.
+  Note the scale convention it abstracts, where Eilers-Marx stores ``scale`` as
+  σ (uses ``s**2`` as variance) and Wood stores it as σ² directly.
 * **Observation weights across both backends**: ``fit(x, y, weights=w)`` and
   ``gridsearch(x, y, weights=w)`` scale observations by :math:`\sqrt{w_i}` in
   both the Eilers-Marx and Wood backends (replacing the earlier ``robust=True``
@@ -101,7 +101,7 @@ New features
 * **Robust grid search** uses dedicated IRLS path with threaded evaluation.
 * **Statistics methods** added to both ``GAMCore`` and ``LinGAM``:
   ``loglikelihood()``, ``aic()``, ``bic()``, ``deviance_explained()``.
-* **Selective grid search** via ``search_terms`` parameter: restrict tuning
+* **Selective grid search** (via ``search_terms`` parameter): restrict tuning
   to specific term indices or types.
 
 Improvements

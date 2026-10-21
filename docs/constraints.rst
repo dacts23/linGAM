@@ -12,7 +12,7 @@ periodicity wraps the B-spline basis and penalty across the domain boundaries.
    Monotonicity and convexity constraints (``mono_inc``, ``mono_dec``,
    ``convex``, ``concave``) are provided by the Eilers-Marx engine
    (``backend='eilers'``).  Periodic smooths (``constraint='periodic'``) are
-   supported in both engines: via wrapped B-splines in ``backend='eilers'``
+   supported in both engines, using wrapped B-splines in ``backend='eilers'``
    and via cyclic cubic/P-spline bases (``bs='cc'`` / ``bs='cp'``) in
    ``backend='wood'``.
 
@@ -47,7 +47,7 @@ Available constraints
    :align: center
    :width: 98%
 
-   Effect of shape constraints on noisy data: (left) ``constraint='mono_inc'``
+   Effect of shape constraints on noisy data, where (left) ``constraint='mono_inc'``
    suppresses non-physical local dips in a dose-response curve; (centre)
    ``constraint='mono_dec'`` damps rebounds in an exponential decay curve;
    (right) ``constraint='periodic'`` (or Wood's ``bs='cc'``) joins value and

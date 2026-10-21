@@ -10,19 +10,19 @@ Three executed notebooks live in ``examples/``. The two backend tutorials
 walk through the mathematics and workflow of each backend with assertions
 for every formula:
 
-* x`examples/gam_tutorial.ipynb`_: a hands-on tour across both backends:
-  underfitting vs. overfitting, EDF interpretation, 2-D tensor interactions,
+* `examples/gam_tutorial.ipynb`_: a hands-on tour across both backends,
+  covering underfitting vs. overfitting, EDF interpretation, 2-D tensor interactions,
   and shape constraints.
-* x`examples/wood_backend_math_tutorial.ipynb`_: the Wood backend's mathematics
-  and workflow: the basis zoo, ``S.scale`` and sum-to-zero absorption,
+* `examples/wood_backend_math_tutorial.ipynb`_: the Wood backend's mathematics
+  and workflow, covering the basis zoo, ``S.scale`` and sum-to-zero absorption,
   continuous REML/GCV optimisation, Wood (2013) approximate F-tests, and a
   full engineering case study.
-* x`examples/eilers_backend_math_tutorial.ipynb`_: the Eilers-Marx backend's
-  mathematics and workflow: De Boor B-splines, difference penalties, the SVD
+* `examples/eilers_backend_math_tutorial.ipynb`_: the Eilers-Marx backend's
+  mathematics and workflow, covering De Boor B-splines, difference penalties, the SVD
   data-augmentation solver, GCV grid search, shape constraints, and the same
   case study end to end.
 
-Running the notebooks needs the Jupyter stack: install it with
+Running the notebooks needs the Jupyter stack, which you can install with
 ``pip install -e .[notebooks]`` from the repository root.
 
 .. _examples/gam_tutorial.ipynb: https://github.com/dacts23/magli/blob/main/examples/gam_tutorial.ipynb
@@ -66,7 +66,7 @@ Basic regression & residual diagnostics
    :align: center
    :width: 92%
 
-   Output of ``model.plot_diagnostics(x, y)``: Observed vs. Fitted values,
+   Four diagnostic views produced by ``model.plot_diagnostics(x, y)``, showing observed versus fitted values,
    Residuals vs. Fitted values, Residual Histogram, and Normal Q-Q plot.
 
 

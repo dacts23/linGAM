@@ -1,6 +1,6 @@
 .. _part-comparison:
 
-Part IV: Backends Compared
+Part IV — Backends Compared
 ===========================
 
 .. _section-backends-compared:
@@ -18,7 +18,7 @@ Here, the first term measures how closely the fitted curve tracks the observed d
 
 Paul Eilers approached smoothing from an engineering and chemometrics perspective. In chemometrics, datasets often consist of smooth spectroscopic curves measured across hundreds of contiguous wavelengths. Eilers wanted an intuitive, transparent system built out of identical, evenly spaced building blocks that could be evaluated rapidly and controlled with simple difference penalties. His philosophy prioritizes computational directness, numerical stability on difficult grids, and straightforward geometric controls such as monotonicity.
 
-Simon Wood approached the problem as a mathematical statistician. He recognized that non-linear smoothing could be recast as a generalized linear mixed model, where the wiggliness penalty acts as a Gaussian prior on the regression coefficients. Wood wanted an entire inferential ecosystem: automatic parameter selection that scales to dozens of terms, a rich catalog of specialized basis functions tailored to different coordinate geometries, and formal hypothesis tests with p-values matching classical linear regression tables.
+Simon Wood approached the problem as a mathematical statistician. He recognized that non-linear smoothing could be recast as a generalized linear mixed model, where the wiggliness penalty acts as a Gaussian prior on the regression coefficients. Wood wanted an entire inferential ecosystem with automatic parameter selection that scales to dozens of terms, a rich catalog of specialized basis functions tailored to different coordinate geometries, and formal hypothesis tests with p-values matching classical linear regression tables.
 
 Neither philosophy is universally better; each excels in different modeling scenarios.
 
@@ -27,15 +27,15 @@ Neither philosophy is universally better; each excels in different modeling scen
    :align: center
    :width: 100%
 
-   A head-to-head comparison illustrating how the two backends handle core modeling tasks: (1) univariate smooth estimation, (2) discrete GCV grid search versus continuous REML optimization, (3) monotonic shape constraints, (4) cyclic boundary wrapping, (5) outlier down-weighting, and (6) 2-D interaction surfaces with independent coordinate smoothing.
+   A head-to-head comparison illustrating how the two backends handle core modeling tasks across univariate smooth estimation (1), discrete GCV grid search versus continuous REML optimization (2), monotonic shape constraints (3), cyclic boundary wrapping (4), outlier down-weighting (5), and 2-D interaction surfaces with independent coordinate smoothing (6).
 
 
-The Choice of Basis: Uniform LEGO Bricks vs. Tailored Geometries
-----------------------------------------------------------------
+The Choice of Basis — Uniform LEGO Bricks vs. Tailored Geometries
+-----------------------------------------------------------------
 
 The first fundamental divergence between the backends is how they translate an input variable into a set of basis curves.
 
-The Eilers-Marx backend bets entirely on a single basis family: the uniform B-spline. Instead of debating where knots should sit, Eilers-Marx places a uniform grid of bell-shaped cubic B-spline bumps across the entire range of your predictor. Every basis function has the exact same width and shape, overlapping with its immediate neighbors to form what mathematicians call a partition of unity (the bumps sum to exactly 1.0 at every point along the axis). You typically assign between 10 and 40 basis functions to a term, and you leave the knot locations alone. The difference penalty handles all the work of deciding how flexible the curve should be. This setup is predictable, robust, and easy to visualize, functioning very much like building a curve out of identical LEGO bricks.
+The Eilers-Marx backend bets entirely on a single basis family, the uniform B-spline. Instead of debating where knots should sit, Eilers-Marx places a uniform grid of bell-shaped cubic B-spline bumps across the entire range of your predictor. Every basis function has the exact same width and shape, overlapping with its immediate neighbors to form what mathematicians call a partition of unity (the bumps sum to exactly 1.0 at every point along the axis). You typically assign between 10 and 40 basis functions to a term, and you leave the knot locations alone. The difference penalty handles all the work of deciding how flexible the curve should be. This setup is predictable, robust, and easy to visualize, functioning very much like building a curve out of identical LEGO bricks.
 
 Simon Wood argued that physical data comes in geometries where uniform B-splines are suboptimal. The Wood backend therefore provides an entire zoo of basis families:
 
@@ -47,17 +47,17 @@ Simon Wood argued that physical data comes in geometries where uniform B-splines
 In short, Eilers-Marx chooses one simple, uniform tool and regularizes it, whereas Wood offers a curated toolkit tailored to specific physical and spatial geometries.
 
 
-Tuning Smoothness: Discrete Grid Sweeps vs. Continuous Mountain Climbing
-------------------------------------------------------------------------
+Tuning Smoothness — Discrete Grid Sweeps vs. Continuous Mountain Climbing
+-------------------------------------------------------------------------
 
 Once you choose a basis, you must decide how much to penalize wiggles. If the penalty parameter :math:`\lambda` is too small, the curve chases random noise; if :math:`\lambda` is too large, it flattens into a straight line. The two backends find the optimal :math:`\lambda` through fundamentally different mechanisms.
 
-In the Eilers-Marx backend, smoothing parameter selection is treated as an explicit experimental sweep. You provide a grid of candidate :math:`\lambda` values (for example, eleven log-spaced points from 0.001 to 1000), and the algorithm evaluates Generalized Cross-Validation (GCV) at every candidate. Because candidate points are completely independent, the search evaluates them in parallel across your CPU cores. The major advantage of this approach is visual transparency: you can plot the entire U-shaped GCV curve, inspect whether the chosen minimum is sharp or ambiguous, and explore alternative configurations. The limitation is combinatorial scaling: if you have four different smooth terms and want to search ten candidate values for each, a full grid requires :math:`10^4 = 10,000` evaluations, which quickly becomes computationally prohibitive.
+In the Eilers-Marx backend, smoothing parameter selection is treated as an explicit experimental sweep. You provide a grid of candidate :math:`\lambda` values (for example, eleven log-spaced points from 0.001 to 1000), and the algorithm evaluates Generalized Cross-Validation (GCV) at every candidate. Because candidate points are completely independent, the search evaluates them in parallel across your CPU cores. The major advantage of this approach is visual transparency; you can plot the entire U-shaped GCV curve, inspect whether the chosen minimum is sharp or ambiguous, and explore alternative configurations. The limitation is combinatorial scaling. If you have four different smooth terms and want to search ten candidate values for each, a full grid requires :math:`10^4 = 10,000` evaluations, which quickly becomes computationally prohibitive.
 
 The Wood backend solves this by turning parameter selection into an internal optimization problem. Because the penalty acts as a Gaussian prior on the coefficients, the marginal likelihood of the data can be evaluated using Restricted Maximum Likelihood (REML). Instead of evaluating a discrete grid, Wood optimizes :math:`\log \lambda` continuously using exact analytic gradients. The algorithm calculates the slope of the REML surface directly from the existing matrix decomposition and steps uphill toward the optimum using L-BFGS-B or Brent's method. This means you never have to specify search ranges or guess candidate values; the backend finds the continuous optimum on its own. More importantly, this continuous optimization scales effortlessly to models with multiple terms, updating a dozen independent smoothing parameters simultaneously in a fraction of a second.
 
 
-Numerical Solvers: SVD Data Augmentation vs. Cholesky Efficiency
+Numerical Solvers — SVD Data Augmentation vs. Cholesky Efficiency
 -----------------------------------------------------------------
 
 Behind every GAM fit lies a system of linear equations. The choice of solver determines how fast the model fits and how reliably it behaves when data is collinear or sparse.
@@ -67,8 +67,8 @@ The Eilers-Marx backend relies on the Singular Value Decomposition (SVD) applied
 The Wood backend uses a QR factorization of the design matrix followed by a Cholesky decomposition of the penalized system :math:`R^\top R + S_{\boldsymbol{\lambda}} = L L^\top`. A Cholesky solve requires roughly one-third the floating-point operations of a full SVD, making each objective evaluation significantly faster. More importantly for Wood's optimizer, both the determinant of the penalized system and the effective degrees of freedom fall directly out of the diagonal elements of the Cholesky factor :math:`L`. This allows Wood to evaluate the REML score and its analytic gradient in a single rapid pass at each iteration of the optimizer.
 
 
-Identifiability and Zero-Centering: Implicit Offsets vs. Absorbed Constraints
------------------------------------------------------------------------------
+Identifiability and Zero-Centering — Implicit Offsets vs. Absorbed Constraints
+------------------------------------------------------------------------------
 
 A subtle challenge in additive models is identifiability. If you add 10 to a smooth term :math:`f_1(x_1)` and subtract 10 from the global intercept :math:`\beta_0`, the model's total predictions remain completely identical. Without a clear rule, the division of labor between the intercept and the smooth terms becomes arbitrary.
 
@@ -87,8 +87,8 @@ The Eilers-Marx backend takes a conservative, pragmatic approach to inference. I
 The Wood backend fully embraces the Bayesian mixed-model interpretation. By viewing the penalty as a Gaussian prior, it constructs a Bayesian posterior covariance matrix alongside the frequentist sandwich covariance. Using Simon Wood's 2013 moment-matching derivation, it computes an approximate F-statistic and an associated p-value for each smooth term. This tests the null hypothesis that the smooth function is identically zero across its entire range. If you need to submit an empirical paper or present results to stakeholders who expect standard regression tables with significance stars and p-values, the Wood backend provides that output directly through its summary method.
 
 
-Physical Shape Constraints: When Domain Knowledge Trumps Noise
---------------------------------------------------------------
+Physical Shape Constraints — When Domain Knowledge Trumps Noise
+---------------------------------------------------------------
 
 In many engineering, medical, and economic problems, physical laws or established domain knowledge dictate how a curve must behave. For example, cumulative drug toxicity must not decrease as dosage increases, soil strength must increase with compaction, and material wear must accumulate over time. When data is noisy, an unconstrained algorithm might fit local dips or reversals that violate physical reality.
 

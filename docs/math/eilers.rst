@@ -1,6 +1,6 @@
 .. _part-eilers:
 
-Part II: The Eilers & Marx Backend
+Part II — The Eilers & Marx Backend
 ===================================
 
 .. tip::
@@ -19,7 +19,7 @@ Part II: The Eilers & Marx Backend
 How the Eilers-Marx backend thinks
 ----------------------------------
 
-The Eilers-Marx backend (``backend='eilers'``) is the minimalist design: **one
+The Eilers-Marx backend (``backend='eilers'``) is the minimalist design, relying on **one
 basis family, one solver, one criterion, chosen well.**  Every smooth term
 is a uniform cubic B-spline; smoothness is charged by a difference penalty;
 the one free knob, the smoothing parameter :math:`\lambda`, is chosen by
@@ -55,7 +55,7 @@ Each step is a section below.  The design bets on three ideas:
    work with a square-root of the penalised system instead
    (:ref:`SVD solver<section-svd-solver>`).
 
-Identifiability in this backend is *implicit*: the intercept column is
+Identifiability in this backend is *implicit*, meaning the intercept column is
 unpenalised and absorbs the overall level, and each penalty leaves its own
 null space (constant and linear trends for the default penalty) uncharged,
 so the decomposition into intercept + smooths is well defined in practice.
@@ -64,8 +64,8 @@ compare against Wood's approach later.
 
 .. _section-bsplines:
 
-B-spline bases: building curves from building blocks
-----------------------------------------------------
+B-Spline Bases and Local Building Blocks
+----------------------------------------
 
 If we want :math:`f(x)` to be a *smooth, flexible curve*, we need a
 way to represent it mathematically.
@@ -73,18 +73,18 @@ way to represent it mathematically.
 **Why not just use a high-degree polynomial?**  A degree-20 polynomial can
 wiggle a lot, but when you fit it to data every point in one corner of the
 plot affects the curve *everywhere*.  You get wild oscillations (Runge's
-phenomenon).  Polynomials are globally coupled: change one coefficient and
+phenomenon).  Polynomials are globally coupled, so changing one coefficient moves
 everything changes.
 
-**The key insight of B-splines**: build the curve from *localised* building
+The central principle of B-splines is to build the curve from *localised* building
 blocks.  Each block (basis function) is nonzero only in a small region.
 Adjusting a block only changes the curve in its neighbourhood, not across
 the whole domain.  This is called **compact support**.
 
 Think of LEGO bricks.  A long, curved wall isn't built from one flexible
-piece: it is built from many small, rigid bricks each responsible for a
+piece; instead, it is built from many small, rigid bricks each responsible for a
 tiny segment.  The bricks overlap slightly at the edges for smoothness.
-B-spline basis functions are the mathematical equivalent: each one is a
+B-spline basis functions are the mathematical equivalent. Each one is a
 smooth "bump" that covers a few neighbouring data points.  When you stack
 them with different heights (coefficients :math:`\beta_j`), you get any
 smooth shape you want:
@@ -102,7 +102,7 @@ API).
    :align: center
    :width: 100%
 
-   Single-term ``LinGAM.plot_decomposition`` (Eilers-Marx backend): **(left)** uniform cubic
+   Single-term ``LinGAM.plot_decomposition`` (Eilers-Marx backend), showing **(left)** uniform cubic
    B-spline basis bumps :math:`B_j(x)` and interior knots, **(middle)** estimated coefficients
    :math:`\hat\beta_j` and intercept, **(right)** scaled basis functions :math:`\hat\beta_j B_j(x) + \hat\beta_0`
    summing to the fitted curve.
@@ -146,7 +146,7 @@ bricks tile the space) and each column has compact support (localised
 bumps).
 
 **Why cubic?**  magli defaults to ``spline_order=3``, which the recursion
-above turns into basis functions of order :math:`k+1 = 4`: cubic
+above turns into basis functions of order :math:`k+1 = 4`, producing cubic
 polynomials, degree 3.  Cubic is the lowest degree that gives *continuous
 second derivatives*, so the curve looks smooth to the human eye.  Lower
 orders look jagged; higher orders increase computation without visible
@@ -169,7 +169,7 @@ B-spline derivative formula :math:`B'_{i,k+1} = k
 \bigl( B_{i,k}/\Delta\tau - B_{i+1,k}/\Delta\tau \bigr)`.
 
 **Periodic basis.**  When ``constraint='periodic'``, the domain wraps
-around: the input is taken modulo 1 and the last :math:`k` columns fold
+around by evaluating the input modulo 1 and folding the last :math:`k` columns
 into the first :math:`k`, preserving the partition of unity
 :math:`\sum_j B_j(x) = 1`, enforcing :math:`f(0) = f(1)`, and reducing the
 coefficient count from :math:`K` to :math:`K_{\text{eff}} = K - k`.
@@ -177,8 +177,8 @@ coefficient count from :math:`K` to :math:`K_{\text{eff}} = K - k`.
 
 .. _section-penalties:
 
-Penalties: why flexibility needs a cost
----------------------------------------
+Penalties and the Cost of Flexibility
+-------------------------------------
 
 Suppose we give the model :math:`K = 30` basis functions.  It could fit the
 data almost *perfectly*, including every random noise wiggle.  When we then
@@ -200,11 +200,11 @@ The first term rewards fitting the training data closely.  The second term
 punishes certain patterns in the coefficients.  The smoothing parameter
 :math:`\lambda` (``lam`` in the API) controls the tax rate:
 
-* :math:`\lambda = 0`: no penalty; the curve can be as wiggly as the
-  basis allows.  Equivalent to unpenalised regression.
-* :math:`\lambda \to \infty`: infinite penalty; the curve is forced to
+* **Zero penalty** (:math:`\lambda = 0`): the curve can be as wiggly as the
+  basis allows (equivalent to unpenalised regression).
+* **Infinite penalty** (:math:`\lambda \to \infty`): the curve is forced to
   be as smooth as possible (a straight line for second-difference penalties).
-* :math:`0 < \lambda < \infty`: a balance.  magli uses grid search to
+* **Balanced penalty** (:math:`0 < \lambda < \infty`): magli uses grid search to
   find the :math:`\lambda` that minimises GCV.
 
 .. figure:: ../_static/images/penalty_lambda_effect.png
@@ -212,7 +212,7 @@ punishes certain patterns in the coefficients.  The smoothing parameter
    :align: center
    :width: 100%
 
-   How :math:`\lambda` shapes the fit (:math:`K = 22`): **(left)** weak penalty
+   How :math:`\lambda` shapes the fit (:math:`K = 22`), showing (left) weak penalty
    (:math:`\lambda = 10^{-5}`) lets adjacent B-splines oscillate to chase noise;
    **(middle)** GCV-optimal :math:`\lambda` balances smoothness and fidelity;
    **(right)** strong penalty (:math:`\lambda = 10^4`) forces the second differences
@@ -220,9 +220,9 @@ punishes certain patterns in the coefficients.  The smoothing parameter
 
 **What each penalty does to the curve:**
 
-*Second-difference penalty (default):*  Penalises the *curvature* (second
+**Second-difference penalty (default).** Penalises the *curvature* (second
 derivative) of :math:`f(x)`.  A straight line has zero curvature, so it
-costs nothing.  Wiggles cost a lot.  This produces the visually "smooth"
+costs nothing.  Wiggles cost a lot, producing the visually smooth
 curves we expect.
 
 .. math::
@@ -235,7 +235,7 @@ curves we expect.
    \qquad
    P = \lambda \, D_2^\top D_2.
 
-*Active-set directional shape penalties (``mono_inc``, ``mono_dec``, ``convex``, ``concave``):*
+**Active-set directional shape penalties** (``mono_inc``, ``mono_dec``, ``convex``, ``concave``).
 In addition to the smoothness penalty :math:`\lambda D_2^\top D_2`, shape-constrained
 terms add ``pyGAM``'s iterative active-set penalty
 :math:`C(\boldsymbol{\beta}) = \lambda_{\text{con}} D_m^\top \operatorname{diag}(\mathbf{v}(\boldsymbol{\beta})) D_m + \lambda_{L2} I`
@@ -243,14 +243,14 @@ with :math:`\lambda_{\text{con}} = 10^9` and :math:`\lambda_{L2} = 10^{-3}`, whe
 :math:`\mathbf{v}(\boldsymbol{\beta})` selects violated first differences (:math:`m=1`
 for monotonicity) or second differences (:math:`m=2` for convexity/concavity).
 
-*Circular second-difference (periodicity):*  The second-difference operator
-wraps around, connecting the last coefficient back to the first: the
+**Circular second-difference (periodicity).** The second-difference operator
+wraps around, connecting the last coefficient back to the first, which is the
 mathematical equivalent of gluing the two ends of the curve together.
 
-*Ridge penalty:*  For factor terms (and linear terms, if penalised),
+**Ridge penalty.** For factor terms (and linear terms, if penalised),
 :math:`P = \lambda I_K`.  This is a "shrink-toward-zero" penalty that pulls
 all coefficients toward zero by the same amount.  (Linear ``l()`` terms
-default to :math:`\lambda = 0`: unpenalised.)
+default to :math:`\lambda = 0`, remaining unpenalised.)
 
 **The role of** :math:`\boldsymbol{\lambda}` **cannot be overstated.**
 :math:`\lambda` determines how much information the model extracts from the
@@ -327,14 +327,14 @@ Effective Degrees of Freedom (EDF)
 ----------------------------------
 
 In ordinary linear regression with :math:`p` predictors, the model uses
-exactly :math:`p` degrees of freedom: one per coefficient.  You can think
+exactly :math:`p` degrees of freedom, one per coefficient.  You can think
 of each degree of freedom as the model's ability to "move" in one
 independent direction to fit the data.
 
 **Penalised splines blur this picture.**  The model *has* :math:`K`
 coefficients (basis functions), but the penalty restricts how freely each
 one can move.  A heavily penalised coefficient is "shrunken" toward its
-neighbours: it costs an entire degree of freedom to include, but the
+neighbours, costing an entire degree of freedom to include, but the
 penalty means you only use a fraction of it.
 
 The EDF measures **how many independent directions the fitted model actually
@@ -356,7 +356,7 @@ Using the SVD augmentation from the solver, this simplifies to:
    \text{EDF} = \sum_{i} \sigma_i(U_1)^2 = \|U_1\|_F^2,
 
 where :math:`U_1` is the data block of the SVD's left singular vectors.
-Why the equality holds: with :math:`X = QR` and
+To understand why this equality holds, observe that with :math:`X = QR` and
 :math:`[R;E] = U\Sigma V^\top`, the hat matrix factors as
 :math:`H = Q U_1 U_1^\top Q^\top`, so its trace is
 :math:`\operatorname{tr}(U_1^\top Q^\top Q U_1) = \|U_1\|_F^2`.  This is
@@ -407,15 +407,15 @@ The formula:
 
 Let's unpack each piece:
 
-* :math:`n`: number of observations: a larger dataset gives a more stable
+* **Sample size** :math:`n`: a larger dataset gives a more stable
   estimate.
-* :math:`\text{RSS} = \sum_i (y_i - \hat y_i)^2`: how far the predictions
-  are from the actual values.  Lower is better (better fit).
-* :math:`\text{EDF}`: effective degrees of freedom: the model's complexity.
+* **Residual sum of squares** :math:`\text{RSS} = \sum_i (y_i - \hat y_i)^2`: measures how far the predictions
+  are from the actual values (lower is better).
+* :math:`\text{EDF}` represents effective degrees of freedom, measuring the model's complexity.
   More EDF means the model can "chase" data points more aggressively.
-* :math:`\gamma`: the GCV penalty multiplier (default 1.4 in the Eilers-Marx
+* :math:`\gamma` is the GCV penalty multiplier (default 1.4 in the Eilers-Marx
   backend).  Setting :math:`\gamma > 1` makes the criterion slightly
-  conservative: it prefers simpler models, analogous to AIC's penalty term.
+  conservative, preferring simpler models in analogy to AIC's penalty term.
 
 The denominator :math:`(n - \gamma \cdot \text{EDF})^2` is the key.  When
 EDF is small (simple model), the denominator is large → GCV is small →
@@ -451,7 +451,7 @@ combinations in seconds rather than minutes.
 
 .. _section-penalised-fit:
 
-Putting it together: the penalised fit
+Putting the Penalized Fit Together
 --------------------------------------
 
 Let's trace what happens when you call ``model.fit(x, y)`` with the Eilers-Marx
@@ -464,10 +464,10 @@ backend:
 2. **Build design matrices.**  Each term constructs its B-spline basis
    (or one-hot encoding for factors, or just a column for linear terms).
    These are stacked side-by-side, plus an intercept column of ones, to
-   form the full design matrix :math:`X` (size :math:`n \times m`).
+   form the full design matrix :math:`X` with dimensions :math:`n \times m`.
 
 3. **Build the penalty.**  Each term's penalty matrix is computed and
-   assembled into a block-diagonal :math:`P` (size :math:`m \times m`).
+   assembled into a block-diagonal :math:`P` with dimensions :math:`m \times m`.
    The intercept block is kept at zero because we never penalize the overall baseline level.
 
 4. **Solve.**  The SVD data-augmentation solver finds
@@ -475,7 +475,7 @@ backend:
    :math:`B_{\text{solve}}` for later use.
 
 5. **Compute diagnostics.**  RSS, EDF, GCV, scale estimate, covariance
-   matrix, standard errors: all available via ``model.statistics_``.
+   matrix, standard errors, all accessible via ``model.statistics_``.
 
 **Why the intercept is special.**  If we penalised the intercept, the
 model would be forced toward :math:`y = 0`, which is almost never what we
@@ -486,7 +486,7 @@ and why the intercept block in :math:`P` is zero.
 **A note on identifiability.**  The default second-difference penalty does
 not charge constant or linear trends (they lie in :math:`D_2`'s null
 space).  Together with the unpenalised intercept, this pins down the
-decomposition: the intercept owns the level, and each smooth owns only its
+decomposition, so the intercept owns the level, and each smooth owns only its
 *bending*.  The Eilers-Marx backend relies on this implicit mechanism.  The Wood
 backend, as we'll see, makes the centering explicit with a sum-to-zero
 constraint (same goal, different route).
@@ -512,12 +512,12 @@ Kronecker product of marginal B-spline bases:
 
 If :math:`B_1` is :math:`n \times K_1` and :math:`B_2` is :math:`n \times
 K_2`, then :math:`B_{\text{tensor}}` is :math:`n \times (K_1 K_2)`.  This
-grows quickly: a 2-D tensor with :math:`K_1 = K_2 = 6` creates 36
+grows quickly. For example, a 2-D tensor with :math:`K_1 = K_2 = 6` creates 36
 columns; with :math:`K_1 = K_2 = 10` it's 100 columns.  This is why
 tensor terms use smaller default :math:`K` values (4-8) than univariate
 splines (5-25).
 
-The penalty is a **Kronecker sum**: each dimension gets its own
+The penalty is assembled as a **Kronecker sum**, giving each dimension its own
 smoothing parameter:
 
 .. math::
@@ -533,7 +533,7 @@ versa.  (Pass a list to ``lam=`` to give each dimension its own
 
 **When to use a tensor vs. separate s() terms.**  If the interaction
 exists, a model with only ``s(temperature) + s(vibration)`` will show
-patterned residuals: the error at high-temp-high-vibration will be
+patterned residuals, as the error at high temperature and high vibration will be
 systematically wrong.  Adding ``te(temperature, vibration)`` captures this
 extra structure. You can verify this in the decomposition plot; if the te() heatmap shows
 a strong diagonal pattern, the interaction is real.
@@ -548,15 +548,15 @@ A point prediction says "the model thinks blade life is 42.3 cycles."  An
 interval says "the model thinks blade life is between 40.1 and 44.5 cycles,
 with 95% confidence."  Intervals quantify uncertainty.
 
-**Confidence intervals** answer: *How precisely do we know the average
-response at this point?*  They capture uncertainty in the coefficient
-estimates.  Narrow where we have lots of data; wide where data is sparse.
+**Confidence intervals** quantify uncertainty about the true average
+response at a given point, reflecting variability in the coefficient
+estimates. They are narrow where data is abundant and wider where data is sparse.
 
-**Prediction intervals** answer: *Where would a single new observation
-likely fall?*  They add the residual variability :math:`\hat\sigma^2` to
-the confidence interval width.  A prediction interval is always wider than
-a confidence interval at the same point: individual observations are
-noisier than averages.
+**Prediction intervals** assess where a single new observation
+would likely fall, combining coefficient uncertainty with residual
+variability :math:`\hat\sigma^2`. A prediction interval is always wider than
+a confidence interval at the same point, because individual observations are
+inherently noisier than population averages.
 
 The formulas:
 
@@ -591,7 +591,7 @@ We use the t-distribution (not the normal) because :math:`\sigma` is
 estimated from the data.  Degrees of freedom are :math:`n - \text{EDF}`
 because the penalty has already "used up" EDF worth of information.
 
-This covariance is the **frequentist** one: it treats :math:`\lambda` as
+This covariance is the **frequentist** one, treating :math:`\lambda` as
 fixed and propagates only the sampling variability of
 :math:`\hat{\boldsymbol{\beta}}`.  The Wood backend additionally computes
 a *Bayesian* covariance (treating the penalty as a prior); the difference
@@ -600,8 +600,8 @@ is explained in :ref:`Part III<section-wood-inference>`.
 
 .. _section-grid-search-mechanics:
 
-Fast grid search: how it works
-------------------------------
+How Fast Grid Search Works
+--------------------------
 
 Grid search evaluates every combination of :math:`K` (``n_splines``) and
 :math:`\lambda` (``lam``) candidates.  A naïve implementation would rebuild
@@ -609,7 +609,7 @@ Grid search evaluates every combination of :math:`K` (``n_splines``) and
 
 magli's fast path splits the work into two phases:
 
-**Phase 1: Precompute per** :math:`\boldsymbol{K}` **(threaded).**
+**Phase 1 — Precompute per** :math:`\boldsymbol{K}` **(threaded).**
 For each candidate basis count :math:`K`:
 
 1. Build :math:`X_K` and compute :math:`X_K = Q_K R_K` (QR).
@@ -623,10 +623,10 @@ All :math:`K`-configurations are processed in parallel when
 decomposition, so CPU-bound linear algebra genuinely runs on multiple
 cores).  With the default ``n_jobs=1`` everything runs serially.
 
-**Phase 2: Evaluate per** :math:`\boldsymbol{(K, \lambda)}` **(threaded).**
+**Phase 2 — Evaluate per** :math:`\boldsymbol{(K, \lambda)}` **(threaded).**
 For each combination:
 
-1. Assemble penalty: :math:`P = \lambda S`.
+1. Assemble the penalty matrix :math:`P = \lambda S`.
 2. Form :math:`B = R_K^\top R_K + P`.
 3. Cholesky solve for :math:`\hat{\boldsymbol{\beta}}` and EDF.
 4. Compute RSS and GCV.
@@ -638,7 +638,7 @@ the per-K evaluation loop use the same ``n_jobs``-gated threading.
 
 **Why this matters.**  For a model with :math:`m = 20` coefficients,
 :math:`n = 500` observations, and a grid of :math:`8 \times 8 = 64`
-combinations: a naïve sweep takes ~64 SVDs of :math:`500 \times 20`
+combinations, whereas a direct unoptimized sweep takes ~64 SVDs of :math:`500 \times 20`
 matrices.  The fast path does ~8 QR decompositions (one per unique
 :math:`K`) and ~64 Cholesky solves (one per :math:`(K, \lambda)` pair),
 which is roughly 10× faster.  The gap widens with larger :math:`n`.

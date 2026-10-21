@@ -1,7 +1,7 @@
 magli
 =====
 
-**magli (Modelo Aditivo Generalizado Lineal)**: a high-performance Python implementation of
+**magli (Modelo Aditivo Generalizado Lineal)** is a high-performance Python implementation of
 Generalized Additive Models supporting both **Eilers & Marx (1996)** and **Wood (2011)** backends.
 
 `GitHub Repository <https://github.com/dacts23/magli>`_ | `PyPI Package <https://pypi.org/project/magli/>`_ | `Getting-started notebook <https://github.com/dacts23/magli/blob/main/examples/gam_tutorial.ipynb>`_ | `Wood backend notebook <https://github.com/dacts23/magli/blob/main/examples/wood_backend_math_tutorial.ipynb>`_ | `Eilers-Marx notebook <https://github.com/dacts23/magli/blob/main/examples/eilers_backend_math_tutorial.ipynb>`_
@@ -36,11 +36,11 @@ penalised to avoid overfitting.
    :align: center
    :width: 100%
 
-   Penalised GAMs balance model flexibility against smoothness: capturing nonlinear
+   Penalised GAMs balance model flexibility against smoothness by capturing nonlinear
    structure without chasing random noise.
 
 The package provides two complementary engines accessible through a single, unified interface
-(:class:`GAM` / :class:`LinGAM` for single-term smooths and :class:`GAMCore` for multi-term formulas):
+through :class:`GAM` / :class:`LinGAM` for single-term smooths and :class:`GAMCore` for multi-term formulas:
 
 1. **Wood (2011) Backend** (``backend='wood'``, default):
    Python implementation of Simon Wood's GAM methods (Wood 2011, 2017).
@@ -55,10 +55,10 @@ The package provides two complementary engines accessible through a single, unif
 
 The package supports:
 
-* **Univariate splines** ``s()``: smooth nonlinear trends
-* **Tensor-product interactions** ``te()``: multidimensional interactions
-* **Categorical factors** ``f()``: dummy / one-hot coding
-* **Linear terms** ``l()``: parametric linear effects
+* **Univariate splines** ``s()`` for smooth nonlinear trends
+* **Tensor-product interactions** ``te()`` for multidimensional interactions
+* **Categorical factors** ``f()`` with dummy or one-hot coding
+* **Linear terms** ``l()`` for parametric linear effects
 * **Shape constraints**: monotonicity, convexity, concavity, periodicity
 * **Fast evaluation**: QR decomposition with SVD data-augmentation to avoid squaring condition numbers
 * **Confidence & prediction intervals**: Bayesian posterior covariance and frequentist intervals
@@ -69,7 +69,7 @@ When to use magli
 * You need more flexibility than linear regression but full interpretability without black-box complexity.
 * You want the exact statistical rigor and bases of Simon Wood's GAM formulation in pure Python.
 * You have domain constraints (monotonic, concave, periodic) to enforce on model components.
-* You need to *explain* predictions to domain experts: each term produces a component plot.
+* You need to *explain* predictions to domain experts, where each term produces an isolated component plot.
 
 
 Quick example

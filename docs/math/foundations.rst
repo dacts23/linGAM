@@ -1,6 +1,6 @@
 .. _part-shared:
 
-Part I: Shared Foundations
+Part I — Shared Foundations
 ===========================
 
 .. _section-why-gam:
@@ -31,7 +31,7 @@ This design addresses a central dilemma in data analysis. Simple linear regressi
    :align: center
    :width: 100%
 
-   How penalization tames complexity: (a) ordinary linear regression fails to capture non-linear structure; (b) an unpenalized spline with excessive capacity chases individual noise points (:math:`\text{EDF} = 28`); (c) a penalized GAM balances flexibility against wiggliness, recovering the underlying mean trend with calibrated 95% confidence and prediction intervals.
+   How penalization tames complexity. Panel (a) illustrates ordinary linear regression failing to capture non-linear structure; panel (b) shows an unpenalized spline with excessive capacity chasing individual noise points (:math:`\text{EDF} = 28`); panel (c) shows a penalized GAM balancing flexibility against wiggliness, recovering the underlying mean trend with calibrated 95% confidence and prediction intervals.
 
 When you call ``model.plot_decomposition(x, y)``, the model reveals how it constructed its prediction:
 
@@ -51,8 +51,8 @@ Both backends in ``magli`` fit this exact additive structure. They differ in how
 
 .. _section-formula-decomposition:
 
-Decomposition: How the Model Explains Its Predictions
------------------------------------------------------
+Decomposition — How the Model Explains Its Predictions
+------------------------------------------------------
 
 The defining feature of GAMs is that predictions decompose into independent additive pieces:
 
@@ -84,7 +84,7 @@ When you generate a decomposition grid using ``model.plot_decomposition(x, y)``,
 * The **red shaded margins** mark extrapolation regions where the model predicts beyond the range of training observations. Because splines switch to linear extrapolation outside training boundaries, predictions in these regions should be interpreted with care.
 * The **dashed horizontal zero lines** show where each term has a neutral contribution.
 
-Reading a decomposition plot is like reading a story from left to right. Each panel answers a distinct physical question: how does operating temperature influence component life, how does shaft speed affect wear, and do temperature and vibration combine synergistically? Because the model is additive, each answer stands on its own. While all components sum together to form the final prediction, you can evaluate the physical meaning of each curve independently without wrestling with hidden cross-talk.
+Reading a decomposition plot is like reading a story from left to right. Each panel answers a distinct physical question, such as how operating temperature influences component life, how shaft speed affects wear, or whether temperature and vibration combine synergistically. Because the model is additive, each answer stands on its own. While all components sum together to form the final prediction, you can evaluate the physical meaning of each curve independently without wrestling with hidden cross-talk.
 
 It is worth noting that partial dependence curves show the model's isolated perspective on each variable rather than raw two-dimensional correlations. A raw scatter plot often mixes in confounding effects from other predictors, which can mask the true underlying relationship. The partial dependence curve extracts the isolated contribution, controlling for the remaining variables.
 
@@ -134,10 +134,10 @@ Confidence Intervals versus Prediction Intervals
 
 ``magli`` models provide two distinct uncertainty bands through ``model.confidence_intervals(x)`` and ``model.prediction_intervals(x)``, and keeping their purposes clear is essential:
 
-* **Confidence intervals** reflect uncertainty about the true underlying mean curve :math:`f(x)`. If you gathered an infinite amount of data, this band would narrow to zero width because the estimate of the average trend becomes increasingly precise. It depends solely on parameter covariance: :math:`\operatorname{Var}(\hat{f}(x)) = \mathbf{b}(x)^\top V_{\boldsymbol{\beta}} \mathbf{b}(x)`.
-* **Prediction intervals** answer where a new, individual observation will fall. Even if you knew the true curve with absolute certainty, individual measurements still scatter around that mean with standard deviation :math:`\sigma`. Prediction variance combines both sources of variation: :math:`\operatorname{Var}(y_{\text{new}} \mid x) = \operatorname{Var}(\hat{f}(x)) + \hat\sigma^2`. As a result, prediction intervals never collapse to zero width, regardless of your sample size.
+* **Confidence intervals** reflect uncertainty about the true underlying mean curve :math:`f(x)`. If you gathered an infinite amount of data, this band would narrow to zero width because the estimate of the average trend becomes increasingly precise. It depends solely on parameter covariance, given by :math:`\operatorname{Var}(\hat{f}(x)) = \mathbf{b}(x)^\top V_{\boldsymbol{\beta}} \mathbf{b}(x)`.
+* **Prediction intervals** answer where a new, individual observation will fall. Even if you knew the true curve with absolute certainty, individual measurements still scatter around that mean with standard deviation :math:`\sigma`. Prediction variance combines both sources of variation, giving :math:`\operatorname{Var}(y_{\text{new}} \mid x) = \operatorname{Var}(\hat{f}(x)) + \hat\sigma^2`. As a result, prediction intervals never collapse to zero width, regardless of your sample size.
 
-Multidimensional Geometry: How Tensor Products Work
+Multidimensional Geometry and Tensor Products
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 When two variables interact, a purely additive model :math:`f_1(x_1) + f_2(x_2)` misses the synergy. For example, high operating temperature might be manageable at low vibration levels, but destructive when vibration is high.
