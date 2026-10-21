@@ -362,16 +362,12 @@ Why the equality holds: with :math:`X = QR` and
 :math:`\operatorname{tr}(U_1^\top Q^\top Q U_1) = \|U_1\|_F^2`.  This is
 computed in a single NumPy call with no matrix inversion.
 
-**What EDF tells you in practice:**
+In practice, the estimated EDF offers immediate insight into what your model learned:
 
-* ``EDF ≈ 2``: the term is essentially a straight line (2 df = intercept +
-  slope).
-* ``EDF ≈ K``: the penalty is very weak; the term is using nearly all its
-  basis functions.
-* ``EDF << K`` with good fit: the penalty is working well: the data has a
-  smooth trend that the model captures with few effective parameters.
-* ``EDF`` growing while GCV stays flat: you're overfitting: the extra
-  wiggle doesn't help prediction.
+* An EDF near 2 indicates that the term has essentially collapsed to a linear slope.
+* An EDF close to the basis dimension :math:`K` shows that the penalty is very weak and the term is using almost its full parameter capacity.
+* An EDF substantially lower than :math:`K` with a strong fit confirms that the penalty is working as intended, capturing a smooth trend with just a few effective parameters.
+* An EDF growing while the GCV score stays flat warns of overfitting, where additional wiggles chase noise without improving predictive accuracy.
 
 Per-direction EDF is stored in ``statistics_['edof_per_coef']``:
 
@@ -379,7 +375,7 @@ Per-direction EDF is stored in ``statistics_['edof_per_coef']``:
 
    \text{EDF}_j = \sum_i U_{1,ji}^2 = (U_1 U_1^\top)_{jj}.
 
-Note that in the Eilers-Marx SVD solver, the rows of :math:`U_1` correspond to
+In the Eilers-Marx SVD solver, the rows of :math:`U_1` correspond to
 the :math:`m` QR-orthogonalised directions of :math:`R` (:math:`Q^\top H Q
 = U_1 U_1^\top`), whereas the Wood backend reports the diagonal of the
 coefficient influence matrix :math:`F = (X^\top X + S_\lambda)^{-1}
@@ -472,7 +468,7 @@ backend:
 
 3. **Build the penalty.**  Each term's penalty matrix is computed and
    assembled into a block-diagonal :math:`P` (size :math:`m \times m`).
-   The intercept block is zero: we never penalise the overall level.
+   The intercept block is kept at zero because we never penalize the overall baseline level.
 
 4. **Solve.**  The SVD data-augmentation solver finds
    :math:`\hat{\boldsymbol{\beta}}` and stores the solution operator
@@ -539,7 +535,7 @@ versa.  (Pass a list to ``lam=`` to give each dimension its own
 exists, a model with only ``s(temperature) + s(vibration)`` will show
 patterned residuals: the error at high-temp-high-vibration will be
 systematically wrong.  Adding ``te(temperature, vibration)`` captures this
-extra structure.  Check the decomposition plot: if the te() heatmap shows
+extra structure. You can verify this in the decomposition plot; if the te() heatmap shows
 a strong diagonal pattern, the interaction is real.
 
 

@@ -182,8 +182,8 @@ function of the fourth-derivative operator:
 
    \frac{d^4}{dr^4}\left(\frac{|r|^3}{12}\right) = \delta(r),
 
-where :math:`\delta` is the Dirac delta.  Consequence: for any function of
-the form above, the curvature integral collapses to a quadratic form in
+where :math:`\delta` is the Dirac delta. As a consequence, for any function of
+this form, the curvature integral collapses to a quadratic form in
 the coefficients,
 
 .. math::
@@ -192,10 +192,10 @@ the coefficients,
    \qquad
    E_{ij} = \eta(|x_i - x_j|).
 
-A one-line sanity check: for :math:`r > 0`,
-:math:`\eta'''(r) = 1/2` (and :math:`-1/2` for :math:`r < 0`), so the
-third derivative jumps by exactly 1 at the origin, which is what makes
-the fourth derivative a unit Dirac spike.  The "thin plate" name comes
+To see why this works intuitively, observe that for :math:`r > 0`,
+:math:`\eta'''(r) = 1/2` (and :math:`-1/2` for :math:`r < 0`), meaning the
+third derivative jumps by exactly 1 at the origin. That sudden step is what
+makes the fourth derivative a unit Dirac spike.  The "thin plate" name comes
 from the :math:`d=2` generalisation, where the penalty is the bending
 energy of a physical plate.
 
@@ -203,8 +203,8 @@ energy of a physical plate.
 positive and negative eigenvalues, but it is *positive definite on the
 subspace orthogonal to the null space* (:math:`T^\top\delta = 0`).
 Solving the continuous problem exactly gives :math:`f` with one parameter
-per data point (an :math:`O(n)` model): effective, but too expensive and
-over-flexible for practical use.
+per data point (an :math:`O(n)` model), which is mathematically elegant but
+far too expensive and flexible for practical use.
 
 **The low-rank approximation.**  Wood's trick (and magli's) is to keep
 only the :math:`k` most important radial directions.  Eigen-decompose
@@ -282,12 +282,12 @@ can effectively drop a term.)
 Cubic regression splines (``cr``, ``cs``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If thin plate splines are the elegant continuous solution, cubic
-regression splines are the workhorse discrete one.  The idea: place
-:math:`k` knots at the sample **quantiles** of the unique :math:`x`
-values, demand that :math:`f` be a cubic polynomial between knots, twice
-continuously differentiable at each knot, and *linear outside the range of
-the knots* (the "natural" boundary condition: :math:`f'' = 0` beyond the
+If thin plate splines provide an elegant continuous solution, cubic
+regression splines serve as the workhorse discrete alternative. Their
+construction places :math:`k` knots at the sample **quantiles** of the
+unique :math:`x` values, ensuring that :math:`f` is a cubic polynomial between
+knots, twice continuously differentiable at each knot, and linear beyond
+the boundary knots (the "natural" boundary condition: :math:`f'' = 0` beyond the
 first and last knot).
 
 **The value-curvature parametrisation.**  A natural cubic spline is fully
@@ -586,20 +586,11 @@ unpenalised polynomial modes in the smooths), the criterion to minimise is
    + \frac12 \log |H|
    - \frac12 \log |S_{\boldsymbol{\lambda}}|_+ .
 
-Reading it term by term:
+Each component in this score has an intuitive interpretation:
 
-* :math:`D_p / 2\hat\sigma^2`: how well the penalised fit explains the
-  data, measured against the estimated noise.  The first two terms
-  together are :math:`(n-M_p)(1 + \log 2\pi\hat\sigma^2)/2` after
-  substituting :math:`\hat\sigma^2`, a pure function of the penalised
-  deviance.
-* :math:`\frac12 \log|H|`: a complexity tax.  The more the penalty is
-  weakened, the larger :math:`H`'s determinant, the worse the score.
-  This term is what prevents :math:`\lambda \to 0`.
-* :math:`-\frac12 \log|S_{\boldsymbol{\lambda}}|_+`: a normalisation
-  correction for the prior.  :math:`|S|_+` is the product of the
-  *positive* eigenvalues only (the penalty is singular by design: its
-  null space would otherwise contribute :math:`\log 0 = -\infty`).
+* The first term, :math:`D_p / (2\hat\sigma^2)`, measures goodness of fit by evaluating how closely the penalized curve tracks the observations relative to the estimated residual noise.
+* The second term, :math:`\frac12 \log|H|`, acts as an explicit complexity penalty. When you weaken the smoothing penalty, the determinant of :math:`H` swells, penalizing over-flexible models and preventing :math:`\lambda \to 0`.
+* The third term, :math:`-\frac12 \log|S_{\boldsymbol{\lambda}}|_+$ provides the normalization constant for the Gaussian prior. Because the penalty matrix has a null space for flat or linear functions, this determinant is evaluated over positive eigenvalues only (:math:`|S|_+`), avoiding the undefined logarithm of zero while correctly adjusting for the rank of the penalty.
 
 Why the ":math:`_+`" matters can be seen by taking :math:`S_\lambda =
 \lambda S` with :math:`\operatorname{rank}(S) = r`:
